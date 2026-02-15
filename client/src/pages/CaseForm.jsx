@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { useAuth } from '../context/AuthContext';
 import './CaseForm.css';
 
 const CaseForm = () => {
   const { type } = useParams();
   const navigate = useNavigate();
+  const { token } = useAuth();
   const [benefit, setBenefit] = useState(null);
   const [formData, setFormData] = useState({
     address: '',
@@ -23,7 +25,7 @@ const CaseForm = () => {
 
   const fetchBenefit = async () => {
     try {
-      const response = await axios.get('/api/benefits');
+      const response = await axios.get('/benefits');
       setBenefit(response.data[type]);
     } catch (error) {
       console.error('Failed to fetch benefit:', error);
@@ -58,24 +60,31 @@ const CaseForm = () => {
       return;
     }
 
+    if (!token) {
+      setError('נא להתחבר כדי לשלוח את הטופס.');
+      setLoading(false);
+      return;
+    }
+
     try {
-      await axios.post('/api/cases', {
-        benefitType: type,
-        ...formData
-      });
+      await axios.post(
+        '/cases',
+        { benefitType: type, ...formData },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
 
       navigate('/confirmation', { state: { benefitType: type } });
     } catch (error) {
       const status = error.response?.status;
       const msg = error.response?.data?.error;
       if (status === 401) {
-        setError('נא להתחבר מחדש כדי לשלוח את הטופס.');
+        setError('ההתחברות פגה. נא להתחבר מחדש ולשלוח שוב.');
       } else if (status === 403) {
         setError(msg || 'אין הרשאה לשלוח תיק.');
+      } else if (!error.response) {
+        setError('השרת לא פועל. הרץ מתיקיית הפרויקט: npm run dev (כדי להפעיל שרת + קליינט) ואז נסה שוב.');
       } else if (status >= 500 || msg) {
         setError(msg || 'שגיאת שרת. נסה שוב או בדוק את הטרמינל של השרת.');
-      } else if (!error.response) {
-        setError('לא ניתן להתחבר לשרת. וודא שהשרת רץ (פורט 5000) ומתיקיית שורש: npm run dev');
       } else {
         setError(msg || 'שגיאה בשליחת הטופס.');
       }

@@ -15,7 +15,7 @@ const Confirmation = () => {
 
   const fetchUserCases = async () => {
     try {
-      const response = await axios.get('/api/cases');
+      const response = await axios.get('/cases');
       setCases(response.data);
     } catch (error) {
       console.error('Failed to fetch cases:', error);

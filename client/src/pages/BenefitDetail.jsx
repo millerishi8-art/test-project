@@ -24,7 +24,7 @@ const BenefitDetail = () => {
     const fallback = validKeys.includes(key) ? BENEFITS_FALLBACK[key] : null;
 
     try {
-      const response = await axios.get('/api/benefits');
+      const response = await axios.get('/benefits');
       const data = response.data;
       if (data && validKeys.includes(key) && data[key]) {
         setBenefit(data[key]);

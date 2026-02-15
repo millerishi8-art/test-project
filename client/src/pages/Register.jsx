@@ -11,6 +11,8 @@ const Register = () => {
     password: '',
     confirmPassword: ''
   });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { register } = useAuth();
@@ -93,23 +95,47 @@ const Register = () => {
           </div>
           <div className="form-group">
             <label>סיסמה</label>
-            <input
-              type="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              required
-            />
+            <div className="password-input-wrapper">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                required
+                className="password-input"
+              />
+              <button
+                type="button"
+                className="password-toggle-btn"
+                onClick={() => setShowPassword((s) => !s)}
+                title={showPassword ? 'הסתר סיסמה' : 'הצג סיסמה'}
+                aria-label={showPassword ? 'הסתר סיסמה' : 'הצג סיסמה'}
+              >
+                <span className="password-icon" aria-hidden>{showPassword ? '🙈' : '👁'}</span>
+              </button>
+            </div>
           </div>
           <div className="form-group">
             <label>אישור סיסמה</label>
-            <input
-              type="password"
-              name="confirmPassword"
-              value={formData.confirmPassword}
-              onChange={handleChange}
-              required
-            />
+            <div className="password-input-wrapper">
+              <input
+                type={showConfirmPassword ? 'text' : 'password'}
+                name="confirmPassword"
+                value={formData.confirmPassword}
+                onChange={handleChange}
+                required
+                className="password-input"
+              />
+              <button
+                type="button"
+                className="password-toggle-btn"
+                onClick={() => setShowConfirmPassword((s) => !s)}
+                title={showConfirmPassword ? 'הסתר סיסמה' : 'הצג סיסמה'}
+                aria-label={showConfirmPassword ? 'הסתר סיסמה' : 'הצג סיסמה'}
+              >
+                <span className="password-icon" aria-hidden>{showConfirmPassword ? '🙈' : '👁'}</span>
+              </button>
+            </div>
           </div>
           {error && <div className="error-message">{error}</div>}
           <button type="submit" className="auth-button" disabled={loading}>

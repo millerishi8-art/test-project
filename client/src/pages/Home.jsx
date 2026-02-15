@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
+import { useAuth } from '../context/AuthContext';
 import { homeTranslations } from '../translations/home';
 import './Home.css';
 
@@ -9,6 +10,7 @@ const Home = () => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { language, toggleLanguage } = useLanguage();
+  const { isAdmin } = useAuth();
   const t = homeTranslations[language];
 
   useEffect(() => {
@@ -45,6 +47,10 @@ const Home = () => {
     );
 
     navigate(`/benefit/${type}`);
+  };
+
+  const handleAdminCubeClick = (filter) => {
+    navigate('/admin', { state: { tab: 'cases', filter: filter || 'all' } });
   };
 
   if (loading) {
@@ -115,6 +121,27 @@ const Home = () => {
             <span>₪{benefits.minor.price.ils}</span>
           </div>
         </div>
+
+        {isAdmin && (
+          <>
+            <div
+              className="benefit-cube admin-cube admin-cube-all"
+              onClick={() => handleAdminCubeClick('all')}
+            >
+              <div className="cube-icon">📋</div>
+              <h2>כל הטפסים שאושרו</h2>
+              <p className="cube-description">גישה לכל הטפסים שאנשים אישרו ונשלחו</p>
+            </div>
+            <div
+              className="benefit-cube admin-cube admin-cube-renewal"
+              onClick={() => handleAdminCubeClick('renewal_any')}
+            >
+              <div className="cube-icon">🔄</div>
+              <h2>טפסים שצריך לחדש</h2>
+              <p className="cube-description">כל הטפסים שצריך לחדש עכשיו או בעוד חצי שנה</p>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

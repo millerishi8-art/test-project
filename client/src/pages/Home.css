@@ -70,6 +70,18 @@
   overflow: hidden;
 }
 
+.benefit-cube.admin-cube::before {
+  height: 6px;
+}
+
+.benefit-cube.admin-cube-all::before {
+  background: linear-gradient(135deg, #2e7d32 0%, #1b5e20 100%);
+}
+
+.benefit-cube.admin-cube-renewal::before {
+  background: linear-gradient(135deg, #e65100 0%, #bf360c 100%);
+}
+
 .benefit-cube::before {
   content: '';
   position: absolute;

@@ -21,6 +21,22 @@
   opacity: 0.9;
 }
 
+.admin-header .admin-welcome {
+  max-width: 640px;
+  margin: 0 auto 0.5rem;
+  line-height: 1.5;
+}
+
+.admin-header .admin-welcome strong {
+  color: #fff;
+  font-weight: 700;
+}
+
+.admin-header .admin-sub {
+  font-size: 1rem;
+  opacity: 0.85;
+}
+
 .admin-tabs {
   display: flex;
   gap: 1rem;
@@ -120,6 +136,66 @@
 .status-badge.closed {
   background: #ffebee;
   color: #d32f2f;
+}
+
+/* מצב חידוש */
+.status-badge.renewal-needs_renewal {
+  background: #ffebee;
+  color: #c62828;
+  font-weight: 700;
+}
+
+.status-badge.renewal-renewal_in_6_months {
+  background: #fff3e0;
+  color: #e65100;
+}
+
+.status-badge.renewal-ok {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+.status-badge.renewal-renewed {
+  background: #e3f2fd;
+  color: #1565c0;
+}
+
+.admin-cases-filters {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-bottom: 1.5rem;
+}
+
+.admin-cases-filters button {
+  background: white;
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  padding: 0.6rem 1.2rem;
+  border-radius: 10px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  color: white;
+  transition: all 0.2s;
+}
+
+.admin-cases-filters button:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.admin-cases-filters button.active {
+  background: white;
+  color: #764ba2;
+  border-color: white;
+}
+
+.stat-card.stat-warning .stat-number {
+  color: #c62828;
+}
+
+.stat-card.stat-info .stat-number {
+  color: #1565c0;
 }
 
 .admin-stats {

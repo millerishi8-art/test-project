@@ -8,6 +8,7 @@ const Login = () => {
     email: '',
     password: ''
   });
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
@@ -53,13 +54,29 @@ const Login = () => {
           </div>
           <div className="form-group">
             <label>סיסמה</label>
-            <input
-              type="password"
-              name="password"
-              value={formData.password}
-              onChange={handleChange}
-              required
-            />
+            <div className="password-input-wrapper">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                required
+                className="password-input"
+              />
+              <button
+                type="button"
+                className="password-toggle-btn"
+                onClick={() => setShowPassword((s) => !s)}
+                title={showPassword ? 'הסתר סיסמה' : 'הצג סיסמה'}
+                aria-label={showPassword ? 'הסתר סיסמה' : 'הצג סיסמה'}
+              >
+                {showPassword ? (
+                  <span className="password-icon" aria-hidden>🙈</span>
+                ) : (
+                  <span className="password-icon" aria-hidden>👁</span>
+                )}
+              </button>
+            </div>
           </div>
           {error && <div className="error-message">{error}</div>}
           <button type="submit" className="auth-button" disabled={loading}>

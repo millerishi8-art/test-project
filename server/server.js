@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import routes from './routes/index.js';
@@ -14,6 +15,13 @@ const PORT = process.env.PORT || 5000;
 
 app.use(cors());
 app.use(express.json());
+
+// וידוא שתיקיית data קיימת לשמירת קייסים (cases.json)
+const dataDir = path.join(__dirname, 'data');
+if (!fs.existsSync(dataDir)) {
+  fs.mkdirSync(dataDir, { recursive: true });
+  console.log('נוצרה תיקיית data לשמירת קייסים');
+}
 
 app.use('/api', routes);
 
