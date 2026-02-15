@@ -1,0 +1,19 @@
+# Dependencies - do not commit (reproducible from package.json + package-lock.json)
+node_modules/
+
+# Environment and local data
+.env
+.env.local
+*.log
+data/
+
+# Build output
+dist/
+build/
+.vite/
+
+# OS and editor
+.DS_Store
+Thumbs.db
+*.swp
+*.swo

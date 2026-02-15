@@ -1,0 +1,305 @@
+.benefit-detail-container {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 3rem 2rem;
+}
+
+/* תיאור מוצר – פרטי קייס (מוצג בראש הדף אחרי לחיצה על קובייה) */
+.benefit-product-description {
+  background: #f8f9ff;
+  border-radius: 16px;
+  padding: 2rem 2.5rem;
+  margin-bottom: 2rem;
+  border: 2px solid #e8ebf7;
+  text-align: right;
+}
+
+[dir="ltr"] .benefit-product-description {
+  text-align: left;
+}
+
+.benefit-product-description .product-description-title {
+  color: #667eea;
+  font-size: 1.75rem;
+  margin-bottom: 0.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid #e8ebf7;
+}
+
+.benefit-product-description .product-intro {
+  color: #555;
+  font-size: 1.1rem;
+  margin-bottom: 1.5rem;
+}
+
+.benefit-product-description .product-block {
+  margin-bottom: 1.75rem;
+}
+
+.benefit-product-description .product-block:last-child {
+  margin-bottom: 0;
+}
+
+.benefit-product-description .product-block h3 {
+  color: #764ba2;
+  font-size: 1.2rem;
+  margin-bottom: 0.5rem;
+}
+
+.benefit-product-description .product-block p {
+  color: #444;
+  line-height: 1.8;
+  font-size: 1rem;
+  margin: 0;
+}
+
+.benefit-product-description .product-list {
+  white-space: pre-line;
+}
+
+.benefit-product-description .product-block-important {
+  background: #fff9e6;
+  padding: 1.25rem;
+  border-radius: 12px;
+  border-right: 4px solid #f0c000;
+}
+
+[dir="ltr"] .benefit-product-description .product-block-important {
+  border-right: none;
+  border-left: 4px solid #f0c000;
+}
+
+.benefit-product-description .product-block-contact {
+  background: #e8f4ff;
+  padding: 1.25rem;
+  border-radius: 12px;
+}
+
+.benefit-detail-card {
+  background: white;
+  border-radius: 20px;
+  padding: 3rem;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+.benefit-detail-card h1 {
+  color: #333;
+  margin-bottom: 1rem;
+  font-size: 2.5rem;
+  text-align: center;
+}
+
+.benefit-description {
+  font-size: 1.2rem;
+  color: #666;
+  text-align: center;
+  margin-bottom: 2rem;
+  padding-bottom: 2rem;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.benefit-explanation-block {
+  background: linear-gradient(135deg, #f8f9ff 0%, #eef1ff 100%);
+  border: 2px solid #667eea;
+  border-radius: 16px;
+  padding: 2rem;
+  margin-bottom: 2rem;
+}
+
+.explanation-block-title {
+  color: #667eea;
+  font-size: 1.4rem;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.explanation-section {
+  margin-bottom: 1.5rem;
+}
+
+.explanation-section:last-child {
+  margin-bottom: 0;
+}
+
+.explanation-section h3 {
+  color: #764ba2;
+  font-size: 1.15rem;
+  margin-bottom: 0.5rem;
+}
+
+.explanation-section p {
+  color: #555;
+  line-height: 1.8;
+  margin: 0;
+}
+
+.benefit-section {
+  margin-bottom: 2rem;
+}
+
+.benefit-section h2 {
+  color: #667eea;
+  margin-bottom: 0.5rem;
+  font-size: 1.5rem;
+}
+
+.benefit-section p {
+  color: #555;
+  line-height: 1.8;
+  font-size: 1.1rem;
+}
+
+.estimated-time {
+  font-size: 1.3rem !important;
+  font-weight: bold;
+  color: #764ba2 !important;
+}
+
+.price-display {
+  display: flex;
+  gap: 2rem;
+  margin-top: 1rem;
+}
+
+.price-item {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #667eea;
+  padding: 1rem 2rem;
+  background: #f8f9ff;
+  border-radius: 10px;
+}
+
+.alert-box {
+  background: #fff3cd;
+  border: 2px solid #ffc107;
+  border-radius: 15px;
+  padding: 2rem;
+  margin: 2rem 0;
+}
+
+.alert-box h3 {
+  color: #856404;
+  margin-bottom: 1rem;
+  font-size: 1.3rem;
+}
+
+.alert-box p {
+  color: #856404;
+  line-height: 1.8;
+  margin-bottom: 1rem;
+}
+
+.calendar-button {
+  background: #ffc107;
+  color: #856404;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.calendar-button:hover {
+  background: #ffb300;
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(255, 193, 7, 0.4);
+}
+
+.action-buttons {
+  display: flex;
+  gap: 1rem;
+  margin-top: 2rem;
+  justify-content: center;
+}
+
+.back-button,
+.continue-button {
+  padding: 1rem 2rem;
+  border: none;
+  border-radius: 10px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.back-button {
+  background: #e0e0e0;
+  color: #333;
+}
+
+.back-button:hover {
+  background: #d0d0d0;
+  transform: translateY(-2px);
+}
+
+.continue-button {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.continue-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+}
+
+.loading-container,
+.error-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  min-height: 60vh;
+  color: white;
+  font-size: 1.5rem;
+  gap: 1rem;
+  text-align: center;
+  padding: 2rem;
+}
+
+.error-container .error-title {
+  font-size: 1.5rem;
+  margin: 0;
+  font-weight: 600;
+}
+
+.error-container .error-hint {
+  font-size: 1rem;
+  margin: 0;
+  opacity: 0.9;
+  max-width: 420px;
+  line-height: 1.5;
+}
+
+.error-container .btn-back-home {
+  margin-top: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  background: rgba(255, 255, 255, 0.25);
+  color: white;
+  border: 2px solid rgba(255, 255, 255, 0.6);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.error-container .btn-back-home:hover {
+  background: rgba(255, 255, 255, 0.4);
+  border-color: white;
+}
+
+.loading-spinner {
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
