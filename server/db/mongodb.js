@@ -14,6 +14,7 @@ function getConnectionUri() {
   return base.replace('<db_password>', password);
 }
 
+console.log('getConnectionUri:', getConnectionUri());
 /**
  * מתחבר ל-MongoDB Atlas ומחזיר את ה-DB
  * יש להגדיר ב-.env:
