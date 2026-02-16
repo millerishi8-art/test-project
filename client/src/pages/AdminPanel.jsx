@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import './AdminPanel.css';
 
@@ -23,6 +23,7 @@ function getRenewalStatus(c) {
 
 const AdminPanel = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const stateTab = location.state?.tab;
   const stateFilter = location.state?.filter;
 
@@ -60,9 +61,9 @@ const AdminPanel = () => {
 
   const getBenefitTitle = (type) => {
     const titles = {
-      family: 'משפחה',
-      individual: 'בן אדם יחיד',
-      minor: 'קטין מתחת לגיל 21'
+      family: '  (כולל הורה וילדים מתחת לגיל 18) משפחה',
+      individual: 'בגיר מעל 21',
+      minor: 'בגיר מגיל 18-21 בלבד'
     };
     return titles[type] || type;
   };
@@ -226,12 +227,13 @@ const AdminPanel = () => {
                   <th>תאריך חידוש</th>
                   <th>מצב חידוש</th>
                   <th>סטטוס תיק</th>
+                  <th>פעולות</th>
                 </tr>
               </thead>
               <tbody>
                 {sortedCases.length === 0 ? (
                   <tr>
-                    <td colSpan="8" className="empty-state">
+                    <td colSpan="9" className="empty-state">
                       {cases.length === 0
                         ? 'אין קייסים במערכת. כל תיק שאושר (נשלח) יופיע כאן.'
                         : 'אין תיקים בקטגוריה זו'}
@@ -255,6 +257,15 @@ const AdminPanel = () => {
                         <span className={`status-badge ${caseItem.status}`}>
                           {statusLabel(caseItem.status)}
                         </span>
+                      </td>
+                      <td>
+                        <button
+                          type="button"
+                          className="admin-view-form-btn"
+                          onClick={() => navigate(`/admin/cases/${caseItem.id}`)}
+                        >
+                          צפה בטופס
+                        </button>
                       </td>
                     </tr>
                   ))

@@ -2,6 +2,36 @@
   max-width: 700px;
   margin: 0 auto;
   padding: 3rem 2rem;
+  position: relative;
+}
+
+.confirmation-translate-btn {
+  position: fixed;
+  top: 5.5rem;
+  right: 1.5rem;
+  z-index: 1100;
+  padding: 0.65rem 1.3rem;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #667eea;
+  background: white;
+  border: 2px solid #667eea;
+  border-radius: 12px;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.35);
+  transition: all 0.25s ease;
+}
+
+[dir="rtl"] .confirmation-translate-btn {
+  right: auto;
+  left: 1.5rem;
+}
+
+.confirmation-translate-btn:hover {
+  background: #667eea;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
 }
 
 .confirmation-card {

@@ -23,8 +23,8 @@ export const authenticateToken = (req, res, next) => {
   });
 };
 
-/** אימייל האדמין היחיד שיש לו גישה לפאנל – מסונכרן עם create-admin */
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'millerbitoach@gmail.com';
+/** אימייל האדמין היחיד שיש לו גישה לפאנל – מסונכרן עם create-admin (השוואה לא רגישה לאותיות) */
+const ADMIN_EMAIL = (process.env.ADMIN_EMAIL || 'millerbitoach@gmail.com').trim().toLowerCase();
 
 /**
  * Middleware - בדיקה שהמשתמש הוא admin והאימייל הוא של האדמין המורשה בלבד
@@ -33,7 +33,8 @@ export const isAdmin = (req, res, next) => {
   if (req.user.role !== ROLES.ADMIN) {
     return res.status(403).json({ error: ERROR_MESSAGES.AUTH.ADMIN_REQUIRED });
   }
-  if (req.user.email !== ADMIN_EMAIL) {
+  const userEmail = (req.user.email || '').trim().toLowerCase();
+  if (userEmail !== ADMIN_EMAIL) {
     return res.status(403).json({ error: ERROR_MESSAGES.AUTH.ADMIN_REQUIRED });
   }
   next();

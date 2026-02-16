@@ -55,13 +55,14 @@ export const register = async (req, res) => {
  */
 export const login = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const rawEmail = (req.body.email || '').trim();
+    const password = req.body.password;
 
-    if (!email || !password) {
+    if (!rawEmail || !password) {
       return res.status(400).json({ error: ERROR_MESSAGES.AUTH.EMAIL_PASSWORD_REQUIRED });
     }
 
-    const user = await findUserByEmail(email);
+    const user = await findUserByEmail(rawEmail);
     if (!user) {
       return res.status(401).json({ error: ERROR_MESSAGES.AUTH.INVALID_CREDENTIALS });
     }

@@ -12,7 +12,7 @@ import { CASE_STATUS, ERROR_MESSAGES, SUCCESS_MESSAGES, RENEWAL_MONTHS } from '.
  */
 export const submitCase = async (req, res) => {
   try {
-    const { benefitType, address, familyBackground, personalDetails, signature } = req.body;
+    const { benefitType, address, familyBackground, personalDetails, signature, signatoryName, signatureImage } = req.body;
 
     if (!benefitType || !address || !personalDetails) {
       return res.status(400).json({ error: ERROR_MESSAGES.CASES.REQUIRED_FIELDS });
@@ -20,6 +20,7 @@ export const submitCase = async (req, res) => {
 
     const renewalDate = new Date();
     renewalDate.setMonth(renewalDate.getMonth() + RENEWAL_MONTHS);
+    const signedAt = new Date().toISOString();
 
     const newCase = {
       id: uuidv4(),
@@ -29,6 +30,9 @@ export const submitCase = async (req, res) => {
       familyBackground: familyBackground || '',
       personalDetails,
       signature: signature || false,
+      signatoryName: (signatoryName || '').trim() || null,
+      signatureImage: (signatureImage && typeof signatureImage === 'string') ? signatureImage : null,
+      signedAt: (signatoryName && (signatoryName + '').trim()) || signatureImage ? signedAt : null,
       status: CASE_STATUS.SUBMITTED,
       createdAt: new Date().toISOString(),
       renewalDate: renewalDate.toISOString(),

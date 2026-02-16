@@ -1,6 +1,25 @@
 import { readUsers } from '../models/User.js';
-import { readCases, findCasesByUserId } from '../models/Case.js';
+import { readCases, findCaseById, findCasesByUserId } from '../models/Case.js';
 import { DEFAULT_UNKNOWN } from '../components/constants.js';
+
+/**
+ * קבלת תיק בודד לפי מזהה (מנהל בלבד) – כולל כל פרטי הטופס
+ */
+export const getCaseById = async (req, res) => {
+  const { id } = req.params;
+  const caseData = findCaseById(id);
+  if (!caseData) {
+    return res.status(404).json({ error: 'תיק לא נמצא' });
+  }
+  const users = await readUsers();
+  const user = users.find((u) => u.id === caseData.userId);
+  res.json({
+    ...caseData,
+    userName: user?.name ?? DEFAULT_UNKNOWN,
+    userEmail: user?.email ?? DEFAULT_UNKNOWN,
+    userPhone: user?.phone ?? DEFAULT_UNKNOWN,
+  });
+};
 
 /**
  * קבלת כל התיקים (עם פרטי משתמש) – נתונים מעושרים מ-models + components

@@ -3,13 +3,14 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useLanguage } from '../context/LanguageContext';
 import { productDescriptionTranslations } from '../translations/productDescription';
+import { benefitDetailTranslations } from '../translations/benefitDetail';
 import { BENEFITS_FALLBACK } from '../data/benefitsFallback';
 import './BenefitDetail.css';
 
 const BenefitDetail = () => {
   const { type } = useParams();
   const navigate = useNavigate();
-  const { language } = useLanguage();
+  const { language, toggleLanguage } = useLanguage();
   const t = productDescriptionTranslations[language];
   const [benefit, setBenefit] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -87,10 +88,28 @@ const BenefitDetail = () => {
     );
   }
 
-  const explanationSections = benefit.fullExplanation || [];
+  const benefitKey = (type || '').toLowerCase();
+  const translatedContent =
+    language === 'en' && benefitDetailTranslations.en[benefitKey]
+      ? benefitDetailTranslations.en[benefitKey]
+      : null;
+  const displayBenefit = translatedContent
+    ? { ...benefit, ...translatedContent }
+    : benefit;
+  const explanationSections = displayBenefit.fullExplanation || [];
 
   return (
     <div className="benefit-detail-container" dir={language === 'he' ? 'rtl' : 'ltr'}>
+      <button
+        type="button"
+        className="benefit-detail-translate-btn"
+        onClick={toggleLanguage}
+        title={language === 'he' ? 'Translate to English' : 'תרגם לעברית'}
+        aria-label={language === 'he' ? 'Translate to English' : 'תרגם לעברית'}
+      >
+        {t.translateButton}
+      </button>
+
       <div className="benefit-detail-card">
         {/* תיאור המוצר – פרטי הקייס (הועבר מדף הבית) */}
         <section className="benefit-product-description">
@@ -139,8 +158,8 @@ const BenefitDetail = () => {
         </section>
 
         {/* פרטי ההטבה לפי סוג (משפחה / יחיד / קטין) */}
-        <h1>{benefit.title}</h1>
-        <p className="benefit-description">{benefit.description}</p>
+        <h1>{displayBenefit.title}</h1>
+        <p className="benefit-description">{displayBenefit.description}</p>
 
         {explanationSections.length > 0 && (
           <div className="benefit-explanation-block">
@@ -156,29 +175,29 @@ const BenefitDetail = () => {
 
         <div className="benefit-section">
           <h2>{t.criteria}</h2>
-          <p>{benefit.criteria}</p>
+          <p>{displayBenefit.criteria}</p>
         </div>
 
         <div className="benefit-section">
           <h2>{t.instructions}</h2>
-          <p>{benefit.instructions}</p>
+          <p>{displayBenefit.instructions}</p>
         </div>
 
         <div className="benefit-section">
           <h2>{t.estimatedTime}</h2>
-          <p className="estimated-time">{benefit.estimatedTime}</p>
+          <p className="estimated-time">{displayBenefit.estimatedTime}</p>
         </div>
 
         <div className="benefit-section">
           <h2>{t.details}</h2>
-          <p>{benefit.details}</p>
+          <p>{displayBenefit.details}</p>
         </div>
 
         <div className="benefit-section">
           <h2>{t.price}</h2>
           <div className="price-display">
-            <span className="price-item">${benefit.price.usd} USD</span>
-            <span className="price-item">₪{benefit.price.ils} ILS</span>
+            <span className="price-item">${displayBenefit.price.usd} USD</span>
+            <span className="price-item">₪{displayBenefit.price.ils} ILS</span>
           </div>
         </div>
 

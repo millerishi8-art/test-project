@@ -2,6 +2,36 @@
   max-width: 800px;
   margin: 0 auto;
   padding: 3rem 2rem;
+  position: relative;
+}
+
+.case-form-translate-btn {
+  position: fixed;
+  top: 5.5rem;
+  right: 1.5rem;
+  z-index: 1100;
+  padding: 0.65rem 1.3rem;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #667eea;
+  background: white;
+  border: 2px solid #667eea;
+  border-radius: 12px;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.35);
+  transition: all 0.25s ease;
+}
+
+[dir="rtl"] .case-form-translate-btn {
+  right: auto;
+  left: 1.5rem;
+}
+
+.case-form-translate-btn:hover {
+  background: #667eea;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
 }
 
 .case-form-card {
@@ -86,6 +116,95 @@
   font-weight: 500;
   cursor: pointer;
   line-height: 1.6;
+}
+
+.signature-section .signature-block {
+  margin-top: 1.25rem;
+  padding: 1.25rem;
+  background: #f8f9ff;
+  border-radius: 12px;
+  border: 2px solid #e8ebf7;
+}
+
+.signatory-input {
+  width: 100%;
+  max-width: 400px;
+  padding: 0.75rem 1rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 1.05rem;
+  font-family: inherit;
+  transition: border-color 0.3s;
+}
+
+.signatory-input:focus {
+  outline: none;
+  border-color: #667eea;
+}
+
+.signatory-date-row {
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px dashed #ccc;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.signatory-date-label {
+  color: #666;
+  font-weight: 500;
+}
+
+.signatory-date-value {
+  color: #333;
+  font-weight: 600;
+}
+
+.signature-pad-hint {
+  margin: 0 0 0.75rem;
+  color: #555;
+  font-size: 0.95rem;
+}
+
+.signature-pad-wrap {
+  display: inline-block;
+  border: 2px solid #ccc;
+  border-radius: 8px;
+  background: #fff;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.signature-pad-canvas {
+  display: block;
+  border-radius: 6px;
+  touch-action: none;
+}
+
+.clear-signature-btn {
+  margin-top: 0.75rem;
+  padding: 0.5rem 1rem;
+  font-size: 0.95rem;
+  color: #666;
+  background: #f0f0f0;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.clear-signature-btn:hover {
+  background: #e0e0e0;
+  color: #333;
+}
+
+.signatory-name-optional label {
+  color: #666;
+}
+
+.signatory-name-optional .signatory-input {
+  max-width: 100%;
 }
 
 .error-message {

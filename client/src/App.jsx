@@ -10,6 +10,7 @@ import BenefitDetail from './pages/BenefitDetail';
 import CaseForm from './pages/CaseForm';
 import Confirmation from './pages/Confirmation';
 import AdminPanel from './pages/AdminPanel';
+import AdminCaseDetail from './pages/AdminCaseDetail';
 import './App.css';
 
 function App() {
@@ -58,6 +59,14 @@ function App() {
             element={
               <ProtectedRoute adminOnly>
                 <AdminPanel />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/cases/:caseId"
+            element={
+              <ProtectedRoute adminOnly>
+                <AdminCaseDetail />
               </ProtectedRoute>
             }
           />

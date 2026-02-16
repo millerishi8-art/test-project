@@ -1,0 +1,143 @@
+.admin-case-detail-container {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+  direction: rtl;
+}
+
+.admin-case-detail-card {
+  background: white;
+  border-radius: 20px;
+  padding: 2.5rem;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+.admin-case-detail-card h1 {
+  color: #333;
+  font-size: 1.75rem;
+  margin-bottom: 0.5rem;
+  text-align: center;
+}
+
+.admin-case-detail-sub {
+  text-align: center;
+  color: #666;
+  margin-bottom: 2rem;
+  font-size: 1rem;
+}
+
+.admin-case-detail-section {
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #eee;
+}
+
+.admin-case-detail-section:last-of-type {
+  border-bottom: none;
+}
+
+.admin-case-detail-section h2 {
+  color: #667eea;
+  font-size: 1.25rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #e8ebf7;
+}
+
+.admin-case-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.admin-case-detail-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.admin-case-detail-field-block {
+  margin-bottom: 1rem;
+}
+
+.admin-case-detail-label {
+  color: #666;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.admin-case-detail-value {
+  color: #333;
+  font-size: 1rem;
+}
+
+.admin-case-detail-text {
+  white-space: pre-wrap;
+  word-break: break-word;
+  margin: 0;
+  line-height: 1.6;
+}
+
+.admin-case-detail-signature-img-wrap {
+  margin-top: 0.5rem;
+  padding: 1rem;
+  background: #f8f9ff;
+  border-radius: 10px;
+  border: 1px solid #e8ebf7;
+  display: inline-block;
+}
+
+.admin-case-detail-signature-img {
+  display: block;
+  max-width: 320px;
+  max-height: 140px;
+  object-fit: contain;
+}
+
+.admin-case-detail-actions {
+  margin-top: 2rem;
+  text-align: center;
+}
+
+.admin-case-detail-back {
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #667eea;
+  background: white;
+  border: 2px solid #667eea;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.admin-case-detail-back:hover {
+  background: #667eea;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.35);
+}
+
+.admin-case-detail-error {
+  color: #c62828;
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.admin-case-detail-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 50vh;
+  color: white;
+  font-size: 1.25rem;
+}
+
+.admin-case-detail-spinner {
+  animation: adminCaseDetailPulse 1.2s ease-in-out infinite;
+}
+
+@keyframes adminCaseDetailPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}

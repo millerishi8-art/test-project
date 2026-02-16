@@ -1,37 +1,27 @@
 import { MongoClient } from 'mongodb';
 
-const DEFAULT_URI =
-'mongodb+srv://david:123456@cluster0.rwg4ui6.mongodb.net/?appName=Cluster0'
-
 const DB_NAME = process.env.MONGODB_DB_NAME || 'insurance-agent';
 
 let client = null;
 let db = null;
 
 function getConnectionUri() {
-  const base = process.env.MONGODB_URI || DEFAULT_URI;
-  const password = process.env.MONGODB_PASSWORD || '';
-  return base.replace('<db_password>', password);
+  const uri = process.env.MONGODB_URI;
+  if (!uri || !uri.trim()) {
+    throw new Error(
+      'MONGODB_URI חסר. הגדר ב-.env את מחרוזת החיבור ל-MongoDB (כולל משתמש וסיסמה).'
+    );
+  }
+  return uri.trim();
 }
-
-console.log('getConnectionUri:', getConnectionUri());
 /**
- * מתחבר ל-MongoDB Atlas ומחזיר את ה-DB
- * יש להגדיר ב-.env:
- *   MONGODB_PASSWORD=הסיסמה_שלך
- * או מחרוזת מלאה:
- *   MONGODB_URI=mongodb+srv://david:YOUR_PASSWORD@cluster0.rwg4ui6.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0
- *   MONGODB_DB_NAME=insurance-agent (אופציונלי)
+ * מתחבר ל-MongoDB Atlas ומחזיר את ה-DB.
+ * חובה: MONGODB_URI ב-.env. אופציונלי: MONGODB_DB_NAME.
  */
 export async function connectToMongoDB() {
   if (db) return db;
 
   const uri = getConnectionUri();
-
-  if (uri.includes('123456')) {
-    throw new Error('הגדר MONGODB_PASSWORD ב-.env או MONGODB_URI מלא עם סיסמה');
-  }
-
   client = new MongoClient(uri, { serverSelectionTimeoutMS: 20000 });
 
   try {

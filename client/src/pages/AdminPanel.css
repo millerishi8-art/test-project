@@ -98,6 +98,24 @@
   color: #555;
 }
 
+.admin-view-form-btn {
+  padding: 0.45rem 0.9rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #667eea;
+  background: #f0f4ff;
+  border: 2px solid #667eea;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.admin-view-form-btn:hover {
+  background: #667eea;
+  color: white;
+  transform: translateY(-1px);
+}
+
 .admin-table tbody tr:hover {
   background: #f8f9ff;
 }
@@ -170,24 +188,27 @@
 
 .admin-cases-filters button {
   background: white;
-  border: 2px solid rgba(255, 255, 255, 0.5);
+  border: 2px solid rgba(255, 255, 255, 0.8);
   padding: 0.6rem 1.2rem;
   border-radius: 10px;
   font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
-  color: white;
+  color: #5a4b9e;
   transition: all 0.2s;
 }
 
 .admin-cases-filters button:hover {
-  background: rgba(255, 255, 255, 0.2);
+  background: #f8f9ff;
+  border-color: white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .admin-cases-filters button.active {
   background: white;
   color: #764ba2;
   border-color: white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .stat-card.stat-warning .stat-number {
