@@ -74,6 +74,16 @@
   overflow-x: auto;
 }
 
+.admin-success-message {
+  background: #e8f5e9;
+  color: #2e7d32;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  margin-bottom: 1rem;
+  font-weight: 600;
+  direction: rtl;
+}
+
 .admin-table {
   width: 100%;
   border-collapse: collapse;
@@ -163,6 +173,12 @@
   font-weight: 700;
 }
 
+.status-badge.renewal-pending_confirmation {
+  background: #fff8e1;
+  color: #f9a825;
+  font-weight: 600;
+}
+
 .status-badge.renewal-renewal_in_6_months {
   background: #fff3e0;
   color: #e65100;
@@ -176,6 +192,49 @@
 .status-badge.renewal-renewed {
   background: #e3f2fd;
   color: #1565c0;
+}
+
+.admin-actions-cell {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.admin-confirm-completed-btn {
+  padding: 0.45rem 0.9rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #2e7d32;
+  background: #e8f5e9;
+  border: 2px solid #2e7d32;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.admin-confirm-completed-btn:hover {
+  background: #2e7d32;
+  color: white;
+  transform: translateY(-1px);
+}
+
+.admin-demote-btn {
+  padding: 0.45rem 0.9rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #c62828;
+  background: #ffebee;
+  border: 2px solid #c62828;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.admin-demote-btn:hover {
+  background: #c62828;
+  color: white;
+  transform: translateY(-1px);
 }
 
 .admin-cases-filters {

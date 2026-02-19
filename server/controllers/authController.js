@@ -73,10 +73,13 @@ export const login = async (req, res) => {
     }
 
     const token = signToken({ id: user.id, email: user.email, role: user.role });
+    const userOut = sanitizeUser(user);
+    const adminEmail = (process.env.ADMIN_EMAIL || '').trim().toLowerCase();
+    userOut.isPrimaryAdmin = adminEmail !== '' && (user.email || '').trim().toLowerCase() === adminEmail;
     res.json({
       message: SUCCESS_MESSAGES.AUTH.LOGIN,
       token,
-      user: sanitizeUser(user),
+      user: userOut,
     });
   } catch (error) {
     console.error('Login error:', error);
@@ -85,12 +88,15 @@ export const login = async (req, res) => {
 };
 
 /**
- * משתמש מחובר (me)
+ * משתמש מחובר (me) – כולל isPrimaryAdmin רק למנהל whose email matches ADMIN_EMAIL
  */
 export const getMe = async (req, res) => {
   const user = await findUserById(req.user.id);
   if (!user) {
     return res.status(404).json({ error: ERROR_MESSAGES.AUTH.USER_NOT_FOUND });
   }
-  res.json(sanitizeUser(user));
+  const out = sanitizeUser(user);
+  const adminEmail = (process.env.ADMIN_EMAIL || '').trim().toLowerCase();
+  out.isPrimaryAdmin = adminEmail !== '' && (user.email || '').trim().toLowerCase() === adminEmail;
+  res.json(out);
 };

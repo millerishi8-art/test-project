@@ -75,6 +75,32 @@ export async function createUser(userData) {
 }
 
 /**
+ * מעדכן משתמש לפי id (למשל הורדת מנהל ל-user)
+ */
+export async function updateUserById(id, updateFields) {
+  try {
+    const collection = getCollection();
+    const { id: _id, ...allowed } = updateFields;
+    const set = {};
+    if (allowed.role !== undefined) set.role = allowed.role;
+    if (allowed.password !== undefined) set.password = allowed.password;
+    if (allowed.name !== undefined) set.name = allowed.name;
+    if (allowed.phone !== undefined) set.phone = allowed.phone;
+    if (allowed.email !== undefined) set.email = (allowed.email + '').trim().toLowerCase();
+    if (Object.keys(set).length === 0) return await findUserById(id);
+    const result = await collection.findOneAndUpdate(
+      { id },
+      { $set: set },
+      { returnDocument: 'after' }
+    );
+    return result || null;
+  } catch (error) {
+    console.error('User updateUserById error:', error);
+    return null;
+  }
+}
+
+/**
  * מעדכן כל המשתמשים עם אימייל תואם (לא רגיש לאותיות) – role, password, email
  * חשוב: מעדכן את כל הרשומות עם אותו אימייל כדי שההתחברות תעבוד תמיד
  */

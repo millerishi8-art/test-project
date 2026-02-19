@@ -123,24 +123,14 @@ const Home = () => {
         </div>
 
         {isAdmin && (
-          <>
-            <div
-              className="benefit-cube admin-cube admin-cube-all"
-              onClick={() => handleAdminCubeClick('all')}
-            >
-              <div className="cube-icon">📋</div>
-              <h2>כל הטפסים שאושרו</h2>
-              <p className="cube-description">גישה לכל הטפסים שאנשים אישרו ונשלחו</p>
-            </div>
-            <div
-              className="benefit-cube admin-cube admin-cube-renewal"
-              onClick={() => handleAdminCubeClick('renewal_any')}
-            >
-              <div className="cube-icon">🔄</div>
-              <h2>טפסים שצריך לחדש</h2>
-              <p className="cube-description">כל הטפסים שצריך לחדש עכשיו או בעוד חצי שנה</p>
-            </div>
-          </>
+          <div
+            className="benefit-cube admin-cube admin-cube-all"
+            onClick={() => handleAdminCubeClick('all')}
+          >
+            <div className="cube-icon">📋</div>
+            <h2>כל הטפסים שאושרו</h2>
+            <p className="cube-description">גישה לכל הטפסים שאנשים אישרו ונשלחו</p>
+          </div>
         )}
       </div>
     </div>

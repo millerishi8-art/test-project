@@ -6,13 +6,27 @@ import {
   updateCase,
 } from '../models/Case.js';
 import { CASE_STATUS, ERROR_MESSAGES, SUCCESS_MESSAGES, RENEWAL_MONTHS } from '../components/constants.js';
+import { uploadBase64 } from '../services/cloudinary.js';
+
+function isBase64DataUrl(str) {
+  return typeof str === 'string' && str.trim().startsWith('data:image');
+}
+
+async function resolveImageField(value, folder = 'cases') {
+  if (!value || typeof value !== 'string') return null;
+  if (isBase64DataUrl(value)) {
+    const url = await uploadBase64(value, folder);
+    return url || value;
+  }
+  return value;
+}
 
 /**
  * שליחת תיק חדש
  */
 export const submitCase = async (req, res) => {
   try {
-    const { benefitType, address, familyBackground, personalDetails, signature, signatoryName, signatureImage } = req.body;
+    const { benefitType, address, familyBackground, personalDetails, signature, signatoryName, signatureImage, idCardPhoto, idCardAnnex } = req.body;
 
     if (!benefitType || !address || !personalDetails) {
       return res.status(400).json({ error: ERROR_MESSAGES.CASES.REQUIRED_FIELDS });
@@ -21,6 +35,12 @@ export const submitCase = async (req, res) => {
     const renewalDate = new Date();
     renewalDate.setMonth(renewalDate.getMonth() + RENEWAL_MONTHS);
     const signedAt = new Date().toISOString();
+
+    const [signatureImageUrl, idCardPhotoUrl, idCardAnnexUrl] = await Promise.all([
+      resolveImageField(signatureImage, 'cases/signatures'),
+      resolveImageField(idCardPhoto, 'cases/id-cards'),
+      resolveImageField(idCardAnnex, 'cases/id-annex'),
+    ]);
 
     const newCase = {
       id: uuidv4(),
@@ -31,8 +51,10 @@ export const submitCase = async (req, res) => {
       personalDetails,
       signature: signature || false,
       signatoryName: (signatoryName || '').trim() || null,
-      signatureImage: (signatureImage && typeof signatureImage === 'string') ? signatureImage : null,
-      signedAt: (signatoryName && (signatoryName + '').trim()) || signatureImage ? signedAt : null,
+      signatureImage: signatureImageUrl || null,
+      idCardPhoto: idCardPhotoUrl || null,
+      idCardAnnex: idCardAnnexUrl || null,
+      signedAt: (signatoryName && (signatoryName + '').trim()) || signatureImageUrl ? signedAt : null,
       status: CASE_STATUS.SUBMITTED,
       createdAt: new Date().toISOString(),
       renewalDate: renewalDate.toISOString(),
