@@ -37,7 +37,7 @@
 }
 
 .admin-case-detail-section h2 {
-  color: #667eea;
+  color: #1e6bb8;
   font-size: 1.25rem;
   margin-bottom: 1rem;
   padding-bottom: 0.5rem;
@@ -81,7 +81,7 @@
 .admin-case-detail-signature-img-wrap {
   margin-top: 0.5rem;
   padding: 1rem;
-  background: #f8f9ff;
+  background: #e3f2fd;
   border-radius: 10px;
   border: 1px solid #e8ebf7;
   display: inline-block;
@@ -94,28 +94,47 @@
   object-fit: contain;
 }
 
+.admin-case-detail-status-select {
+  padding: 0.5rem 0.75rem;
+  font-size: 1rem;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  min-width: 220px;
+  background: white;
+}
+
+.admin-case-detail-saving {
+  font-size: 0.9rem;
+  color: #666;
+  margin-right: 0.5rem;
+}
+
 .admin-case-detail-actions {
   margin-top: 2rem;
-  text-align: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: center;
+  align-items: center;
 }
 
 .admin-case-detail-back {
   padding: 0.75rem 1.5rem;
   font-size: 1rem;
   font-weight: 600;
-  color: #667eea;
+  color: #1e6bb8;
   background: white;
-  border: 2px solid #667eea;
+  border: 2px solid #1e6bb8;
   border-radius: 10px;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .admin-case-detail-back:hover {
-  background: #667eea;
+  background: #1e6bb8;
   color: white;
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.35);
+  box-shadow: 0 4px 12px rgba(30, 107, 184, 0.35);
 }
 
 .admin-case-detail-error {

@@ -30,10 +30,16 @@ export const ERROR_MESSAGES = {
     EMAIL_PASSWORD_REQUIRED: 'אימייל וסיסמה חובה',
     USER_EXISTS: 'משתמש עם אימייל זה כבר קיים',
     INVALID_CREDENTIALS: 'פרטי התחברות לא תקינים',
+    EMAIL_NOT_VERIFIED: 'נא לאמת את כתובת האימייל לפני ההתחברות. בדוק את תיבת הדואר (כולל דואר זבל) ולחץ על הקישור שנשלח.',
     TOKEN_REQUIRED: 'נדרש טוקן גישה',
     TOKEN_INVALID: 'טוקן לא תקין או שפג תוקפו',
     ADMIN_REQUIRED: 'נדרשת הרשאת מנהל',
     USER_NOT_FOUND: 'משתמש לא נמצא',
+    VERIFICATION_TOKEN_INVALID: 'קישור האימות לא תקף או שפג תוקפו.',
+    VERIFICATION_CODE_INVALID: 'הקוד לא תקף. בדוק שהזנת 6 ספרות נכונות.',
+    VERIFICATION_CODE_EXPIRED: 'תוקף הקוד פג. בקש קוד חדש (שלח שוב אימייל אימות).',
+    PHONE_CODE_INVALID: 'קוד האימות לא תקף או שפג תוקפו. בקש קוד חדש.',
+    PHONE_REQUIRED: 'לא נמצא מספר טלפון. הזן אימייל של חשבון שנרשם עם טלפון.',
   },
   CASES: {
     REQUIRED_FIELDS: 'חסרים שדות חובה',
@@ -44,14 +50,20 @@ export const ERROR_MESSAGES = {
     LOGIN: 'שגיאת שרת בהתחברות',
     CASE_SUBMIT: 'שגיאת שרת בשליחת תיק',
     CASE_RENEW: 'שגיאת שרת בחידוש תיק',
+    DB_UNAVAILABLE: 'מסד הנתונים לא זמין. וודא שהשרת רץ ו-MongoDB מחובר (MONGODB_URI ב-server/.env).',
   },
 };
 
 /** הודעות הצלחה (עברית) */
 export const SUCCESS_MESSAGES = {
   AUTH: {
-    REGISTRATION: 'ההרשמה בוצעה בהצלחה',
+    REGISTRATION: 'ההרשמה בוצעה בהצלחה. נשלח אליך אימייל לאימות – אנא לחץ על הקישור באימייל ואז התחבר. אם אינך מוצא את האימייל – בדוק בתיקיית דואר זבל (Spam/Junk) ובכל תיקיות תיבת הדואר.',
+    REGISTRATION_EMAIL_FAILED: 'ההרשמה בוצעה בהצלחה, אך שליחת אימייל האימות נכשלה. השתמש בלחצן "שלח שוב אימייל אימות" בדף ההתחברות. כמו כן בדוק דואר זבל (Spam) ותיקיות אחרות.',
     LOGIN: 'ההתחברות בוצעה בהצלחה',
+    EMAIL_VERIFIED: 'האימייל אומת בהצלחה. כעת ניתן להתחבר.',
+    VERIFICATION_EMAIL_SENT: 'נשלח שוב אימייל אימות לכתובת שלך. אם אינך מוצא – בדוק דואר זבל (Spam/Junk) וכל התיקיות.',
+    PHONE_CODE_SENT: 'נשלח קוד אימות למספר הטלפון שנרשם. התוקף 10 דקות.',
+    PHONE_VERIFIED: 'האימות הושלם. כעת ניתן להתחבר.',
   },
   CASES: {
     SUBMITTED: 'התיק נשלח בהצלחה',

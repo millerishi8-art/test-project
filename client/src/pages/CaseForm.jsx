@@ -16,6 +16,7 @@ const CaseForm = () => {
   const { language, toggleLanguage } = useLanguage();
   const t = caseFormTranslations[language];
   const canvasRef = useRef(null);
+  const fileInputRef = useRef(null);
   const [formData, setFormData] = useState({
     address: '',
     familyBackground: '',
@@ -24,11 +25,20 @@ const CaseForm = () => {
     signatoryName: '',
     signatureImage: ''
   });
+  const [attachments, setAttachments] = useState([]); // { id, data } base64
+  const [documentType, setDocumentType] = useState('id'); // id | license | passport
   const [isDrawing, setIsDrawing] = useState(false);
+
+  const documentTypeOptions = [
+    { value: 'id', labelKey: 'docTypeId' },
+    { value: 'license', labelKey: 'docTypeLicense' },
+    { value: 'passport', labelKey: 'docTypePassport' },
+  ];
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [loadingBenefit, setLoadingBenefit] = useState(true);
   const [benefit, setBenefit] = useState(null);
+  const [renewalAddedToCalendar, setRenewalAddedToCalendar] = useState(false);
 
   useEffect(() => {
     fetchBenefit();
@@ -127,35 +137,71 @@ const CaseForm = () => {
     setError('');
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const readFileAsDataUrl = (file) =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
+  const handleDeviceFiles = async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    const imageFiles = files.filter((f) => f.type.startsWith('image/'));
+    const newItems = await Promise.all(
+      imageFiles.map(async (file) => ({
+        id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        data: await readFileAsDataUrl(file)
+      }))
+    );
+    setAttachments((prev) => [...prev, ...newItems]);
+    e.target.value = '';
+  };
+
+  const removeAttachment = (id) => {
+    setAttachments((prev) => prev.filter((a) => a.id !== id));
+  };
+
+  const getRenewalDate = () => {
+    const d = new Date();
+    d.setMonth(d.getMonth() + 6);
+    return d;
+  };
+
+  const getRenewalDateStr = () => {
+    return getRenewalDate().toLocaleDateString(language === 'he' ? 'he-IL' : 'en-US', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+  };
+
+  const formatGoogleCalendarDateTime = (d) => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const h = String(d.getHours()).padStart(2, '0');
+    const min = String(d.getMinutes()).padStart(2, '0');
+    return `${y}${m}${day}T${h}${min}00`;
+  };
+
+  const handleAddToCalendar = () => {
+    const renewalDate = getRenewalDate();
+    const startDate = formatGoogleCalendarDateTime(renewalDate);
+    const endTime = new Date(renewalDate.getTime() + 60 * 60 * 1000);
+    const endDate = formatGoogleCalendarDateTime(endTime);
+    const title = encodeURIComponent(language === 'he' ? 'חידוש קייס - אל תשכח!' : 'Case renewal - Don\'t forget!');
+    const details = encodeURIComponent(t.renewalAlertBody);
+    const location = encodeURIComponent(language === 'he' ? 'מערכת סוכן ביטוח' : 'Insurance Agent System');
+    const googleCalendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${startDate}/${endDate}&details=${details}&location=${location}`;
+    window.open(googleCalendarUrl, '_blank');
+    setRenewalAddedToCalendar(true);
+  };
+
+  const doActualSubmit = async () => {
     setError('');
     setLoading(true);
-
-    if (!formData.address || !formData.personalDetails) {
-      setError(t.errorFillRequired);
-      setLoading(false);
-      return;
-    }
-
-    if (!formData.signature) {
-      setError(t.errorConfirmSignature);
-      setLoading(false);
-      return;
-    }
-
-    if (!(formData.signatureImage || '').trim()) {
-      setError(t.errorDrawSignature);
-      setLoading(false);
-      return;
-    }
-
-    if (!token) {
-      setError(t.errorLoginRequired);
-      setLoading(false);
-      return;
-    }
-
     try {
       await axios.post(
         '/cases',
@@ -163,20 +209,21 @@ const CaseForm = () => {
           benefitType: type,
           ...formData,
           signatoryName: (formData.signatoryName || '').trim() || undefined,
-          signatureImage: formData.signatureImage || undefined
+          signatureImage: formData.signatureImage || undefined,
+          attachments: attachments.map((a) => a.data),
+          documentType,
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-
       navigate('/confirmation', { state: { benefitType: type } });
-    } catch (error) {
-      const status = error.response?.status;
-      const msg = error.response?.data?.error;
+    } catch (err) {
+      const status = err.response?.status;
+      const msg = err.response?.data?.error;
       if (status === 401) {
         setError(t.errorSessionExpired);
       } else if (status === 403) {
         setError(msg || t.errorNoPermission);
-      } else if (!error.response) {
+      } else if (!err.response) {
         setError(t.errorServerDown);
       } else if (status >= 500 || msg) {
         setError(msg || t.errorServerError);
@@ -186,6 +233,34 @@ const CaseForm = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+
+    if (!formData.address || !formData.personalDetails) {
+      setError(t.errorFillRequired);
+      return;
+    }
+    if (!formData.signature) {
+      setError(t.errorConfirmSignature);
+      return;
+    }
+    if (!(formData.signatureImage || '').trim()) {
+      setError(t.errorDrawSignature);
+      return;
+    }
+    if (!token) {
+      setError(t.errorLoginRequired);
+      return;
+    }
+
+    if (!renewalAddedToCalendar) {
+      setError(t.renewalRequiredFirst);
+      return;
+    }
+    await doActualSubmit();
   };
 
   const benefitTitle =
@@ -252,6 +327,87 @@ const CaseForm = () => {
                 placeholder={t.placeholderPersonalDetails}
               />
             </div>
+          </div>
+
+          <div className="form-section images-section">
+            <div className="images-section-card">
+              <h2 className="images-section-title">{t.sectionImages}</h2>
+              <p className="images-section-hint">{t.sectionImagesHint}</p>
+              <div className="document-type-row">
+                <label htmlFor="documentType" className="document-type-label">
+                  {t.labelDocumentType}
+                </label>
+                <select
+                  id="documentType"
+                  value={documentType}
+                  onChange={(e) => setDocumentType(e.target.value)}
+                  className="document-type-select"
+                  aria-label={t.labelDocumentType}
+                >
+                  {documentTypeOptions.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {t[opt.labelKey]}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="upload-buttons-row">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden-file-input"
+                  onChange={handleDeviceFiles}
+                  aria-label={t.uploadFromDevice}
+                />
+                <button
+                  type="button"
+                  className="upload-source-btn device-btn"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <span className="upload-btn-icon">📁</span>
+                  {t.uploadFromDevice}
+                </button>
+              </div>
+              {attachments.length > 0 && (
+                <div className="attachments-preview">
+                  {attachments.map((att) => (
+                    <div key={att.id} className="attachment-thumb-wrap">
+                      <img src={att.data} alt="" className="attachment-thumb" />
+                      <button
+                        type="button"
+                        className="attachment-remove"
+                        onClick={() => removeAttachment(att.id)}
+                        aria-label={t.removeImage}
+                        title={t.removeImage}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="form-section renewal-section">
+            <h2>{t.sectionRenewal}</h2>
+            <p className="renewal-hint">{t.renewalHint}</p>
+            {!renewalAddedToCalendar && (
+              <p className="renewal-required-notice">{t.renewalRequiredFirst}</p>
+            )}
+            {renewalAddedToCalendar ? (
+              <p className="renewal-added-msg">{t.renewalAddedLabel}</p>
+            ) : (
+              <button
+                type="button"
+                className="add-to-calendar-btn"
+                onClick={handleAddToCalendar}
+              >
+                📅 {t.addToGoogleCalendar}
+              </button>
+            )}
           </div>
 
           <div className="form-section signature-section">
@@ -325,7 +481,7 @@ const CaseForm = () => {
             >
               {t.cancel}
             </button>
-            <button type="submit" className="submit-button" disabled={loading}>
+            <button type="submit" className="submit-button" disabled={loading || !renewalAddedToCalendar}>
               {loading ? t.submitLoading : t.submit}
             </button>
           </div>

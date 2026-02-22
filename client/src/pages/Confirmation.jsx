@@ -36,9 +36,13 @@ const Confirmation = () => {
     ? new Date(latestCase.renewalDate).toLocaleDateString(locale)
     : '';
 
-  const displayStatus = (status) => {
-    if ((status || '').toUpperCase() === 'SUBMITTED') return t.statusSubmitted;
-    return status;
+  const getClientStatusLabel = (c) => {
+    if (!c) return t.statusSubmitted;
+    if (c.adminConfirmedCompleted) return t.statusNeedsRenewal;
+    const s = (c.status || '').toLowerCase();
+    if (s === 'approved') return t.statusApprovedWaitingGov;
+    if (s === 'pending') return t.statusInProgress;
+    return t.statusSubmitted;
   };
 
   return (
@@ -77,7 +81,7 @@ const Confirmation = () => {
             </div>
             <div className="summary-item">
               <span className="summary-label">{t.status}</span>
-              <span className="summary-value status">{displayStatus(latestCase.status)}</span>
+              <span className="summary-value status">{getClientStatusLabel(latestCase)}</span>
             </div>
           </div>
         )}

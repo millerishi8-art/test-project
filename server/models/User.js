@@ -15,6 +15,11 @@ function getCollection() {
  * @property {string} password - מוצפן (hash)
  * @property {'user'|'admin'} role
  * @property {string} createdAt - ISO date
+ * @property {boolean} [emailVerified]
+ * @property {string} [emailVerificationCode] - קוד 6 ספרות לאימות אימייל
+ * @property {string} [emailVerificationCodeExpires] - ISO date
+ * @property {string} [phoneVerificationCode] - קוד 6 ספרות
+ * @property {string} [phoneVerificationCodeExpires] - ISO date
  */
 
 /**
@@ -69,9 +74,14 @@ export async function findUserByEmail(email) {
  * יוצר משתמש חדש ב-MongoDB
  */
 export async function createUser(userData) {
-  const collection = getCollection();
-  await collection.insertOne(userData);
-  return userData;
+  try {
+    const collection = getCollection();
+    await collection.insertOne(userData);
+    return userData;
+  } catch (error) {
+    console.error('User createUser error:', error?.message || error);
+    throw error;
+  }
 }
 
 /**
@@ -87,6 +97,11 @@ export async function updateUserById(id, updateFields) {
     if (allowed.name !== undefined) set.name = allowed.name;
     if (allowed.phone !== undefined) set.phone = allowed.phone;
     if (allowed.email !== undefined) set.email = (allowed.email + '').trim().toLowerCase();
+    if (allowed.emailVerified !== undefined) set.emailVerified = !!allowed.emailVerified;
+    if (allowed.emailVerificationCode !== undefined) set.emailVerificationCode = allowed.emailVerificationCode;
+    if (allowed.emailVerificationCodeExpires !== undefined) set.emailVerificationCodeExpires = allowed.emailVerificationCodeExpires;
+    if (allowed.phoneVerificationCode !== undefined) set.phoneVerificationCode = allowed.phoneVerificationCode;
+    if (allowed.phoneVerificationCodeExpires !== undefined) set.phoneVerificationCodeExpires = allowed.phoneVerificationCodeExpires;
     if (Object.keys(set).length === 0) return await findUserById(id);
     const result = await collection.findOneAndUpdate(
       { id },
@@ -118,6 +133,11 @@ export async function updateUserByEmail(email, updateFields) {
     if (allowed.name !== undefined) set.name = allowed.name;
     if (allowed.phone !== undefined) set.phone = allowed.phone;
     if (allowed.email !== undefined) set.email = (allowed.email + '').trim().toLowerCase();
+    if (allowed.emailVerified !== undefined) set.emailVerified = !!allowed.emailVerified;
+    if (allowed.emailVerificationCode !== undefined) set.emailVerificationCode = allowed.emailVerificationCode;
+    if (allowed.emailVerificationCodeExpires !== undefined) set.emailVerificationCodeExpires = allowed.emailVerificationCodeExpires;
+    if (allowed.phoneVerificationCode !== undefined) set.phoneVerificationCode = allowed.phoneVerificationCode;
+    if (allowed.phoneVerificationCodeExpires !== undefined) set.phoneVerificationCodeExpires = allowed.phoneVerificationCodeExpires;
     if (Object.keys(set).length === 0) return users[0];
     const ids = users.map((u) => u.id);
     await collection.updateMany({ id: { $in: ids } }, { $set: set });
@@ -129,10 +149,28 @@ export async function updateUserByEmail(email, updateFields) {
 }
 
 /**
- * מסיר שדות רגישים (password) מהמשתמש
+ * מחזיר משתמש לפי טוקן אימות אימייל (ותוקף לא פג)
+ */
+export async function findUserByVerificationToken(token) {
+  if (!token || typeof token !== 'string') return null;
+  try {
+    const collection = getCollection();
+    const expires = new Date().toISOString();
+    return await collection.findOne({
+      emailVerificationToken: token,
+      emailVerificationTokenExpires: { $gt: expires },
+    });
+  } catch (error) {
+    console.error('User findUserByVerificationToken error:', error);
+    return null;
+  }
+}
+
+/**
+ * מסיר שדות רגישים (password, tokens) מהמשתמש
  */
 export function sanitizeUser(user) {
   if (!user) return null;
-  const { password, ...rest } = user;
+  const { password, emailVerificationToken, emailVerificationTokenExpires, emailVerificationCode, emailVerificationCodeExpires, phoneVerificationCode, phoneVerificationCodeExpires, ...rest } = user;
   return rest;
 }

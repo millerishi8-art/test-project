@@ -62,7 +62,7 @@
 }
 
 .admin-tabs button.active {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #1e6bb8 0%, #1565c0 100%);
   color: white;
 }
 
@@ -75,8 +75,8 @@
 }
 
 .admin-success-message {
-  background: #e8f5e9;
-  color: #2e7d32;
+  background: #e3f2fd;
+  color: #1e6bb8;
   padding: 0.75rem 1rem;
   border-radius: 10px;
   margin-bottom: 1rem;
@@ -91,7 +91,7 @@
 }
 
 .admin-table thead {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #1e6bb8 0%, #1565c0 100%);
   color: white;
 }
 
@@ -112,22 +112,22 @@
   padding: 0.45rem 0.9rem;
   font-size: 0.9rem;
   font-weight: 600;
-  color: #667eea;
-  background: #f0f4ff;
-  border: 2px solid #667eea;
+  color: #1e6bb8;
+  background: #e3f2fd;
+  border: 2px solid #1e6bb8;
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .admin-view-form-btn:hover {
-  background: #667eea;
+  background: #1e6bb8;
   color: white;
   transform: translateY(-1px);
 }
 
 .admin-table tbody tr:hover {
-  background: #f8f9ff;
+  background: #e3f2fd;
 }
 
 .empty-state {
@@ -157,7 +157,7 @@
 }
 
 .status-badge.submitted {
-  background: #e8f5e9;
+  background: #e3f2fd;
   color: #388e3c;
 }
 
@@ -185,8 +185,8 @@
 }
 
 .status-badge.renewal-ok {
-  background: #e8f5e9;
-  color: #2e7d32;
+  background: #e3f2fd;
+  color: #1e6bb8;
 }
 
 .status-badge.renewal-renewed {
@@ -205,16 +205,16 @@
   padding: 0.45rem 0.9rem;
   font-size: 0.9rem;
   font-weight: 600;
-  color: #2e7d32;
-  background: #e8f5e9;
-  border: 2px solid #2e7d32;
+  color: #1e6bb8;
+  background: #e3f2fd;
+  border: 2px solid #1e6bb8;
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .admin-confirm-completed-btn:hover {
-  background: #2e7d32;
+  background: #1e6bb8;
   color: white;
   transform: translateY(-1px);
 }
@@ -258,14 +258,14 @@
 }
 
 .admin-cases-filters button:hover {
-  background: #f8f9ff;
+  background: #e3f2fd;
   border-color: white;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .admin-cases-filters button.active {
   background: white;
-  color: #764ba2;
+  color: #1565c0;
   border-color: white;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
@@ -303,7 +303,7 @@
 .stat-number {
   font-size: 3rem;
   font-weight: bold;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #1e6bb8 0%, #1565c0 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;

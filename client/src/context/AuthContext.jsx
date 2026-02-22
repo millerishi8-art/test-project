@@ -20,6 +20,7 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [token, setToken] = useState(localStorage.getItem('token'));
+  const [requireEmailVerification, setRequireEmailVerification] = useState(false);
 
   useEffect(() => {
     if (token) {
@@ -34,8 +35,13 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await axios.get('/me');
       setUser(response.data);
+      setRequireEmailVerification(false);
     } catch (error) {
-      console.error('Failed to fetch user:', error);
+      const code = error.response?.data?.code;
+      const isEmailNotVerified = code === 'EMAIL_NOT_VERIFIED';
+      if (isEmailNotVerified) {
+        setRequireEmailVerification(true);
+      }
       logout();
     } finally {
       setLoading(false);
@@ -46,15 +52,19 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await axios.post('/login', { email, password });
       const { token: newToken, user: userData } = response.data;
+      setRequireEmailVerification(false);
       setToken(newToken);
       setUser(userData);
       localStorage.setItem('token', newToken);
       axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
       return { success: true };
     } catch (error) {
+      const message = error.response?.data?.error || 'Login failed';
+      const code = error.response?.data?.code;
       return {
         success: false,
-        error: error.response?.data?.error || 'Login failed'
+        error: message,
+        code: code || null,
       };
     }
   };
@@ -67,12 +77,8 @@ export const AuthProvider = ({ children }) => {
         phone,
         password
       });
-      const { token: newToken, user: userData } = response.data;
-      setToken(newToken);
-      setUser(userData);
-      localStorage.setItem('token', newToken);
-      axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
-      return { success: true };
+      const { message } = response.data;
+      return { success: true, message: message || 'נשלח אימייל אימות. אנא לחץ על הקישור באימייל ואז התחבר.' };
     } catch (error) {
       return {
         success: false,
@@ -88,6 +94,14 @@ export const AuthProvider = ({ children }) => {
     delete axios.defaults.headers.common['Authorization'];
   };
 
+  const applySession = (newToken, userData) => {
+    setRequireEmailVerification(false);
+    setToken(newToken);
+    setUser(userData);
+    localStorage.setItem('token', newToken);
+    axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
+  };
+
   const value = {
     user,
     token,
@@ -95,8 +109,10 @@ export const AuthProvider = ({ children }) => {
     login,
     register,
     logout,
+    applySession,
     isAuthenticated: !!user,
-    isAdmin: user?.role === 'admin'
+    isAdmin: user?.role === 'admin',
+    requireEmailVerification,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

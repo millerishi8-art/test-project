@@ -13,12 +13,12 @@
   padding: 0.65rem 1.3rem;
   font-size: 1.05rem;
   font-weight: 600;
-  color: #667eea;
+  color: #1e6bb8;
   background: white;
-  border: 2px solid #667eea;
+  border: 2px solid #1e6bb8;
   border-radius: 12px;
   cursor: pointer;
-  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.35);
+  box-shadow: 0 4px 15px rgba(30, 107, 184, 0.35);
   transition: all 0.25s ease;
 }
 
@@ -28,10 +28,10 @@
 }
 
 .confirmation-translate-btn:hover {
-  background: #667eea;
+  background: #1e6bb8;
   color: white;
   transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 6px 20px rgba(30, 107, 184, 0.4);
 }
 
 .confirmation-card {
@@ -71,7 +71,7 @@
 }
 
 .case-summary {
-  background: #f8f9ff;
+  background: #e3f2fd;
   border-radius: 15px;
   padding: 2rem;
   margin: 2rem 0;
@@ -79,7 +79,7 @@
 }
 
 .case-summary h2 {
-  color: #667eea;
+  color: #1e6bb8;
   margin-bottom: 1.5rem;
   font-size: 1.5rem;
   text-align: center;
@@ -107,7 +107,7 @@
 }
 
 .renewal-date {
-  color: #764ba2;
+  color: #1565c0;
   font-size: 1.1rem;
 }
 
@@ -143,7 +143,7 @@
 }
 
 .alert-box strong {
-  color: #764ba2;
+  color: #1565c0;
   font-size: 1.1rem;
 }
 
@@ -152,7 +152,7 @@
 }
 
 .home-button {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #1e6bb8 0%, #1565c0 100%);
   color: white;
   border: none;
   padding: 1rem 2.5rem;
@@ -165,5 +165,5 @@
 
 .home-button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 5px 20px rgba(30, 107, 184, 0.4);
 }

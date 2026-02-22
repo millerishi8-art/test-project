@@ -70,7 +70,7 @@ const AdminPanel = () => {
     const titles = {
       family: '  (כולל הורה וילדים מתחת לגיל 18) משפחה',
       individual: 'בגיר מעל 21',
-      minor: 'בגיר מגיל 18-21 בלבד'
+      minor: 'צעיר'
     };
     return titles[type] || type;
   };

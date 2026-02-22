@@ -51,10 +51,12 @@ const Register = () => {
     );
 
     if (result.success) {
-      navigate('/');
-    } else {
-      setError(result.error);
+      setError('');
+      setLoading(false);
+      navigate('/verify-email', { state: { email: formData.email, message: result.message } });
+      return;
     }
+    setError(result.error);
     setLoading(false);
   };
 

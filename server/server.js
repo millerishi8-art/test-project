@@ -26,6 +26,12 @@ if (!fs.existsSync(dataDir)) {
 
 app.use('/api', routes);
 
+// תפיסת שגיאות שלא נתפסו ב-controllers (מחזיר JSON במקום HTML)
+app.use((err, req, res, next) => {
+  console.error('Unhandled server error:', err);
+  res.status(500).json({ error: err?.message || 'שגיאת שרת' });
+});
+
 let server;
 
 async function start() {

@@ -1,6 +1,6 @@
 import { readUsers, findUserById, updateUserById } from '../models/User.js';
 import { readCases, findCaseById, findCasesByUserId, updateCase } from '../models/Case.js';
-import { DEFAULT_UNKNOWN, ROLES } from '../components/constants.js';
+import { DEFAULT_UNKNOWN, ROLES, CASE_STATUS } from '../components/constants.js';
 
 /**
  * קבלת תיק בודד לפי מזהה (מנהל בלבד) – כולל כל פרטי הטופס
@@ -95,6 +95,30 @@ export const demoteAdmin = async (req, res) => {
   } catch (error) {
     console.error('demoteAdmin error:', error);
     return res.status(500).json({ error: 'שגיאה בהורדת המנהל' });
+  }
+};
+
+const ALLOWED_STATUSES = [CASE_STATUS.SUBMITTED, CASE_STATUS.PENDING, CASE_STATUS.APPROVED];
+
+/**
+ * מנהל מעדכן סטטוס תיק (נשלח / בתהליך / אושר מחכים לממשלה)
+ */
+export const updateCaseStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+    if (!ALLOWED_STATUSES.includes(status)) {
+      return res.status(400).json({ error: 'סטטוס לא תקין. אפשרויות: submitted, pending, approved' });
+    }
+    const caseData = findCaseById(id);
+    if (!caseData) {
+      return res.status(404).json({ error: 'תיק לא נמצא' });
+    }
+    const updated = updateCase(id, { status });
+    return res.json({ message: 'סטטוס התיק עודכן', case: updated });
+  } catch (error) {
+    console.error('updateCaseStatus error:', error);
+    return res.status(500).json({ error: 'שגיאה בעדכון הסטטוס' });
   }
 };
 

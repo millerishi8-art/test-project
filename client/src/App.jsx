@@ -5,10 +5,12 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Navbar from './components/Navbar';
 import Register from './pages/Register';
 import Login from './pages/Login';
+import VerifyEmail from './pages/VerifyEmail';
 import Home from './pages/Home';
 import BenefitDetail from './pages/BenefitDetail';
 import CaseForm from './pages/CaseForm';
 import Confirmation from './pages/Confirmation';
+import CaseStatus from './pages/CaseStatus';
 import AdminPanel from './pages/AdminPanel';
 import AdminCaseDetail from './pages/AdminCaseDetail';
 import './App.css';
@@ -22,6 +24,7 @@ function App() {
         <Routes>
           <Route path="/register" element={<Register />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/verify-email" element={<VerifyEmail />} />
           <Route
             path="/"
             element={
@@ -51,6 +54,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Confirmation />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/case-status"
+            element={
+              <ProtectedRoute>
+                <CaseStatus />
               </ProtectedRoute>
             }
           />

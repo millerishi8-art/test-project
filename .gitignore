@@ -1,9 +1,10 @@
 # Dependencies - do not commit (reproducible from package.json + package-lock.json)
 node_modules/
 
-# Environment and local data
+# Environment and local data (never commit credentials)
 .env
 .env.local
+server/.env
 *.log
 data/
 

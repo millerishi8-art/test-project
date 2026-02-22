@@ -6,13 +6,14 @@ let client = null;
 let db = null;
 
 function getConnectionUri() {
-  const uri = process.env.MONGODB_URI;
-  if (!uri || !uri.trim()) {
+  let uri = (process.env.MONGODB_URI || '').trim();
+  if (!uri) {
     throw new Error(
       'MONGODB_URI חסר. הגדר ב-.env את מחרוזת החיבור ל-MongoDB (כולל משתמש וסיסמה).'
     );
   }
-  return uri.trim();
+  uri = uri.replace(/^['"]|['"]$/g, '');
+  return uri;
 }
 /**
  * מתחבר ל-MongoDB Atlas ומחזיר את ה-DB.

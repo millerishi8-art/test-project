@@ -6,8 +6,14 @@ import './AdminCaseDetail.css';
 const benefitTitles = {
   family: 'משפחה (כולל הורה וילדים מתחת לגיל 18)',
   individual: 'בגיר מעל 21',
-  minor: 'בגיר מגיל 18-21 בלבד',
+  minor: 'צעיר',
 };
+
+const STATUS_OPTIONS = [
+  { value: 'submitted', label: 'נשלח' },
+  { value: 'pending', label: 'בתהליך' },
+  { value: 'approved', label: 'אושר – מחכים לאישור הממשלה' },
+];
 
 const AdminCaseDetail = () => {
   const { caseId } = useParams();
@@ -15,6 +21,8 @@ const AdminCaseDetail = () => {
   const [caseData, setCaseData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [statusSaving, setStatusSaving] = useState(false);
+  const [confirmingCompleted, setConfirmingCompleted] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -43,6 +51,32 @@ const AdminCaseDetail = () => {
       hour: '2-digit',
       minute: '2-digit',
     });
+  };
+
+  const handleStatusChange = async (e) => {
+    const newStatus = e.target.value;
+    if (newStatus === caseData.status) return;
+    setStatusSaving(true);
+    try {
+      const res = await axios.patch(`/admin/cases/${caseId}`, { status: newStatus });
+      setCaseData((prev) => (prev && res.data.case ? { ...prev, ...res.data.case } : res.data.case || prev));
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setStatusSaving(false);
+    }
+  };
+
+  const handleConfirmCompleted = async () => {
+    setConfirmingCompleted(true);
+    try {
+      const res = await axios.patch(`/admin/cases/${caseId}/confirm-completed`);
+      setCaseData((prev) => (prev ? { ...prev, ...res.data.case } : res.data.case));
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setConfirmingCompleted(false);
+    }
   };
 
   if (loading) {
@@ -108,9 +142,25 @@ const AdminCaseDetail = () => {
               <span className="admin-case-detail-value">{formatDate(c.renewalDate)}</span>
             </div>
             <div className="admin-case-detail-field">
-              <span className="admin-case-detail-label">סטטוס</span>
-              <span className="admin-case-detail-value">{c.status}</span>
+              <span className="admin-case-detail-label">סטטוס (מה הלקוח רואה)</span>
+              <select
+                className="admin-case-detail-status-select"
+                value={c.status || 'submitted'}
+                onChange={handleStatusChange}
+                disabled={statusSaving}
+              >
+                {STATUS_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
+              </select>
+              {statusSaving && <span className="admin-case-detail-saving">שומר...</span>}
             </div>
+            {c.adminConfirmedCompleted && (
+              <div className="admin-case-detail-field">
+                <span className="admin-case-detail-label">אושר הושלם</span>
+                <span className="admin-case-detail-value">כן – הלקוח יראה "צריך חידוש" + תאריך</span>
+              </div>
+            )}
           </div>
         </section>
 
@@ -159,6 +209,16 @@ const AdminCaseDetail = () => {
         )}
 
         <div className="admin-case-detail-actions">
+          {!c.adminConfirmedCompleted && (
+            <button
+              type="button"
+              className="admin-confirm-completed-btn"
+              onClick={handleConfirmCompleted}
+              disabled={confirmingCompleted}
+            >
+              {confirmingCompleted ? 'מאשר...' : 'אישור הושלם (צריך חידוש בעוד חצי שנה)'}
+            </button>
+          )}
           <button type="button" className="admin-case-detail-back" onClick={() => navigate('/admin')}>
             חזרה לפאנל הניהול
           </button>

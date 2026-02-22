@@ -1,0 +1,181 @@
+.case-status-container {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 3rem 2rem;
+  position: relative;
+}
+
+.case-status-translate-btn {
+  position: fixed;
+  top: 5.5rem;
+  right: 1.5rem;
+  z-index: 1100;
+  padding: 0.65rem 1.3rem;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #1e6bb8;
+  background: white;
+  border: 2px solid #1e6bb8;
+  border-radius: 12px;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(30, 107, 184, 0.35);
+  transition: all 0.25s ease;
+}
+
+[dir="rtl"] .case-status-translate-btn {
+  right: auto;
+  left: 1.5rem;
+}
+
+.case-status-translate-btn:hover {
+  background: #1e6bb8;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(30, 107, 184, 0.4);
+}
+
+.case-status-card {
+  background: white;
+  border-radius: 20px;
+  padding: 2.5rem 3rem;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+}
+
+.case-status-card h1 {
+  color: #333;
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+  text-align: center;
+}
+
+.case-status-subtitle {
+  text-align: center;
+  color: #2c5282;
+  font-size: 1.1rem;
+  margin-bottom: 2rem;
+}
+
+.case-status-stages {
+  margin-bottom: 2.5rem;
+  padding-bottom: 2rem;
+  border-bottom: 1px solid #e8ebf7;
+}
+
+.case-status-stages h2 {
+  color: #1e6bb8;
+  font-size: 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.stages-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.stages-list li {
+  padding: 0.6rem 0;
+  padding-right: 1rem;
+  padding-left: 0;
+  border-right: 3px solid #42a5f5;
+  margin-bottom: 0.5rem;
+  color: #444;
+  line-height: 1.6;
+}
+
+[dir="ltr"] .stages-list li {
+  border-right: none;
+  border-left: 3px solid #42a5f5;
+  padding-left: 1rem;
+  padding-right: 0;
+}
+
+.stages-list strong {
+  color: #1a3a52;
+}
+
+.case-status-list-section h2 {
+  color: #1e6bb8;
+  font-size: 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.case-status-loading,
+.case-status-empty {
+  color: #666;
+  text-align: center;
+  padding: 2rem;
+}
+
+.case-status-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.case-status-item {
+  background: #e3f2fd;
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  border-right: 4px solid #1e6bb8;
+}
+
+[dir="ltr"] .case-status-item {
+  border-right: none;
+  border-left: 4px solid #1e6bb8;
+}
+
+.case-status-item-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.case-status-item-row:last-child {
+  margin-bottom: 0;
+}
+
+.case-status-item-label {
+  color: #555;
+  font-weight: 600;
+  min-width: 120px;
+}
+
+.case-status-item-value {
+  color: #333;
+}
+
+.case-status-badge {
+  font-weight: 600;
+  color: #1565c0;
+}
+
+.case-status-item-value.renewal-date {
+  color: #1e6bb8;
+  font-weight: 600;
+}
+
+.case-status-actions {
+  margin-top: 2rem;
+  text-align: center;
+}
+
+.case-status-back-btn {
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #1e6bb8;
+  background: white;
+  border: 2px solid #1e6bb8;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.case-status-back-btn:hover {
+  background: #1e6bb8;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(30, 107, 184, 0.35);
+}

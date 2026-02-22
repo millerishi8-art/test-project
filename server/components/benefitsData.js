@@ -7,8 +7,8 @@ import { BENEFIT_TYPES } from './constants.js';
 export const BENEFITS_DATA = {
   [BENEFIT_TYPES.FAMILY]: {
     id: BENEFIT_TYPES.FAMILY,
-    title: 'משפחה',
-    description: 'הטבות למשפחה',
+    title: 'משפחה (נשואים + ילדים)',
+    description: 'הטבות למשפחה – זוג הורים נשואים וילדים',
     criteria: 'משפחה עם ילדים (הורים + ילדים עד גיל 21). נדרשות תעודות זהות של כל בני המשפחה ומסמכי קשר משפחתי במידת הצורך.',
     instructions: 'מילוי טופס בקשת הטבה מסוג משפחה, צירוף מסמכים מזהה לכל בן משפחה, ואישור כתובת מגורים. לאחר השליחה יבדק התיק ויוחזר עדכון תוך 2–3 שבועות.',
     estimatedTime: '2-3 שבועות',
@@ -31,8 +31,8 @@ export const BENEFITS_DATA = {
   },
   [BENEFIT_TYPES.INDIVIDUAL]: {
     id: BENEFIT_TYPES.INDIVIDUAL,
-    title: 'בן אדם יחיד',
-    description: 'הטבות לאדם יחיד',
+    title: 'בגיר (מעל גיל 21)',
+    description: 'הטבות לבגיר מעל גיל 21',
     criteria: 'אדם בוגר (מעל גיל 21) ללא ילדים ברשותו. נדרשת תעודת זהות בת תוקף וכתובת מגורים.',
     instructions: 'מילוי טופס בקשת הטבה לאדם יחיד, צירוף תעודת זהות ומסמך כתובת. לאחר השליחה יבדק התיק ויוחזר עדכון תוך 1–2 שבועות.',
     estimatedTime: '1-2 שבועות',
@@ -55,8 +55,8 @@ export const BENEFITS_DATA = {
   },
   [BENEFIT_TYPES.MINOR]: {
     id: BENEFIT_TYPES.MINOR,
-    title: 'קטין מתחת לגיל 21',
-    description: 'הטבות לקטין מתחת לגיל 21',
+    title: 'צעיר',
+    description: 'הטבות לצעיר',
     criteria: 'קטין מתחת לגיל 21. נדרשת תעודת זהות או תעודת לידה של הקטין ואישור הורה/אפוטרופוס.',
     instructions: 'מילוי טופס בהתאם לקטין, צירוף תעודת זהות/לידה של הקטין ומסמך מההורה או האפוטרופוס. לאחר השליחה יבדק התיק ויוחזר עדכון תוך 1–2 שבועות.',
     estimatedTime: '1-2 שבועות',

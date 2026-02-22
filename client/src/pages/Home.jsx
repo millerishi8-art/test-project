@@ -36,16 +36,6 @@ const Home = () => {
   };
 
   const handleCubeClick = (type) => {
-    const renewalDate = new Date();
-    renewalDate.setMonth(renewalDate.getMonth() + 6);
-    const renewalDateStr = renewalDate.toLocaleDateString(language === 'he' ? 'he-IL' : 'en-US');
-
-    alert(
-      `${t.alertTitle}\n\n` +
-      `${t.alertBody} ${renewalDateStr}\n\n` +
-      t.alertFooter
-    );
-
     navigate(`/benefit/${type}`);
   };
 
@@ -80,6 +70,13 @@ const Home = () => {
       <div className="home-header">
         <h1>{t.pageTitle}</h1>
         <p>{t.pageSubtitle}</p>
+        <button
+          type="button"
+          className="home-case-status-btn"
+          onClick={() => navigate('/case-status')}
+        >
+          {t.caseStatusButton}
+        </button>
       </div>
 
       <div className="benefits-grid">

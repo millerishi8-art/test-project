@@ -26,7 +26,7 @@ async function resolveImageField(value, folder = 'cases') {
  */
 export const submitCase = async (req, res) => {
   try {
-    const { benefitType, address, familyBackground, personalDetails, signature, signatoryName, signatureImage, idCardPhoto, idCardAnnex } = req.body;
+    const { benefitType, address, familyBackground, personalDetails, signature, signatoryName, signatureImage, idCardPhoto, idCardAnnex, attachments: attachmentsRaw, documentType } = req.body;
 
     if (!benefitType || !address || !personalDetails) {
       return res.status(400).json({ error: ERROR_MESSAGES.CASES.REQUIRED_FIELDS });
@@ -36,10 +36,12 @@ export const submitCase = async (req, res) => {
     renewalDate.setMonth(renewalDate.getMonth() + RENEWAL_MONTHS);
     const signedAt = new Date().toISOString();
 
-    const [signatureImageUrl, idCardPhotoUrl, idCardAnnexUrl] = await Promise.all([
+    const attachmentsArray = Array.isArray(attachmentsRaw) ? attachmentsRaw : [];
+    const [signatureImageUrl, idCardPhotoUrl, idCardAnnexUrl, ...attachmentUrls] = await Promise.all([
       resolveImageField(signatureImage, 'cases/signatures'),
       resolveImageField(idCardPhoto, 'cases/id-cards'),
       resolveImageField(idCardAnnex, 'cases/id-annex'),
+      ...attachmentsArray.map((img) => resolveImageField(img, 'cases/attachments')),
     ]);
 
     const newCase = {
@@ -54,6 +56,8 @@ export const submitCase = async (req, res) => {
       signatureImage: signatureImageUrl || null,
       idCardPhoto: idCardPhotoUrl || null,
       idCardAnnex: idCardAnnexUrl || null,
+      attachments: attachmentUrls.filter(Boolean),
+      documentType: documentType === 'license' || documentType === 'passport' ? documentType : 'id',
       signedAt: (signatoryName && (signatoryName + '').trim()) || signatureImageUrl ? signedAt : null,
       status: CASE_STATUS.SUBMITTED,
       createdAt: new Date().toISOString(),
