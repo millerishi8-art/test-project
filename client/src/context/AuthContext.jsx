@@ -13,6 +13,19 @@ export const useAuth = () => {
 
 // In dev we use relative /api so Vite proxy forwards to the backend (no direct connection to :5000)
 const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? '/api' : 'http://localhost:5000/api');
+const isDev = import.meta.env.DEV;
+
+/** Log auth error with location, server payload, status, and optional stack in dev */
+function logAuthError(location, error, opts = {}) {
+  const status = error.response?.status;
+  const data = error.response?.data;
+  console.error(`[Frontend] ${location}:`, error?.message || String(error));
+  if (status != null) console.error(`[Frontend] ${location} HTTP status:`, status);
+  if (data && typeof data === 'object') {
+    console.error(`[Frontend] ${location} server payload:`, { error: data.error, code: data.code, message: data.message });
+  }
+  if (isDev && error?.stack) console.error(`[Frontend] ${location} stack:`, error.stack);
+}
 
 axios.defaults.baseURL = API_URL;
 
@@ -37,6 +50,7 @@ export const AuthProvider = ({ children }) => {
       setUser(response.data);
       setRequireEmailVerification(false);
     } catch (error) {
+      logAuthError('fetchUser /me', error);
       const code = error.response?.data?.code;
       const isEmailNotVerified = code === 'EMAIL_NOT_VERIFIED';
       if (isEmailNotVerified) {
@@ -59,11 +73,14 @@ export const AuthProvider = ({ children }) => {
       axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
       return { success: true };
     } catch (error) {
-      const message = error.response?.data?.error || 'Login failed';
-      const code = error.response?.data?.code;
+      logAuthError('Login request failed', error);
+      const data = error.response?.data;
+      const message = data?.error || 'Login failed';
+      const debugMsg = data?.debug;
+      const code = data?.code;
       return {
         success: false,
-        error: message,
+        error: debugMsg ? `${message}: ${debugMsg}` : message,
         code: code || null,
       };
     }
@@ -77,12 +94,24 @@ export const AuthProvider = ({ children }) => {
         phone,
         password
       });
-      const { message } = response.data;
-      return { success: true, message: message || 'נשלח אימייל אימות. אנא לחץ על הקישור באימייל ואז התחבר.' };
+      const { message, emailSent, devCode } = response.data;
+      return {
+        success: true,
+        message: message || (emailSent ? 'נשלח קוד אימות לאימייל.' : 'הרשמה בוצעה. שליחת הקוד נכשלה – השתמש ב"שלח שוב אימייל אימות" בדף ההתחברות.'),
+        emailSent: !!emailSent,
+        devCode: devCode || null,
+      };
     } catch (error) {
+      logAuthError('Register request failed', error);
+      const data = error.response?.data;
+      const serverError = (data && typeof data === 'object' && data.error) || 'Registration failed';
+      const debugMsg = data && typeof data === 'object' ? data.debug : undefined;
+      if (data && typeof data === 'object') {
+        console.error('[Frontend] Register server response:', data);
+      }
       return {
         success: false,
-        error: error.response?.data?.error || 'Registration failed'
+        error: debugMsg ? `${serverError}: ${debugMsg}` : serverError
       };
     }
   };

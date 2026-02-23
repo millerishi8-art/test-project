@@ -68,3 +68,15 @@ export const updateCase = (caseId, updates) => {
   writeCases(cases);
   return cases[index];
 };
+
+/**
+ * מוחק תיק לצמיתות לפי מזהה
+ */
+export const deleteCase = (caseId) => {
+  const cases = readCases();
+  const index = cases.findIndex((c) => c.id === caseId);
+  if (index === -1) return null;
+  const removed = cases.splice(index, 1)[0];
+  writeCases(cases);
+  return removed;
+};

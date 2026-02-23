@@ -53,9 +53,17 @@ const Register = () => {
     if (result.success) {
       setError('');
       setLoading(false);
-      navigate('/verify-email', { state: { email: formData.email, message: result.message } });
+      navigate('/verify-email', {
+        state: {
+          email: formData.email,
+          message: result.message,
+          emailSent: result.emailSent,
+          devCode: result.devCode ?? null,
+        },
+      });
       return;
     }
+    console.error('[Frontend] Register submit: server returned error:', result.error);
     setError(result.error);
     setLoading(false);
   };

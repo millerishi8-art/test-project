@@ -52,6 +52,8 @@ async function start() {
   server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server is running on http://localhost:${PORT}`);
     console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+    const hasEmail = !!(process.env.EMAIL_USER && process.env.EMAIL_PASS);
+    console.log(hasEmail ? '[Email] מוגדר (EMAIL_USER קיים) – קוד אימות יישלח באימייל' : '[Email] לא מוגדר – הגדר EMAIL_USER ו-EMAIL_PASS ב-server/.env');
   });
 }
 

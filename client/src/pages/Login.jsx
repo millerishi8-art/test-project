@@ -4,6 +4,13 @@ import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import './Auth.css';
 
+function logAuthError(location, err) {
+  console.error('[Frontend]', location, ':', err?.message || String(err));
+  if (err?.response?.status != null) console.error('[Frontend]', location, 'HTTP status:', err.response.status);
+  if (err?.response?.data) console.error('[Frontend]', location, 'server payload:', err.response.data);
+  if (import.meta.env.DEV && err?.stack) console.error('[Frontend]', location, 'stack:', err.stack);
+}
+
 const Login = () => {
   const [formData, setFormData] = useState({
     email: '',
@@ -56,10 +63,16 @@ const Login = () => {
 
     if (result.success) {
       navigate('/');
-    } else {
-      setError(result.error || 'ההתחברות נכשלה.');
-      setLoginErrorCode(result.code || null);
+      setLoading(false);
+      return;
     }
+    if (result.code === 'EMAIL_NOT_VERIFIED') {
+      navigate('/verify-email', { state: { email: formData.email.trim(), fromLogin: true } });
+      setLoading(false);
+      return;
+    }
+    setError(result.error || 'ההתחברות נכשלה.');
+    setLoginErrorCode(result.code || null);
     setLoading(false);
   };
 
@@ -77,6 +90,7 @@ const Login = () => {
       const res = await axios.post('/resend-verification', { email });
       setResendMessage(res.data?.message || 'נשלח שוב אימייל אימות.');
     } catch (err) {
+      logAuthError('Login resend verification', err);
       setError(err.response?.data?.error || 'שליחה חוזרת נכשלה.');
     } finally {
       setResendLoading(false);
@@ -99,6 +113,7 @@ const Login = () => {
       setPhoneStep('sent');
       setPhoneCode('');
     } catch (err) {
+      logAuthError('Login request phone verification', err);
       setError(err.response?.data?.error || 'שליחת קוד נכשלה.');
     } finally {
       setPhoneSendLoading(false);
@@ -121,6 +136,7 @@ const Login = () => {
       applySession(res.data.token, res.data.user);
       navigate('/');
     } catch (err) {
+      logAuthError('Login verify phone code', err);
       setError(err.response?.data?.error || 'קוד לא תקף או שפג תוקפו.');
     } finally {
       setPhoneVerifyLoading(false);
@@ -148,6 +164,7 @@ const Login = () => {
       setEmailCode('');
       setLoginErrorCode(null);
     } catch (err) {
+      logAuthError('Login verify email code', err);
       setError(err.response?.data?.error || 'הקוד לא תקף או שפג תוקפו.');
     } finally {
       setEmailVerifyLoading(false);

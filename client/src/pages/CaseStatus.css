@@ -55,45 +55,6 @@
   margin-bottom: 2rem;
 }
 
-.case-status-stages {
-  margin-bottom: 2.5rem;
-  padding-bottom: 2rem;
-  border-bottom: 1px solid #e8ebf7;
-}
-
-.case-status-stages h2 {
-  color: #1e6bb8;
-  font-size: 1.25rem;
-  margin-bottom: 1rem;
-}
-
-.stages-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.stages-list li {
-  padding: 0.6rem 0;
-  padding-right: 1rem;
-  padding-left: 0;
-  border-right: 3px solid #42a5f5;
-  margin-bottom: 0.5rem;
-  color: #444;
-  line-height: 1.6;
-}
-
-[dir="ltr"] .stages-list li {
-  border-right: none;
-  border-left: 3px solid #42a5f5;
-  padding-left: 1rem;
-  padding-right: 0;
-}
-
-.stages-list strong {
-  color: #1a3a52;
-}
-
 .case-status-list-section h2 {
   color: #1e6bb8;
   font-size: 1.25rem;
@@ -110,19 +71,36 @@
 .case-status-list {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 1.5rem;
 }
 
 .case-status-item {
-  background: #e3f2fd;
+  background: #f8fafc;
   border-radius: 12px;
   padding: 1.25rem 1.5rem;
-  border-right: 4px solid #1e6bb8;
+  border: 1px solid #e2e8f0;
+}
+
+[dir="rtl"] .case-status-item {
+  border-right: 4px solid #94a3b8;
 }
 
 [dir="ltr"] .case-status-item {
-  border-right: none;
-  border-left: 4px solid #1e6bb8;
+  border-left: 4px solid #94a3b8;
+}
+
+.case-status-item-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.case-status-item-header .case-status-badge {
+  font-weight: 700;
 }
 
 .case-status-item-row {
@@ -130,6 +108,11 @@
   flex-wrap: wrap;
   gap: 0.5rem;
   margin-bottom: 0.5rem;
+}
+
+.case-status-item-row.renewal-row {
+  margin-top: 0.75rem;
+  margin-bottom: 0;
 }
 
 .case-status-item-row:last-child {
@@ -154,6 +137,140 @@
 .case-status-item-value.renewal-date {
   color: #1e6bb8;
   font-weight: 600;
+}
+
+/* —— Dynamic timeline (vertical) —— */
+.case-status-timeline {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  position: relative;
+}
+
+.timeline-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 0.5rem 0;
+  position: relative;
+}
+
+.timeline-step.has-line::before {
+  content: '';
+  position: absolute;
+  width: 2px;
+  top: 1.25rem;
+  bottom: -0.5rem;
+  border-radius: 1px;
+}
+
+[dir="rtl"] .timeline-step.has-line::before {
+  right: 0.35rem;
+  left: auto;
+}
+
+[dir="ltr"] .timeline-step.has-line::before {
+  left: 0.35rem;
+  right: auto;
+}
+
+.timeline-bullet {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 0.25rem;
+  box-shadow: 0 0 0 2px white;
+}
+
+[dir="rtl"] .timeline-bullet {
+  margin-right: 0;
+  margin-left: 0;
+}
+
+.timeline-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.timeline-content strong {
+  display: block;
+  font-size: 1rem;
+}
+
+.timeline-desc {
+  font-size: 0.9rem;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+/* Completed = Green */
+.timeline-step-completed .timeline-bullet,
+.timeline-step-completed .timeline-content strong {
+  color: #15803d;
+}
+
+.timeline-step-completed .timeline-bullet {
+  background: #22c55e;
+}
+
+.timeline-step-completed.has-line::before {
+  background: #22c55e;
+}
+
+/* Current / Pending = Yellow */
+.timeline-step-current .timeline-bullet,
+.timeline-step-current .timeline-content strong {
+  color: #a16207;
+}
+
+.timeline-step-current .timeline-bullet {
+  background: #eab308;
+}
+
+.timeline-step-current.has-line::before {
+  background: #eab308;
+}
+
+.timeline-step-current .timeline-desc {
+  color: #854d0e;
+}
+
+/* Future = Gray */
+.timeline-step-future .timeline-bullet,
+.timeline-step-future .timeline-content strong {
+  color: #94a3b8;
+}
+
+.timeline-step-future .timeline-bullet {
+  background: #cbd5e1;
+}
+
+.timeline-step-future.has-line::before {
+  background: #e2e8f0;
+}
+
+.timeline-step-future .timeline-desc {
+  color: #94a3b8;
+}
+
+/* Rejected / Closed = Red */
+.timeline-step-rejected .timeline-bullet,
+.timeline-step-rejected .timeline-content strong {
+  color: #b91c1c;
+}
+
+.timeline-step-rejected .timeline-bullet {
+  background: #dc2626;
+}
+
+.timeline-step-rejected.has-line::before {
+  background: #dc2626;
+}
+
+.timeline-step-rejected .timeline-desc {
+  color: #991b1b;
 }
 
 .case-status-actions {

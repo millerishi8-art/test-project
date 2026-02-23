@@ -34,12 +34,16 @@ const AdminPanel = () => {
 
   const [users, setUsers] = useState([]);
   const [cases, setCases] = useState([]);
-  const [activeTab, setActiveTab] = useState(stateTab === 'cases' ? 'cases' : 'cases');
+  const [activeTab, setActiveTab] = useState(
+    stateTab === 'admins' ? 'admins' : stateTab === 'users' ? 'users' : 'cases'
+  );
   const [casesFilter, setCasesFilter] = useState(
     (stateFilter === 'needs_renewal' || stateFilter === 'renewal_in_6_months') ? stateFilter : 'all'
   );
   const [loading, setLoading] = useState(true);
   const [demotingId, setDemotingId] = useState(null);
+  const [deletingCaseId, setDeletingCaseId] = useState(null);
+  const [statusUpdatingId, setStatusUpdatingId] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
 
   useEffect(() => {
@@ -48,8 +52,12 @@ const AdminPanel = () => {
 
   useEffect(() => {
     if (stateTab === 'cases') setActiveTab('cases');
+    if (stateTab === 'users') setActiveTab('users');
+    if (stateTab === 'admins') setActiveTab('admins');
     if (stateFilter === 'needs_renewal' || stateFilter === 'renewal_in_6_months') setCasesFilter(stateFilter);
   }, [stateTab, stateFilter]);
+
+  const adminUsers = users.filter((u) => (u.role || '').toLowerCase() === 'admin');
 
   const fetchData = async () => {
     try {
@@ -124,6 +132,42 @@ const AdminPanel = () => {
     }
   };
 
+  const handleRemoveCase = async (caseItem) => {
+    if (!window.confirm('האם אתה בטוח שברצונך להסיר לצמיתות?')) return;
+    setDeletingCaseId(caseItem.id);
+    setSuccessMessage('');
+    try {
+      await axios.delete(`/admin/cases/${caseItem.id}`);
+      setCases((prev) => prev.filter((c) => c.id !== caseItem.id));
+      setSuccessMessage('התיק הוסר לצמיתות.');
+      setTimeout(() => setSuccessMessage(''), 4000);
+    } catch (err) {
+      console.error('Failed to delete case:', err);
+      const msg = err.response?.data?.error || 'שגיאה במחיקת התיק';
+      alert(msg);
+    } finally {
+      setDeletingCaseId(null);
+    }
+  };
+
+  const handleUpdateCaseStatus = async (caseItem, newStatus) => {
+    setStatusUpdatingId(caseItem.id);
+    setSuccessMessage('');
+    try {
+      const res = await axios.patch(`/admin/cases/${caseItem.id}`, { status: newStatus });
+      setCases((prev) =>
+        prev.map((c) => (c.id === caseItem.id ? { ...c, status: res.data?.case?.status ?? newStatus } : c))
+      );
+      setSuccessMessage(newStatus === 'approved' ? 'התיק אושר.' : 'סטטוס התיק עודכן.');
+      setTimeout(() => setSuccessMessage(''), 4000);
+    } catch (err) {
+      console.error('Failed to update case status:', err);
+      alert(err.response?.data?.error || 'שגיאה בעדכון הסטטוס');
+    } finally {
+      setStatusUpdatingId(null);
+    }
+  };
+
   const statusLabel = (s) => {
     const labels = { submitted: 'אושר/נשלח', pending: 'ממתין', approved: 'אושר', rejected: 'נדחה', closed: 'סגור' };
     return labels[s] || s;
@@ -169,20 +213,26 @@ const AdminPanel = () => {
 
       <div className="admin-tabs">
         <button
-          className={activeTab === 'users' ? 'active' : ''}
-          onClick={() => setActiveTab('users')}
-        >
-          גישת מנהלים ({users.length})
-        </button>
-        <button
           className={activeTab === 'cases' ? 'active' : ''}
           onClick={() => setActiveTab('cases')}
         >
           קייסים ({cases.length})
         </button>
+        <button
+          className={activeTab === 'users' ? 'active' : ''}
+          onClick={() => setActiveTab('users')}
+        >
+          קליינטים ומנהלים ({users.length})
+        </button>
+        <button
+          className={activeTab === 'admins' ? 'active' : ''}
+          onClick={() => setActiveTab('admins')}
+        >
+          מנהלים בלבד ({adminUsers.length})
+        </button>
       </div>
 
-      {activeTab === 'users' && (
+      {(activeTab === 'users' || activeTab === 'admins') && (
         <div className="admin-table-container">
           {successMessage && (
             <div className="admin-success-message" role="alert">
@@ -202,14 +252,16 @@ const AdminPanel = () => {
               </tr>
             </thead>
             <tbody>
-              {users.length === 0 ? (
+              {(activeTab === 'admins' ? adminUsers : users).length === 0 ? (
                 <tr>
                   <td colSpan="7" className="empty-state">
-                    אין משתמשים במערכת
+                    {activeTab === 'admins'
+                      ? 'אין מנהלים במערכת. הרשאות מנהל ניתנות דרך create-admin או make-admin.'
+                      : 'אין משתמשים במערכת'}
                   </td>
                 </tr>
               ) : (
-                users.map((user) => (
+                (activeTab === 'admins' ? adminUsers : users).map((user) => (
                   <tr key={user.id}>
                     <td>{user.name}</td>
                     <td>{user.email}</td>
@@ -317,6 +369,26 @@ const AdminPanel = () => {
                           >
                             צפה בטופס
                           </button>
+                          {caseItem.status !== 'approved' && caseItem.status !== 'rejected' && caseItem.status !== 'closed' && (
+                            <button
+                              type="button"
+                              className="admin-approve-btn"
+                              onClick={() => handleUpdateCaseStatus(caseItem, 'approved')}
+                              disabled={statusUpdatingId === caseItem.id}
+                            >
+                              {statusUpdatingId === caseItem.id ? '...' : 'אושר/נשלח'}
+                            </button>
+                          )}
+                          {caseItem.status !== 'rejected' && caseItem.status !== 'closed' && (
+                            <button
+                              type="button"
+                              className="admin-close-btn"
+                              onClick={() => handleUpdateCaseStatus(caseItem, 'rejected')}
+                              disabled={statusUpdatingId === caseItem.id}
+                            >
+                              {statusUpdatingId === caseItem.id ? '...' : 'נסגר'}
+                            </button>
+                          )}
                           {caseItem.renewalStatus === RENEWAL_PENDING_CONFIRMATION && (
                             <button
                               type="button"
@@ -326,6 +398,14 @@ const AdminPanel = () => {
                               אשר הושלם
                             </button>
                           )}
+                          <button
+                            type="button"
+                            className="admin-remove-btn"
+                            onClick={() => handleRemoveCase(caseItem)}
+                            disabled={deletingCaseId === caseItem.id}
+                          >
+                            {deletingCaseId === caseItem.id ? 'מוחק...' : 'הסר'}
+                          </button>
                         </div>
                       </td>
                     </tr>

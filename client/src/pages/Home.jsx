@@ -111,8 +111,8 @@ const Home = () => {
           onClick={() => handleCubeClick('minor')}
         >
           <div className="cube-icon">🧒</div>
-          <h2>{language === 'he' ? benefits.minor.title : t.minor}</h2>
-          <p className="cube-description">{language === 'he' ? benefits.minor.description : t.minorDesc}</p>
+          <h2>{t.minor}</h2>
+          <p className="cube-description">{t.minorDesc}</p>
           <div className="cube-price">
             <span>${benefits.minor.price.usd}</span>
             <span>₪{benefits.minor.price.ils}</span>

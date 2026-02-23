@@ -13,6 +13,7 @@ import Confirmation from './pages/Confirmation';
 import CaseStatus from './pages/CaseStatus';
 import AdminPanel from './pages/AdminPanel';
 import AdminCaseDetail from './pages/AdminCaseDetail';
+import WhatsAppButton from './components/WhatsAppButton';
 import './App.css';
 
 function App() {
@@ -21,6 +22,7 @@ function App() {
       <AuthProvider>
         <div className="app">
         <Navbar />
+        <WhatsAppButton />
         <Routes>
           <Route path="/register" element={<Register />} />
           <Route path="/login" element={<Login />} />

@@ -11,8 +11,10 @@ const benefitTitles = {
 
 const STATUS_OPTIONS = [
   { value: 'submitted', label: 'נשלח' },
-  { value: 'pending', label: 'בתהליך' },
+  { value: 'pending', label: 'בתהליך / ממתין לאישור' },
   { value: 'approved', label: 'אושר – מחכים לאישור הממשלה' },
+  { value: 'rejected', label: 'נדחה / נסגר' },
+  { value: 'closed', label: 'נסגר' },
 ];
 
 const AdminCaseDetail = () => {
@@ -23,6 +25,7 @@ const AdminCaseDetail = () => {
   const [error, setError] = useState('');
   const [statusSaving, setStatusSaving] = useState(false);
   const [confirmingCompleted, setConfirmingCompleted] = useState(false);
+  const [enlargedImage, setEnlargedImage] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -104,6 +107,30 @@ const AdminCaseDetail = () => {
 
   return (
     <div className="admin-case-detail-container">
+      {enlargedImage && (
+        <div
+          className="admin-case-detail-lightbox"
+          onClick={() => setEnlargedImage(null)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="תצוגה מוגדלת של התמונה"
+        >
+          <button
+            type="button"
+            className="admin-case-detail-lightbox-close"
+            onClick={() => setEnlargedImage(null)}
+            aria-label="סגור"
+          >
+            ×
+          </button>
+          <img
+            src={enlargedImage}
+            alt="תצוגה מוגדלת"
+            className="admin-case-detail-lightbox-img"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
       <div className="admin-case-detail-card">
         <h1>פרטי טופס – תיק #{c.id.slice(0, 8)}</h1>
         <p className="admin-case-detail-sub">גישה כמנהל. כל הפרטים שנשלחו בטופס.</p>
@@ -180,6 +207,40 @@ const AdminCaseDetail = () => {
             <span className="admin-case-detail-label">פרטים נוספים</span>
             <p className="admin-case-detail-value admin-case-detail-text">{c.personalDetails || '–'}</p>
           </div>
+
+          {(c.idCardPhoto || c.idCardAnnex || (Array.isArray(c.attachments) && c.attachments.length > 0)) && (
+            <>
+              <h3 className="admin-case-detail-images-heading">תמונות ומסמכים שהלקוח העלה</h3>
+              {c.idCardPhoto && (
+                <div className="admin-case-detail-field admin-case-detail-field-block">
+                  <span className="admin-case-detail-label">תמונת תעודת זהות / מסמך</span>
+                  <div className="admin-case-detail-img-wrap admin-case-detail-img-clickable" onClick={() => setEnlargedImage(c.idCardPhoto)}>
+                    <img src={c.idCardPhoto} alt="תעודת זהות / מסמך" className="admin-case-detail-uploaded-img" />
+                  </div>
+                </div>
+              )}
+              {c.idCardAnnex && (
+                <div className="admin-case-detail-field admin-case-detail-field-block">
+                  <span className="admin-case-detail-label">נספח למסמך</span>
+                  <div className="admin-case-detail-img-wrap admin-case-detail-img-clickable" onClick={() => setEnlargedImage(c.idCardAnnex)}>
+                    <img src={c.idCardAnnex} alt="נספח למסמך" className="admin-case-detail-uploaded-img" />
+                  </div>
+                </div>
+              )}
+              {Array.isArray(c.attachments) && c.attachments.length > 0 && (
+                <div className="admin-case-detail-field admin-case-detail-field-block">
+                  <span className="admin-case-detail-label">מסמכים מצורפים נוספים</span>
+                  <div className="admin-case-detail-attachments">
+                    {c.attachments.map((url, i) => (
+                      <div key={i} className="admin-case-detail-img-wrap admin-case-detail-img-clickable" onClick={() => setEnlargedImage(url)}>
+                        <img src={url} alt={`מסמך מצורף ${i + 1}`} className="admin-case-detail-uploaded-img" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
         </section>
 
         {(c.signatoryName || c.signatureImage) && (
@@ -199,8 +260,8 @@ const AdminCaseDetail = () => {
             )}
             {c.signatureImage && (
               <div className="admin-case-detail-field admin-case-detail-field-block">
-                <span className="admin-case-detail-label">חתימה (תמונה)</span>
-                <div className="admin-case-detail-signature-img-wrap">
+                <span className="admin-case-detail-label">חתימה (תמונה שהלקוח העלה)</span>
+                <div className="admin-case-detail-signature-img-wrap admin-case-detail-img-clickable" onClick={() => setEnlargedImage(c.signatureImage)}>
                   <img src={c.signatureImage} alt="חתימה" className="admin-case-detail-signature-img" />
                 </div>
               </div>

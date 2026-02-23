@@ -1,5 +1,5 @@
 import { readUsers, findUserById, updateUserById } from '../models/User.js';
-import { readCases, findCaseById, findCasesByUserId, updateCase } from '../models/Case.js';
+import { readCases, findCaseById, findCasesByUserId, updateCase, deleteCase } from '../models/Case.js';
 import { DEFAULT_UNKNOWN, ROLES, CASE_STATUS } from '../components/constants.js';
 
 /**
@@ -98,7 +98,7 @@ export const demoteAdmin = async (req, res) => {
   }
 };
 
-const ALLOWED_STATUSES = [CASE_STATUS.SUBMITTED, CASE_STATUS.PENDING, CASE_STATUS.APPROVED];
+const ALLOWED_STATUSES = [CASE_STATUS.SUBMITTED, CASE_STATUS.PENDING, CASE_STATUS.APPROVED, CASE_STATUS.REJECTED, 'closed'];
 
 /**
  * מנהל מעדכן סטטוס תיק (נשלח / בתהליך / אושר מחכים לממשלה)
@@ -108,7 +108,7 @@ export const updateCaseStatus = async (req, res) => {
     const { id } = req.params;
     const { status } = req.body;
     if (!ALLOWED_STATUSES.includes(status)) {
-      return res.status(400).json({ error: 'סטטוס לא תקין. אפשרויות: submitted, pending, approved' });
+      return res.status(400).json({ error: 'סטטוס לא תקין. אפשרויות: submitted, pending, approved, rejected, closed' });
     }
     const caseData = findCaseById(id);
     if (!caseData) {
@@ -140,5 +140,26 @@ export const confirmCaseCompleted = async (req, res) => {
   } catch (error) {
     console.error('confirmCaseCompleted error:', error);
     return res.status(500).json({ error: 'שגיאה באישור הקייס' });
+  }
+};
+
+/**
+ * מנהל מוחק תיק לצמיתות. דורש role admin (מוגן ע"י isAdmin middleware).
+ */
+export const deleteCasePermanent = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const caseData = findCaseById(id);
+    if (!caseData) {
+      return res.status(404).json({ error: 'תיק לא נמצא' });
+    }
+    const removed = deleteCase(id);
+    if (!removed) {
+      return res.status(500).json({ error: 'שגיאה במחיקת התיק' });
+    }
+    return res.json({ message: 'התיק הוסר לצמיתות', id });
+  } catch (error) {
+    console.error('deleteCasePermanent error:', error);
+    return res.status(500).json({ error: 'שגיאה במחיקת התיק' });
   }
 };

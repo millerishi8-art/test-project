@@ -94,6 +94,108 @@
   object-fit: contain;
 }
 
+.admin-case-detail-images-heading {
+  color: #1565c0;
+  font-size: 1.05rem;
+  margin: 1.25rem 0 0.75rem;
+  font-weight: 600;
+}
+
+.admin-case-detail-img-wrap {
+  margin-top: 0.5rem;
+  padding: 1rem;
+  background: #f0f9ff;
+  border-radius: 10px;
+  border: 1px solid #e0f2fe;
+  display: inline-block;
+  max-width: 100%;
+}
+
+.admin-case-detail-uploaded-img {
+  display: block;
+  max-width: 100%;
+  max-height: 400px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: 6px;
+}
+
+.admin-case-detail-attachments {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 0.5rem;
+}
+
+.admin-case-detail-attachments .admin-case-detail-img-wrap {
+  margin-top: 0;
+}
+
+.admin-case-detail-img-clickable {
+  cursor: pointer;
+}
+
+.admin-case-detail-img-clickable:hover {
+  opacity: 0.92;
+}
+
+.admin-case-detail-img-clickable .admin-case-detail-uploaded-img,
+.admin-case-detail-img-clickable .admin-case-detail-signature-img {
+  pointer-events: none;
+}
+
+.admin-case-detail-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  cursor: zoom-out;
+}
+
+.admin-case-detail-lightbox-close {
+  position: absolute;
+  top: 1rem;
+  left: 1rem;
+  width: 48px;
+  height: 48px;
+  border: none;
+  background: rgba(255, 255, 255, 0.15);
+  color: white;
+  font-size: 2rem;
+  line-height: 1;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+}
+
+[dir="rtl"] .admin-case-detail-lightbox-close {
+  left: auto;
+  right: 1rem;
+}
+
+.admin-case-detail-lightbox-close:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.admin-case-detail-lightbox-img {
+  max-width: 95vw;
+  max-height: 90vh;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: 8px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  cursor: default;
+}
+
 .admin-case-detail-status-select {
   padding: 0.5rem 0.75rem;
   font-size: 1rem;

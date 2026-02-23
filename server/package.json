@@ -8,6 +8,7 @@
     "start": "node server.js",
     "dev": "node --watch server.js",
     "create-admin": "node create-admin.js",
+    "set-admin": "node create-admin.js millerbitoach@gmail.com admin123",
     "install:all": "npm install && cd ../client && npm install",
     "server": "npm start",
     "server:dev": "npm run dev",

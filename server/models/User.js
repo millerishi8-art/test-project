@@ -167,6 +167,22 @@ export async function findUserByVerificationToken(token) {
 }
 
 /**
+ * מוחק משתמש/ים לפי אימייל (לא רגיש לאותיות) – מחזיר מספר רשומות שנמחקו
+ */
+export async function deleteUserByEmail(email) {
+  try {
+    const collection = getCollection();
+    const re = emailRegex(email);
+    if (!re) return 0;
+    const result = await collection.deleteMany({ email: re });
+    return result.deletedCount || 0;
+  } catch (error) {
+    console.error('User deleteUserByEmail error:', error);
+    return 0;
+  }
+}
+
+/**
  * מסיר שדות רגישים (password, tokens) מהמשתמש
  */
 export function sanitizeUser(user) {

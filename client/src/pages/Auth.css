@@ -297,6 +297,19 @@
   color: #c33;
 }
 
+.verify-warning {
+  color: #b85c00;
+}
+
+.verify-dev-code {
+  color: #066;
+  font-size: 0.95rem;
+}
+
+.verify-info {
+  color: #1e6bb8;
+}
+
 .verify-btn {
   display: inline-block;
   text-align: center;

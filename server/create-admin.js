@@ -20,7 +20,7 @@ async function run() {
 
   const adminEmailRaw = process.argv[2] || process.env.ADMIN_EMAIL || 'millerbitoach@gmail.com';
   const adminEmail = adminEmailRaw.trim().toLowerCase();
-  const adminPassword = process.argv[3] || 'admin123';
+  const adminPassword = process.argv[3] || process.env.ADMIN_PASSWORD || 'admin123';
 
   const hashedPassword = await bcrypt.hash(adminPassword, 10);
 
