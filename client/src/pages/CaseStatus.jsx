@@ -15,24 +15,28 @@ const STATUS = {
 };
 
 /**
- * Returns timeline steps for one case. Each step has: key, title, desc, state.
- * state: 'completed' (green) | 'current' (yellow) | 'future' (gray) | 'rejected' (red)
+ * Returns timeline steps. When rejected/closed: only 2 steps (timeline ends at step 2).
+ * When approved or in progress: 3 steps. Each step has: key, title, desc, state.
  */
 function getTimelineSteps(c, t) {
   const s = (c?.status || STATUS.SUBMITTED).toLowerCase();
   const isRejectedOrClosed = s === STATUS.REJECTED || s === STATUS.CLOSED;
-  const steps = [
-    { key: '1', title: t.timelineStep1, desc: t.timelineStep1Desc },
-    { key: '2', title: t.timelineStep2, desc: t.timelineStep2Desc },
-    { key: '3', title: t.timelineStep3, desc: t.timelineStep3Desc },
-    { key: '4', title: t.timelineStep4, desc: t.timelineStep4Desc },
+  const isApproved = s === STATUS.APPROVED || (c?.detailedAdminStatus || '').includes('אושר על ידי הממשלה');
+  const step1 = s === STATUS.SUBMITTED ? 'current' : 'completed';
+  const step2 = s === STATUS.SUBMITTED ? 'future' : (s === STATUS.PENDING || (c?.detailedAdminStatus || '').includes('הוגשו טפסים')) ? 'current' : 'completed';
+  const step3 = isApproved ? 'completed' : 'future';
+
+  if (isRejectedOrClosed) {
+    return [
+      { key: '1', title: t.timelineStep1, desc: t.timelineStep1Desc, state: 'completed' },
+      { key: '2', title: t.timelineStep2, desc: t.timelineStep2Desc, state: 'completed' },
+    ];
+  }
+  return [
+    { key: '1', title: t.timelineStep1, desc: t.timelineStep1Desc, state: step1 },
+    { key: '2', title: t.timelineStep2, desc: t.timelineStep2Desc, state: step2 },
+    { key: '3', title: t.timelineStep3, desc: t.timelineStep3Desc, state: step3 },
   ];
-  let step1 = 'completed';
-  let step2 = s === STATUS.SUBMITTED ? 'current' : 'completed';
-  let step3 = s === STATUS.PENDING ? 'current' : (s === STATUS.APPROVED || c?.adminConfirmedCompleted || isRejectedOrClosed ? 'completed' : 'future');
-  let step4 = isRejectedOrClosed ? 'rejected' : 'future';
-  const states = [step1, step2, step3, step4];
-  return steps.map((step, i) => ({ ...step, state: states[i] }));
 }
 
 const CaseStatus = () => {
@@ -63,14 +67,19 @@ const CaseStatus = () => {
     return t.benefitTitles?.[key] || type;
   };
 
+  /** Client visibility: map admin processing stages to what the client sees */
   const getClientStatusLabel = (c) => {
     if (!c) return t.statusSubmitted;
     const s = (c.status || '').toLowerCase();
+    const detailed = (c.detailedAdminStatus || '').trim();
+
     if (s === STATUS.REJECTED || s === STATUS.CLOSED) return t.statusClosedRejected;
     if (c.adminConfirmedCompleted) return t.statusNeedsRenewal;
-    if (s === STATUS.APPROVED) return t.statusApprovedWaitingGov;
+    if (detailed === 'הוגשו טפסים מחכה לאישור הממשלה') return t.statusFormsSubmittedWaitingGov;
+    if (detailed === 'נפתח הבקשה באתר מחכה לראיון אישי' || detailed === 'נעשה ראיון מחכה להגשת טפסים') return t.statusCaseInApprovalProcess;
+    if (s === STATUS.APPROVED || detailed === 'אושר על ידי הממשלה') return t.statusApprovedWaitingGov;
     if (s === STATUS.PENDING) return t.statusInProgress;
-    return t.statusSubmitted;
+    return t.statusCaseInApprovalProcess;
   };
 
   const locale = language === 'he' ? 'he-IL' : 'en-US';
@@ -122,10 +131,48 @@ const CaseStatus = () => {
                           <div className="timeline-content">
                             <strong>{step.title}</strong>
                             <span className="timeline-desc">{step.desc}</span>
+                            {step.key === '3' && step.state === 'completed' && c.approvedBenefits && (
+                              <div className="case-status-approved-benefits">
+                                {c.approvedBenefits.rentAssistance != null && String(c.approvedBenefits.rentAssistance).trim() !== '' && (
+                                  <div className="case-status-benefit-row">
+                                    <span className="case-status-benefit-label">{t.benefitRentAssistance}:</span>
+                                    <span className="case-status-benefit-value">{c.approvedBenefits.rentAssistance}</span>
+                                  </div>
+                                )}
+                                {c.approvedBenefits.foodStamps != null && String(c.approvedBenefits.foodStamps).trim() !== '' && (
+                                  <div className="case-status-benefit-row">
+                                    <span className="case-status-benefit-label">{t.benefitFoodStamps}:</span>
+                                    <span className="case-status-benefit-value">{c.approvedBenefits.foodStamps}</span>
+                                  </div>
+                                )}
+                                {c.approvedBenefits.financialAid != null && String(c.approvedBenefits.financialAid).trim() !== '' && (
+                                  <div className="case-status-benefit-row">
+                                    <span className="case-status-benefit-label">{t.benefitFinancialAid}:</span>
+                                    <span className="case-status-benefit-value">{c.approvedBenefits.financialAid}</span>
+                                  </div>
+                                )}
+                                {c.approvedBenefits.totalDeposited != null && String(c.approvedBenefits.totalDeposited).trim() !== '' && (
+                                  <div className="case-status-benefit-row">
+                                    <span className="case-status-benefit-label">{t.benefitTotalDeposited}:</span>
+                                    <span className="case-status-benefit-value">{c.approvedBenefits.totalDeposited}</span>
+                                  </div>
+                                )}
+                              </div>
+                            )}
                           </div>
                         </li>
                       ))}
                     </ul>
+                    {(c.status === 'rejected' || c.status === 'closed') && (
+                      <div className="case-status-rejection-card" role="alert">
+                        <h3 className="case-status-rejection-card-title">
+                          <span aria-hidden>❌</span> {t.rejectionCardTitle}
+                        </h3>
+                        {c.rejectionReason && (
+                          <p className="case-status-rejection-card-reason">{c.rejectionReason}</p>
+                        )}
+                      </div>
+                    )}
                     {c.renewalDate && (
                       <div className="case-status-item-row renewal-row">
                         <span className="case-status-item-label">{t.renewalDate}:</span>

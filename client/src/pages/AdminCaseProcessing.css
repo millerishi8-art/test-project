@@ -1,0 +1,248 @@
+.admin-case-processing-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem;
+  direction: rtl;
+}
+
+.admin-case-processing-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.admin-case-processing-header h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1a237e;
+  margin-bottom: 0.5rem;
+}
+
+.admin-case-processing-sub {
+  font-size: 1.05rem;
+  color: #555;
+  margin-bottom: 1rem;
+}
+
+.admin-case-processing-back {
+  background: #e3f2fd;
+  color: #1565c0;
+  border: 2px solid #1565c0;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.admin-case-processing-back:hover {
+  background: #1565c0;
+  color: white;
+}
+
+.admin-processing-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 50vh;
+}
+
+.admin-processing-spinner {
+  font-size: 1.25rem;
+  color: #666;
+}
+
+.admin-processing-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.admin-processing-stage-btn {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border-radius: 8px;
+  border: 2px solid #90a4ae;
+  background: #eceff1;
+  color: #37474f;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: normal;
+  max-width: 220px;
+  line-height: 1.25;
+}
+
+.admin-processing-stage-btn:hover:not(:disabled) {
+  background: #cfd8dc;
+  border-color: #78909c;
+  transform: translateY(-1px);
+}
+
+.admin-processing-stage-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.admin-processing-stage-btn.stage-rejection {
+  border-color: #c62828;
+  background: #ffebee;
+  color: #b71c1c;
+}
+
+.admin-processing-stage-btn.stage-rejection:hover:not(:disabled) {
+  background: #ffcdd2;
+  border-color: #b71c1c;
+}
+
+.admin-processing-stage-btn.stage-approval {
+  border-color: #2e7d32;
+  background: #e8f5e9;
+  color: #1b5e20;
+}
+
+.admin-processing-stage-btn.stage-approval:hover:not(:disabled) {
+  background: #c8e6c9;
+  border-color: #1b5e20;
+}
+
+.admin-processing-current-status {
+  font-size: 0.9rem;
+  color: #555;
+}
+
+.admin-processing-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.admin-processing-modal {
+  background: white;
+  border-radius: 16px;
+  padding: 2rem;
+  max-width: 480px;
+  width: 100%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.admin-processing-modal h2 {
+  font-size: 1.35rem;
+  margin-bottom: 0.5rem;
+  color: #1a237e;
+}
+
+.admin-processing-modal-desc {
+  font-size: 0.95rem;
+  color: #666;
+  margin-bottom: 1rem;
+}
+
+.admin-processing-modal-input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-family: inherit;
+  margin-bottom: 1.25rem;
+  resize: vertical;
+  min-height: 100px;
+}
+
+.admin-processing-modal-input:focus {
+  outline: none;
+  border-color: #1565c0;
+}
+
+.admin-processing-modal-actions {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: flex-end;
+}
+
+.admin-processing-modal-cancel {
+  padding: 0.6rem 1.2rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border: 2px solid #9e9e9e;
+  background: #f5f5f5;
+  color: #616161;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.admin-processing-modal-cancel:hover {
+  background: #eeeeee;
+}
+
+.admin-processing-modal-submit {
+  padding: 0.6rem 1.2rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border: 2px solid #c62828;
+  background: #ffebee;
+  color: #b71c1c;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.admin-processing-modal-submit:hover {
+  background: #c62828;
+  color: white;
+}
+
+.admin-processing-modal-benefits .admin-processing-modal-desc {
+  margin-bottom: 1rem;
+}
+
+.admin-processing-benefits-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.admin-processing-benefits-form label {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #37474f;
+}
+
+.admin-processing-benefits-form .admin-processing-modal-input {
+  margin-bottom: 0;
+  min-height: auto;
+  padding: 0.5rem 0.75rem;
+}
+
+.admin-processing-modal-approve {
+  padding: 0.6rem 1.2rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border: 2px solid #2e7d32;
+  background: #e8f5e9;
+  color: #1b5e20;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.admin-processing-modal-approve:hover {
+  background: #2e7d32;
+  color: white;
+}
+
+@media (max-width: 768px) {
+  .admin-processing-stage-btn {
+    max-width: 100%;
+    font-size: 0.75rem;
+    padding: 0.4rem 0.6rem;
+  }
+}

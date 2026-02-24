@@ -6,45 +6,94 @@
 
 .admin-header {
   text-align: center;
-  color: white;
-  margin-bottom: 2rem;
+  margin-bottom: 2.5rem;
+  padding: 1.5rem 1rem;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
 }
 
 .admin-header h1 {
-  font-size: 2.5rem;
-  margin-bottom: 0.5rem;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+  font-size: 2.75rem;
+  font-weight: 800;
+  margin-bottom: 0.75rem;
+  color: #fff;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5), 0 0 1px rgba(0, 0, 0, 0.8);
+  letter-spacing: 0.02em;
 }
 
 .admin-header p {
   font-size: 1.2rem;
-  opacity: 0.9;
+  color: #fff;
+  opacity: 1;
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.45), 0 0 1px rgba(0, 0, 0, 0.6);
 }
 
 .admin-header .admin-welcome {
   max-width: 640px;
   margin: 0 auto 0.5rem;
-  line-height: 1.5;
+  line-height: 1.65;
+  color: #fff;
+  font-weight: 500;
 }
 
 .admin-header .admin-welcome strong {
   color: #fff;
   font-weight: 700;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
 }
 
 .admin-header .admin-sub {
-  font-size: 1rem;
-  opacity: 0.85;
+  font-size: 1.05rem;
+  color: rgba(255, 255, 255, 0.95);
+  opacity: 1;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
+.admin-header-actions {
+  margin-top: 1rem;
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.admin-case-processing-btn {
+  background: linear-gradient(135deg, #2e7d32 0%, #1b5e20 100%);
+  color: white;
+  border: none;
+  padding: 0.85rem 1.75rem;
+  border-radius: 12px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+}
+
+.admin-case-processing-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+  background: linear-gradient(135deg, #388e3c 0%, #2e7d32 100%);
 }
 
 .admin-tabs {
   display: flex;
+  flex-direction: column;
+  align-items: center;
   gap: 1rem;
-  justify-content: center;
   margin-bottom: 2rem;
 }
 
-.admin-tabs button {
+.admin-tabs-main {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.admin-tabs-main button,
+.admin-users-subtabs button {
   background: white;
   border: none;
   padding: 1rem 2rem;
@@ -56,14 +105,30 @@
   color: #666;
 }
 
-.admin-tabs button:hover {
+.admin-tabs-main button:hover,
+.admin-users-subtabs button:hover {
   background: #f0f0f0;
   transform: translateY(-2px);
 }
 
-.admin-tabs button.active {
+.admin-tabs-main button.active,
+.admin-users-subtabs button.active {
   background: linear-gradient(135deg, #1e6bb8 0%, #1565c0 100%);
   color: white;
+}
+
+.admin-users-subtabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: center;
+}
+
+.admin-cases-filters-inline {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: center;
 }
 
 .admin-table-container {

@@ -134,3 +134,52 @@ export async function sendVerificationCodeEmail(to, name, code) {
     return false;
   }
 }
+
+/**
+ * Send 6-digit password reset code email.
+ * Never throws – returns false on failure and logs errors.
+ */
+export async function sendPasswordResetCodeEmail(to, name, code) {
+  const config = getConfig();
+  if (!config.isConfigured) {
+    console.warn('[Email] Not configured. Cannot send password reset code.');
+    return false;
+  }
+
+  const transport = getTransporter();
+  if (!transport) return false;
+
+  const fromAddress = config.EMAIL_FROM || config.EMAIL_USER || config.SMTP_USER;
+  if (!fromAddress) return false;
+
+  const codeStr = String(code || '').trim().replace(/\D/g, '').slice(0, 6) || '000000';
+  console.log('[Email] Sending password reset code to', (to || '').trim());
+  const subject = 'קוד איפוס סיסמה – סוכן ביטוח';
+  const html = `
+    <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 500px;">
+      <h2>שלום ${name || 'משתמש'},</h2>
+      <p>קוד איפוס הסיסמה שלך הוא:</p>
+      <p style="font-size: 28px; font-weight: bold; letter-spacing: 4px;">${codeStr}</p>
+      <p>הזן את הקוד בדף ההתחברות ובחר סיסמה חדשה.</p>
+      <p>הקוד תקף ל-15 דקות.</p>
+      <hr style="border: none; border-top: 1px solid #eee;" />
+      <p style="color: #888; font-size: 12px;">סוכן ביטוח</p>
+    </div>
+  `;
+  const text = `שלום ${name || 'משתמש'},\n\nקוד איפוס הסיסמה: ${codeStr}\n\nהזן את הקוד באתר ובחר סיסמה חדשה. הקוד תקף ל-15 דקות.`;
+
+  try {
+    await transport.sendMail({
+      from: fromAddress,
+      to: (to || '').trim(),
+      subject,
+      text,
+      html,
+    });
+    console.log('[Email] Password reset code sent to', (to || '').trim());
+    return true;
+  } catch (err) {
+    console.error('[Email] Send password reset code failed:', err?.message || err);
+    return false;
+  }
+}

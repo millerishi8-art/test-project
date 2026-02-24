@@ -115,6 +115,19 @@
   margin-bottom: 0;
 }
 
+.case-status-item-row.case-status-rejection-reason {
+  margin-top: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: #ffebee;
+  border-radius: 8px;
+  border: 1px solid #ffcdd2;
+}
+
+.case-status-rejection-reason .case-status-item-value {
+  color: #b71c1c;
+  font-weight: 500;
+}
+
 .case-status-item-row:last-child {
   margin-bottom: 0;
 }
@@ -199,6 +212,31 @@
   font-size: 1rem;
 }
 
+.case-status-approved-benefits {
+  margin-top: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: #e8f5e9;
+  border-radius: 8px;
+  border: 1px solid #a5d6a7;
+}
+
+.case-status-benefit-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.25rem 0;
+}
+
+.case-status-benefit-label {
+  font-weight: 600;
+  color: #2e7d32;
+  min-width: 140px;
+}
+
+.case-status-benefit-value {
+  color: #1b5e20;
+}
+
 .timeline-desc {
   font-size: 0.9rem;
   color: #64748b;
@@ -270,6 +308,32 @@
 }
 
 .timeline-step-rejected .timeline-desc {
+  color: #991b1b;
+}
+
+/* Rejection alert card – standalone below timeline, timeline line does not continue */
+.case-status-rejection-card {
+  margin-top: 1.25rem;
+  padding: 1rem 1.25rem;
+  background: #fef2f2;
+  border: 2px solid #ef4444;
+  border-radius: 12px;
+}
+
+.case-status-rejection-card-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 0.5rem 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #b91c1c;
+}
+
+.case-status-rejection-card-reason {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.5;
   color: #991b1b;
 }
 

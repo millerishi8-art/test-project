@@ -19,14 +19,19 @@ function WhatsAppIcon({ size = 28 }) {
 
 export default function WhatsAppButton() {
   return (
-    <a
-      href={WHATSAPP_URL}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="whatsapp-float"
-      aria-label="צור קשר בוואטסאפ"
-    >
-      <WhatsAppIcon />
-    </a>
+    <div className="whatsapp-float-wrap">
+      <span className="whatsapp-float-bubble" role="tooltip">
+        לשאלות והתייעצות אפשר לפנות בוואטסאפ בין השעות 16:00 ל-22:00 שעון ישראל. מענה לוקח בין יום לשנה.
+      </span>
+      <a
+        href={WHATSAPP_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="whatsapp-float"
+        aria-label="צור קשר בוואטסאפ"
+      >
+        <WhatsAppIcon />
+      </a>
+    </div>
   );
 }

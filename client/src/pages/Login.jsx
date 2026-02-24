@@ -30,6 +30,15 @@ const Login = () => {
   const [emailCode, setEmailCode] = useState('');
   const [emailVerifyLoading, setEmailVerifyLoading] = useState(false);
   const [emailVerifySuccess, setEmailVerifySuccess] = useState('');
+  const [resetStep, setResetStep] = useState(null);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetCode, setResetCode] = useState('');
+  const [resetNewPassword, setResetNewPassword] = useState('');
+  const [resetConfirmPassword, setResetConfirmPassword] = useState('');
+  const [resetSendLoading, setResetSendLoading] = useState(false);
+  const [resetSubmitLoading, setResetSubmitLoading] = useState(false);
+  const [resetMessage, setResetMessage] = useState('');
+  const [resetError, setResetError] = useState('');
   const { login, requireEmailVerification, applySession } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -56,6 +65,7 @@ const Login = () => {
     e.preventDefault();
     setError('');
     setResendMessage('');
+    setResetMessage('');
     setLoginErrorCode(null);
     setLoading(true);
 
@@ -171,6 +181,155 @@ const Login = () => {
     }
   };
 
+  const handleBackToLogin = () => {
+    setResetStep(null);
+    setResetEmail('');
+    setResetCode('');
+    setResetNewPassword('');
+    setResetConfirmPassword('');
+    setResetMessage('');
+    setResetError('');
+  };
+
+  const handleRequestPasswordReset = async (e) => {
+    e.preventDefault();
+    const email = (resetEmail || '').trim().toLowerCase();
+    if (!email) {
+      setResetError('הזן את כתובת האימייל');
+      return;
+    }
+    setResetSendLoading(true);
+    setResetError('');
+    setResetMessage('');
+    try {
+      const res = await axios.post('/request-password-reset', { email });
+      setResetMessage(res.data?.message || 'אם הכתובת קיימת במערכת, נשלח אליך קוד איפוס סיסמה. בדוק דואר זבל.');
+      setResetStep('code');
+    } catch (err) {
+      logAuthError('Request password reset', err);
+      setResetError(err.response?.data?.error || 'שליחת הקוד נכשלה.');
+    } finally {
+      setResetSendLoading(false);
+    }
+  };
+
+  const handleResetPassword = async (e) => {
+    e.preventDefault();
+    const email = (resetEmail || '').trim().toLowerCase();
+    const code = (resetCode || '').replace(/\D/g, '').slice(0, 6);
+    if (!email || code.length !== 6) {
+      setResetError('הזן אימייל וקוד בן 6 ספרות');
+      return;
+    }
+    if (!resetNewPassword || resetNewPassword.length < 6) {
+      setResetError('הסיסמה חייבת להכיל לפחות 6 תווים');
+      return;
+    }
+    if (resetNewPassword !== resetConfirmPassword) {
+      setResetError('הסיסמאות לא תואמות');
+      return;
+    }
+    setResetSubmitLoading(true);
+    setResetError('');
+    setResetMessage('');
+    try {
+      const res = await axios.post('/reset-password', { email, code, newPassword: resetNewPassword });
+      setResetMessage(res.data?.message || 'הסיסמה עודכנה בהצלחה. התחבר עם הסיסמה החדשה.');
+      setResetStep(null);
+      setResetCode('');
+      setResetNewPassword('');
+      setResetConfirmPassword('');
+      setFormData((prev) => ({ ...prev, email }));
+    } catch (err) {
+      logAuthError('Reset password', err);
+      setResetError(err.response?.data?.error || 'איפוס הסיסמה נכשל.');
+    } finally {
+      setResetSubmitLoading(false);
+    }
+  };
+
+  if (resetStep === 'email' || resetStep === 'code') {
+    return (
+      <div className="auth-container">
+        <div className="auth-card">
+          <h2>איפוס סיסמה</h2>
+          {resetStep === 'email' && (
+            <form onSubmit={handleRequestPasswordReset}>
+              <div className="form-group">
+                <label>אימייל</label>
+                <input
+                  type="email"
+                  value={resetEmail}
+                  onChange={(e) => { setResetEmail(e.target.value); setResetError(''); }}
+                  placeholder="הזן את כתובת האימייל"
+                  autoFocus
+                />
+              </div>
+              {resetError && <div className="error-message">{resetError}</div>}
+              {resetMessage && <div className="success-message">{resetMessage}</div>}
+              <button type="submit" className="auth-button" disabled={resetSendLoading}>
+                {resetSendLoading ? 'שולח...' : 'שלח קוד לאימייל'}
+              </button>
+              <button type="button" className="auth-link-button" onClick={handleBackToLogin}>
+                ← חזרה להתחברות
+              </button>
+            </form>
+          )}
+          {resetStep === 'code' && (
+            <form onSubmit={handleResetPassword}>
+              <div className="form-group">
+                <label>אימייל</label>
+                <input type="email" value={resetEmail} readOnly className="input-readonly" />
+              </div>
+              <div className="form-group">
+                <label>קוד אימות (6 ספרות)</label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={6}
+                  placeholder="000000"
+                  value={resetCode}
+                  onChange={(e) => setResetCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  className="phone-code-input"
+                />
+              </div>
+              <div className="form-group">
+                <label>סיסמה חדשה</label>
+                <input
+                  type="password"
+                  value={resetNewPassword}
+                  onChange={(e) => { setResetNewPassword(e.target.value); setResetError(''); }}
+                  placeholder="לפחות 6 תווים"
+                  minLength={6}
+                />
+              </div>
+              <div className="form-group">
+                <label>אימות סיסמה</label>
+                <input
+                  type="password"
+                  value={resetConfirmPassword}
+                  onChange={(e) => { setResetConfirmPassword(e.target.value); setResetError(''); }}
+                  placeholder="הזן שוב את הסיסמה"
+                />
+              </div>
+              {resetError && <div className="error-message">{resetError}</div>}
+              {resetMessage && <div className="success-message">{resetMessage}</div>}
+              <button type="submit" className="auth-button" disabled={resetSubmitLoading}>
+                {resetSubmitLoading ? 'מאפס...' : 'אפס סיסמה'}
+              </button>
+              <button type="button" className="auth-link-button" onClick={handleBackToLogin}>
+                ← חזרה להתחברות
+              </button>
+            </form>
+          )}
+          <p className="auth-link">
+            אין לך חשבון? <Link to="/register">הירשם כאן</Link>
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="auth-container">
       <div className="auth-card">
@@ -217,6 +376,7 @@ const Login = () => {
               </button>
             </div>
           </div>
+          {resetMessage && <div className="success-message">{resetMessage}</div>}
           {resendMessage && (
             <>
               <div className="success-message">{resendMessage}</div>
@@ -230,6 +390,9 @@ const Login = () => {
           {error && (
             <div className={loginErrorCode === 'EMAIL_NOT_VERIFIED' ? 'error-message error-message-verify' : 'error-message'}>
               {error}
+              {(error === 'פרטי התחברות לא תקינים' || error === 'Invalid credentials' || error?.includes('Login failed')) && (
+                <p className="error-hint">בדוק שהאימייל והסיסמה נכונים. אם הרגע נרשמת – אמת קודם את האימייל (קוד שנשלח אליך).</p>
+              )}
             </div>
           )}
           {showEmailVerifyBlock && (
@@ -298,6 +461,23 @@ const Login = () => {
           <button type="submit" className="auth-button" disabled={loading}>
             {loading ? 'מתחבר...' : 'התחבר'}
           </button>
+          <p className="auth-link auth-link-forgot">
+            <button
+              type="button"
+              className="auth-link-button"
+              onClick={() => {
+                setResetStep('email');
+                setResetEmail(formData.email || '');
+                setResetError('');
+                setResetMessage('');
+                setResetCode('');
+                setResetNewPassword('');
+                setResetConfirmPassword('');
+              }}
+            >
+              שכחתי סיסמה
+            </button>
+          </p>
         </form>
         <p className="auth-link">
           אין לך חשבון? <Link to="/register">הירשם כאן</Link>

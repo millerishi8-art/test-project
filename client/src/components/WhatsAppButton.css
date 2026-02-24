@@ -1,8 +1,74 @@
-.whatsapp-float {
+.whatsapp-float-wrap {
   position: fixed;
   bottom: 1.5rem;
   right: 1.5rem;
   z-index: 9998;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+[dir="rtl"] .whatsapp-float-wrap {
+  right: auto;
+  left: 1.5rem;
+  align-items: flex-start;
+}
+
+.whatsapp-float-bubble {
+  position: absolute;
+  bottom: calc(100% + 12px);
+  right: 0;
+  max-width: 280px;
+  padding: 0.85rem 1rem;
+  background: #fff;
+  color: #1a1a1a;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  border-radius: 14px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.15);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(6px);
+  transition: opacity 0.25s ease, transform 0.25s ease, visibility 0.25s;
+  pointer-events: none;
+  text-align: right;
+  border: 1px solid rgba(37, 211, 102, 0.25);
+}
+
+[dir="rtl"] .whatsapp-float-bubble {
+  right: auto;
+  left: 0;
+  text-align: left;
+}
+
+.whatsapp-float-bubble::after {
+  content: '';
+  position: absolute;
+  bottom: -8px;
+  right: 20px;
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+  border-top: 8px solid #fff;
+  filter: drop-shadow(0 2px 2px rgba(0, 0, 0, 0.06));
+}
+
+[dir="rtl"] .whatsapp-float-bubble::after {
+  right: auto;
+  left: 20px;
+  border-left: 8px solid transparent;
+  border-right: 8px solid transparent;
+}
+
+.whatsapp-float-wrap:hover .whatsapp-float-bubble {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.whatsapp-float {
+  position: relative;
   width: 56px;
   height: 56px;
   border-radius: 50%;
@@ -15,7 +81,7 @@
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.whatsapp-float:hover {
+.whatsapp-float-wrap:hover .whatsapp-float {
   transform: scale(1.08);
   box-shadow: 0 6px 20px rgba(37, 211, 102, 0.5);
   color: #fff;
@@ -23,10 +89,4 @@
 
 .whatsapp-float:active {
   transform: scale(1.02);
-}
-
-/* RTL: optional – keep on right; for LTR layouts it stays bottom-right */
-[dir="rtl"] .whatsapp-float {
-  right: auto;
-  left: 1.5rem;
 }

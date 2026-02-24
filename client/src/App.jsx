@@ -13,6 +13,7 @@ import Confirmation from './pages/Confirmation';
 import CaseStatus from './pages/CaseStatus';
 import AdminPanel from './pages/AdminPanel';
 import AdminCaseDetail from './pages/AdminCaseDetail';
+import AdminCaseProcessing from './pages/AdminCaseProcessing';
 import WhatsAppButton from './components/WhatsAppButton';
 import './App.css';
 
@@ -80,6 +81,14 @@ function App() {
             element={
               <ProtectedRoute adminOnly>
                 <AdminCaseDetail />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/case-processing"
+            element={
+              <ProtectedRoute adminOnly>
+                <AdminCaseProcessing />
               </ProtectedRoute>
             }
           />

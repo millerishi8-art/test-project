@@ -4,6 +4,7 @@ import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { caseFormTranslations } from '../translations/caseForm';
+import { buildGoogleCalendarUrl, openGoogleCalendarInNewTab } from '../utils/googleCalendar';
 import './CaseForm.css';
 
 const SIGNATURE_PAD_WIDTH = 400;
@@ -177,25 +178,22 @@ const CaseForm = () => {
     });
   };
 
-  const formatGoogleCalendarDateTime = (d) => {
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    const h = String(d.getHours()).padStart(2, '0');
-    const min = String(d.getMinutes()).padStart(2, '0');
-    return `${y}${m}${day}T${h}${min}00`;
+  const getCalendarUrl = () => {
+    const renewalDate = getRenewalDate();
+    const endDate = new Date(renewalDate.getTime() + 60 * 60 * 1000);
+    const title = language === 'he' ? 'חידוש קייס - תזכורת' : 'Case renewal - reminder';
+    return buildGoogleCalendarUrl({
+      title,
+      startDate: renewalDate,
+      endDate,
+      details: t.renewalAlertBody || '',
+      location: language === 'he' ? 'מערכת סוכן ביטוח' : 'Insurance Agent System',
+    });
   };
 
   const handleAddToCalendar = () => {
-    const renewalDate = getRenewalDate();
-    const startDate = formatGoogleCalendarDateTime(renewalDate);
-    const endTime = new Date(renewalDate.getTime() + 60 * 60 * 1000);
-    const endDate = formatGoogleCalendarDateTime(endTime);
-    const title = encodeURIComponent(language === 'he' ? 'חידוש קייס - אל תשכח!' : 'Case renewal - Don\'t forget!');
-    const details = encodeURIComponent(t.renewalAlertBody);
-    const location = encodeURIComponent(language === 'he' ? 'מערכת סוכן ביטוח' : 'Insurance Agent System');
-    const googleCalendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${startDate}/${endDate}&details=${details}&location=${location}`;
-    window.open(googleCalendarUrl, '_blank');
+    const url = getCalendarUrl();
+    openGoogleCalendarInNewTab(url);
     setRenewalAddedToCalendar(true);
   };
 
@@ -391,22 +389,22 @@ const CaseForm = () => {
             </div>
           </div>
 
-          <div className="form-section renewal-section">
+          <div className="form-section renewal-section renewal-section-unified">
             <h2>{t.sectionRenewal}</h2>
-            <p className="renewal-hint">{t.renewalHint}</p>
-            {!renewalAddedToCalendar && (
-              <p className="renewal-required-notice">{t.renewalRequiredFirst}</p>
-            )}
+            <p className="renewal-hint">{t.reminderBannerText}</p>
             {renewalAddedToCalendar ? (
               <p className="renewal-added-msg">{t.renewalAddedLabel}</p>
             ) : (
-              <button
-                type="button"
-                className="add-to-calendar-btn"
-                onClick={handleAddToCalendar}
-              >
-                📅 {t.addToGoogleCalendar}
-              </button>
+              <>
+                <p className="renewal-required-notice">{t.renewalRequiredFirst}</p>
+                <button
+                  type="button"
+                  className="add-to-calendar-btn"
+                  onClick={handleAddToCalendar}
+                >
+                  {t.reminderBannerButton}
+                </button>
+              </>
             )}
           </div>
 

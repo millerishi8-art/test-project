@@ -18,7 +18,14 @@ const casesFile = path.join(dataDir, 'cases.json');
  * @property {string} [familyBackground]
  * @property {Object} personalDetails
  * @property {boolean} [signature]
- * @property {string} status - submitted | ...
+ * @property {string} status - submitted | pending | approved | rejected | closed
+ * @property {string} [detailedAdminStatus] - שלב עיבוד מנהל (תצוגה ללקוח לפי לוגיקה)
+ * @property {string} [rejectionReason] - סיבת סגירה/דחייה כשהמנהל לוחץ "הממשלה סגרה"
+ * @property {Object} [approvedBenefits] - פרטי הטבות מאושרות (שלב 5 – אושר על ידי הממשלה)
+ * @property {string} [approvedBenefits.rentAssistance] - סיוע בשכר דירה (כן/לא או סכום)
+ * @property {string} [approvedBenefits.foodStamps] - תלושי מזון (כן/לא או סכום)
+ * @property {string} [approvedBenefits.financialAid] - סיוע כלכלי (סכום)
+ * @property {string} [approvedBenefits.totalDeposited] - סה״כ כסף שנכנס לחשבון
  * @property {string} createdAt - ISO date
  * @property {string} renewalDate - ISO date
  * @property {boolean} isRenewed

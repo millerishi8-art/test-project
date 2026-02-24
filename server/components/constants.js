@@ -40,6 +40,8 @@ export const ERROR_MESSAGES = {
     VERIFICATION_CODE_EXPIRED: 'תוקף הקוד פג. בקש קוד חדש (שלח שוב אימייל אימות).',
     PHONE_CODE_INVALID: 'קוד האימות לא תקף או שפג תוקפו. בקש קוד חדש.',
     PHONE_REQUIRED: 'לא נמצא מספר טלפון. הזן אימייל של חשבון שנרשם עם טלפון.',
+    PASSWORD_RESET_CODE_INVALID: 'הקוד לא תקף או שפג תוקפו. בקש קוד חדש.',
+    PASSWORD_REQUIRED: 'נא להזין סיסמה חדשה.',
   },
   CASES: {
     REQUIRED_FIELDS: 'חסרים שדות חובה',
@@ -64,6 +66,8 @@ export const SUCCESS_MESSAGES = {
     VERIFICATION_EMAIL_SENT: 'נשלח שוב אימייל אימות לכתובת שלך. אם אינך מוצא – בדוק דואר זבל (Spam/Junk) וכל התיקיות.',
     PHONE_CODE_SENT: 'נשלח קוד אימות למספר הטלפון שנרשם. התוקף 10 דקות.',
     PHONE_VERIFIED: 'האימות הושלם. כעת ניתן להתחבר.',
+    PASSWORD_RESET_SENT: 'אם הכתובת קיימת במערכת, נשלח אליך קוד איפוס סיסמה. בדוק את תיבת הדואר (כולל דואר זבל).',
+    PASSWORD_RESET_SUCCESS: 'הסיסמה עודכנה בהצלחה. כעת ניתן להתחבר עם הסיסמה החדשה.',
   },
   CASES: {
     SUBMITTED: 'התיק נשלח בהצלחה',

@@ -143,6 +143,68 @@ export const confirmCaseCompleted = async (req, res) => {
   }
 };
 
+/** שלבי עיבוד תיק – טקסט ל־detailedAdminStatus */
+const PROCESSING_STAGES = {
+  1: 'נפתח הבקשה באתר מחכה לראיון אישי',
+  2: 'נעשה ראיון מחכה להגשת טפסים',
+  3: 'הוגשו טפסים מחכה לאישור הממשלה',
+  4: 'הממשלה סגרה את הכייס',
+  5: 'אושר על ידי הממשלה',
+};
+
+/**
+ * מנהל מעדכן שלב עיבוד תיק (עמוד "עובדים לך על הכייס")
+ * Body: { stage: 1|2|3|4|5, rejectionReason?: string, approvedBenefits?: Object }
+ * ב-stage 4 חובה rejectionReason. ב-stage 5 מומלץ approvedBenefits (מוצג ללקוח בשלב 3).
+ */
+export const updateCaseProcessing = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { stage, rejectionReason, approvedBenefits: approvedBenefitsRaw } = req.body;
+    const stageNum = typeof stage === 'string' ? parseInt(stage, 10) : stage;
+    if (!Number.isInteger(stageNum) || stageNum < 1 || stageNum > 5) {
+      return res.status(400).json({ error: 'סטטוס לא תקין. שלב חייב להיות 1–5.' });
+    }
+    const caseData = findCaseById(id);
+    if (!caseData) {
+      return res.status(404).json({ error: 'תיק לא נמצא' });
+    }
+    const detailedAdminStatus = PROCESSING_STAGES[stageNum];
+    const updates = { detailedAdminStatus };
+    if (stageNum === 4) {
+      const reason = (rejectionReason || '').trim();
+      if (!reason) {
+        return res.status(400).json({ error: 'בשלב "הממשלה סגרה את הכייס" חובה להזין סיבת סגירה.' });
+      }
+      updates.rejectionReason = reason;
+      updates.status = 'closed';
+      updates.approvedBenefits = null;
+    } else if (stageNum === 5) {
+      updates.status = CASE_STATUS.APPROVED;
+      updates.rejectionReason = null;
+      if (approvedBenefitsRaw && typeof approvedBenefitsRaw === 'object') {
+        updates.approvedBenefits = {
+          rentAssistance: approvedBenefitsRaw.rentAssistance != null ? String(approvedBenefitsRaw.rentAssistance).trim() : '',
+          foodStamps: approvedBenefitsRaw.foodStamps != null ? String(approvedBenefitsRaw.foodStamps).trim() : '',
+          financialAid: approvedBenefitsRaw.financialAid != null ? String(approvedBenefitsRaw.financialAid).trim() : '',
+          totalDeposited: approvedBenefitsRaw.totalDeposited != null ? String(approvedBenefitsRaw.totalDeposited).trim() : '',
+        };
+      } else {
+        updates.approvedBenefits = null;
+      }
+    } else {
+      updates.status = CASE_STATUS.PENDING;
+      if (stageNum !== 4) updates.rejectionReason = null;
+      updates.approvedBenefits = null;
+    }
+    const updated = updateCase(id, updates);
+    return res.json({ message: 'סטטוס העיבוד עודכן', case: updated });
+  } catch (error) {
+    console.error('updateCaseProcessing error:', error);
+    return res.status(500).json({ error: 'שגיאה בעדכון סטטוס העיבוד' });
+  }
+};
+
 /**
  * מנהל מוחק תיק לצמיתות. דורש role admin (מוגן ע"י isAdmin middleware).
  */

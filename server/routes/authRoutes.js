@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { register, login, getMe, verifyCode, resendVerificationEmail, requestPhoneVerification, verifyPhone } from '../controllers/authController.js';
+import { register, login, getMe, verifyCode, resendVerificationEmail, requestPhoneVerification, verifyPhone, requestPasswordReset, resetPassword } from '../controllers/authController.js';
 import { authenticateToken } from '../middleware/auth.js';
 
 const router = Router();
@@ -11,6 +11,8 @@ router.post('/verify-code', verifyCode);        // PUBLIC: unverified users have
 router.post('/resend-verification', resendVerificationEmail); // PUBLIC: body: { email }
 router.post('/request-phone-verification', requestPhoneVerification);
 router.post('/verify-phone', verifyPhone);
+router.post('/request-password-reset', requestPasswordReset);
+router.post('/reset-password', resetPassword);
 
 // —— Protected (require token) ——
 router.get('/me', authenticateToken, getMe);

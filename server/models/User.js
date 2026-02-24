@@ -20,6 +20,8 @@ function getCollection() {
  * @property {string} [emailVerificationCodeExpires] - ISO date
  * @property {string} [phoneVerificationCode] - קוד 6 ספרות
  * @property {string} [phoneVerificationCodeExpires] - ISO date
+ * @property {string} [passwordResetCode] - קוד 6 ספרות לאיפוס סיסמה
+ * @property {string} [passwordResetCodeExpires] - ISO date
  */
 
 /**
@@ -102,6 +104,8 @@ export async function updateUserById(id, updateFields) {
     if (allowed.emailVerificationCodeExpires !== undefined) set.emailVerificationCodeExpires = allowed.emailVerificationCodeExpires;
     if (allowed.phoneVerificationCode !== undefined) set.phoneVerificationCode = allowed.phoneVerificationCode;
     if (allowed.phoneVerificationCodeExpires !== undefined) set.phoneVerificationCodeExpires = allowed.phoneVerificationCodeExpires;
+    if (allowed.passwordResetCode !== undefined) set.passwordResetCode = allowed.passwordResetCode;
+    if (allowed.passwordResetCodeExpires !== undefined) set.passwordResetCodeExpires = allowed.passwordResetCodeExpires;
     if (Object.keys(set).length === 0) return await findUserById(id);
     const result = await collection.findOneAndUpdate(
       { id },

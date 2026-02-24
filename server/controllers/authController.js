@@ -4,7 +4,7 @@ import bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
 import { findUserByEmail, findUserById, createUser, updateUserById, sanitizeUser } from '../models/User.js';
 import { ROLES, ERROR_MESSAGES, SUCCESS_MESSAGES } from '../components/constants.js';
-import { sendVerificationCodeEmail } from '../services/email.js';
+import { sendVerificationCodeEmail, sendPasswordResetCodeEmail } from '../services/email.js';
 import { sendVerificationSms } from '../services/sms.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this';
@@ -186,10 +186,17 @@ export const login = async (req, res) => {
     const password = req.body.password;
 
     if (!rawEmail || !password) {
-      return res.status(400).json({ error: ERROR_MESSAGES.AUTH.EMAIL_PASSWORD_REQUIRED });
+      return res.status(400).json({ error: ERROR_MESSAGES?.AUTH?.EMAIL_PASSWORD_REQUIRED || 'אימייל וסיסמה חובה' });
     }
 
-    const user = await findUserByEmail(rawEmail);
+    let user;
+    try {
+      user = await findUserByEmail(rawEmail);
+    } catch (dbErr) {
+      logAuthError('Login findUserByEmail', dbErr, { status: 503 });
+      const msg = (ERROR_MESSAGES?.SERVER?.DB_UNAVAILABLE) || 'מסד הנתונים לא זמין';
+      return res.status(503).json({ error: msg });
+    }
     if (process.env.NODE_ENV !== 'production') {
       console.log('[Backend] Login: user', user ? 'found' : 'NOT found', '| email:', maskEmail(rawEmail));
     }
@@ -210,7 +217,7 @@ export const login = async (req, res) => {
         console.error('[Backend] Login bcrypt.compare threw – exact error:', compareErr?.message ?? String(compareErr));
         console.error('[Backend] Login bcrypt.compare stack:', compareErr?.stack);
         logAuthError('Login bcrypt.compare', compareErr, { status: 500 });
-        return res.status(500).json({ error: ERROR_MESSAGES.SERVER.LOGIN });
+        return res.status(500).json({ error: ERROR_MESSAGES?.SERVER?.LOGIN || 'שגיאת שרת בהתחברות' });
       }
     }
     if (process.env.NODE_ENV !== 'production') {
@@ -239,7 +246,7 @@ export const login = async (req, res) => {
       userOut = sanitizeUser(user);
     } catch (signErr) {
       logAuthError('Login signToken/sanitizeUser', signErr, { status: 500 });
-      return res.status(500).json({ error: ERROR_MESSAGES.SERVER.LOGIN });
+      return res.status(500).json({ error: ERROR_MESSAGES?.SERVER?.LOGIN || 'שגיאת שרת בהתחברות' });
     }
     const adminEmail = (process.env.ADMIN_EMAIL || '').trim().toLowerCase();
     userOut.isPrimaryAdmin = adminEmail !== '' && (user.email || '').trim().toLowerCase() === adminEmail;
@@ -475,5 +482,80 @@ export const verifyPhone = async (req, res) => {
     const status = isDbError ? 503 : 500;
     const message = isDbError ? ERROR_MESSAGES.SERVER.DB_UNAVAILABLE : ERROR_MESSAGES.AUTH.PHONE_CODE_INVALID;
     res.status(status).json({ error: message });
+  }
+};
+
+/**
+ * בקשת קוד איפוס סיסמה – שולח קוד 6 ספרות למייל (תוקף 15 דקות)
+ * מחזיר תמיד הודעה זהה (מטעמי אבטחה) גם אם האימייל לא קיים.
+ */
+export const requestPasswordReset = async (req, res) => {
+  try {
+    const email = (req.body.email || '').trim().toLowerCase();
+    if (!email) {
+      return res.status(400).json({ error: ERROR_MESSAGES.AUTH.EMAIL_PASSWORD_REQUIRED });
+    }
+    const user = await findUserByEmail(email);
+    if (user) {
+      const code = generateEmailVerificationCode();
+      const expires = emailCodeExpiresAt();
+      await updateUserById(user.id, {
+        passwordResetCode: code,
+        passwordResetCodeExpires: expires,
+      });
+      const sent = await sendPasswordResetCodeEmail(user.email, user.name, code);
+      if (process.env.NODE_ENV !== 'production' && !sent) {
+        console.log('[Backend] Password reset code (email not sent):', code);
+      }
+    }
+    const message = SUCCESS_MESSAGES.AUTH.PASSWORD_RESET_SENT || 'אם הכתובת קיימת במערכת, נשלח אליך קוד איפוס סיסמה. בדוק דואר זבל.';
+    return res.json({ message });
+  } catch (error) {
+    logAuthError('Request password reset', error, { status: 500 });
+    return res.status(500).json({ error: ERROR_MESSAGES?.SERVER?.LOGIN || 'שגיאת שרת' });
+  }
+};
+
+/**
+ * איפוס סיסמה – אימות קוד והגדרת סיסמה חדשה
+ */
+export const resetPassword = async (req, res) => {
+  try {
+    const email = (req.body.email || '').trim().toLowerCase();
+    const code = (req.body.code || '').trim().replace(/\D/g, '').slice(0, 6);
+    const newPassword = req.body.newPassword;
+
+    if (!email || !code || code.length !== 6) {
+      return res.status(400).json({ error: ERROR_MESSAGES.AUTH.PASSWORD_RESET_CODE_INVALID });
+    }
+    if (!newPassword || typeof newPassword !== 'string' || newPassword.length < 6) {
+      return res.status(400).json({ error: ERROR_MESSAGES.AUTH.PASSWORD_REQUIRED });
+    }
+
+    const user = await findUserByEmail(email);
+    if (!user) {
+      return res.status(400).json({ error: ERROR_MESSAGES.AUTH.PASSWORD_RESET_CODE_INVALID });
+    }
+
+    const now = new Date().toISOString();
+    const storedCode = (user.passwordResetCode || '').toString().trim();
+    const expires = user.passwordResetCodeExpires || '';
+
+    if (storedCode !== code || expires < now) {
+      return res.status(400).json({ error: ERROR_MESSAGES.AUTH.PASSWORD_RESET_CODE_INVALID });
+    }
+
+    const hashedPassword = await bcrypt.hash(String(newPassword), 10);
+    await updateUserById(user.id, {
+      password: hashedPassword,
+      passwordResetCode: null,
+      passwordResetCodeExpires: null,
+    });
+
+    const message = SUCCESS_MESSAGES.AUTH.PASSWORD_RESET_SUCCESS || 'הסיסמה עודכנה בהצלחה. התחבר עם הסיסמה החדשה.';
+    return res.json({ message });
+  } catch (error) {
+    logAuthError('Reset password', error, { status: 500 });
+    return res.status(500).json({ error: ERROR_MESSAGES?.SERVER?.LOGIN || 'שגיאת שרת' });
   }
 };

@@ -42,28 +42,6 @@ const BenefitDetail = () => {
     }
   };
 
-  const handleAddToCalendar = () => {
-    const renewalDate = new Date();
-    renewalDate.setMonth(renewalDate.getMonth() + 6);
-
-    const year = renewalDate.getFullYear();
-    const month = String(renewalDate.getMonth() + 1).padStart(2, '0');
-    const day = String(renewalDate.getDate()).padStart(2, '0');
-    const hours = String(renewalDate.getHours()).padStart(2, '0');
-    const minutes = String(renewalDate.getMinutes()).padStart(2, '0');
-
-    const startDate = `${year}${month}${day}T${hours}${minutes}00`;
-    const endDate = `${year}${month}${day}T${parseInt(hours) + 1}${minutes}00`;
-
-    const title = encodeURIComponent(language === 'he' ? 'חידוש קייס - אל תשכח!' : 'Case renewal - Don\'t forget!');
-    const details = encodeURIComponent(t.alertText);
-    const location = encodeURIComponent(language === 'he' ? 'מערכת סוכן ביטוח' : 'Insurance Agent System');
-
-    const googleCalendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${startDate}/${endDate}&details=${details}&location=${location}`;
-
-    window.open(googleCalendarUrl, '_blank');
-  };
-
   const handleContinue = () => {
     navigate(`/case-form/${type}`);
   };
@@ -191,22 +169,6 @@ const BenefitDetail = () => {
         <div className="benefit-section">
           <h2>{t.details}</h2>
           <p>{displayBenefit.details}</p>
-        </div>
-
-        <div className="benefit-section">
-          <h2>{t.price}</h2>
-          <div className="price-display">
-            <span className="price-item">${displayBenefit.price.usd} USD</span>
-            <span className="price-item">₪{displayBenefit.price.ils} ILS</span>
-          </div>
-        </div>
-
-        <div className="alert-box">
-          <h3>{t.alertTitle}</h3>
-          <p>{t.alertText}</p>
-          <button onClick={handleAddToCalendar} className="calendar-button">
-            {t.addToCalendar}
-          </button>
         </div>
 
         <div className="action-buttons">

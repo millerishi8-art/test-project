@@ -34,8 +34,11 @@ const AdminPanel = () => {
 
   const [users, setUsers] = useState([]);
   const [cases, setCases] = useState([]);
-  const [activeTab, setActiveTab] = useState(
-    stateTab === 'admins' ? 'admins' : stateTab === 'users' ? 'users' : 'cases'
+  const [mainSection, setMainSection] = useState(
+    stateTab === 'admins' || stateTab === 'users' ? 'users' : 'cases'
+  );
+  const [userSubTab, setUserSubTab] = useState(
+    stateTab === 'admins' ? 'admins' : 'clients'
   );
   const [casesFilter, setCasesFilter] = useState(
     (stateFilter === 'needs_renewal' || stateFilter === 'renewal_in_6_months') ? stateFilter : 'all'
@@ -51,13 +54,20 @@ const AdminPanel = () => {
   }, []);
 
   useEffect(() => {
-    if (stateTab === 'cases') setActiveTab('cases');
-    if (stateTab === 'users') setActiveTab('users');
-    if (stateTab === 'admins') setActiveTab('admins');
+    if (stateTab === 'cases') setMainSection('cases');
+    if (stateTab === 'users') {
+      setMainSection('users');
+      setUserSubTab('clients');
+    }
+    if (stateTab === 'admins') {
+      setMainSection('users');
+      setUserSubTab('admins');
+    }
     if (stateFilter === 'needs_renewal' || stateFilter === 'renewal_in_6_months') setCasesFilter(stateFilter);
   }, [stateTab, stateFilter]);
 
   const adminUsers = users.filter((u) => (u.role || '').toLowerCase() === 'admin');
+  const clientUsers = users.filter((u) => (u.role || '').toLowerCase() !== 'admin');
 
   const fetchData = async () => {
     try {
@@ -209,30 +219,78 @@ const AdminPanel = () => {
           <strong>טפסים לחידוש עתידי (חצי שנה)</strong> — מסודרים במצב חידוש.
         </p>
         <p className="admin-sub">משתמשים וקייסים במערכת. גישה רק עם המייל המורשה למנהל.</p>
+        <div className="admin-header-actions">
+          <button
+            type="button"
+            className="admin-case-processing-btn"
+            onClick={() => navigate('/admin/case-processing')}
+          >
+            עובדים לך על הכייס
+          </button>
+        </div>
       </div>
 
       <div className="admin-tabs">
-        <button
-          className={activeTab === 'cases' ? 'active' : ''}
-          onClick={() => setActiveTab('cases')}
-        >
-          קייסים ({cases.length})
-        </button>
-        <button
-          className={activeTab === 'users' ? 'active' : ''}
-          onClick={() => setActiveTab('users')}
-        >
-          קליינטים ומנהלים ({users.length})
-        </button>
-        <button
-          className={activeTab === 'admins' ? 'active' : ''}
-          onClick={() => setActiveTab('admins')}
-        >
-          מנהלים בלבד ({adminUsers.length})
-        </button>
+        <div className="admin-tabs-main">
+          <button
+            className={mainSection === 'cases' ? 'active' : ''}
+            onClick={() => setMainSection('cases')}
+          >
+            קייסים ({cases.length})
+          </button>
+          <button
+            className={mainSection === 'users' ? 'active' : ''}
+            onClick={() => setMainSection('users')}
+          >
+            משתמשים ({users.length})
+          </button>
+        </div>
+        {mainSection === 'cases' && (
+          <div className="admin-cases-filters admin-cases-filters-inline">
+            <button
+              type="button"
+              className={casesFilter === 'all' ? 'active' : ''}
+              onClick={() => setCasesFilter('all')}
+            >
+              כל התיקים ({cases.length})
+            </button>
+            <button
+              type="button"
+              className={casesFilter === RENEWAL_NEEDS_NOW ? 'active' : ''}
+              onClick={() => setCasesFilter(RENEWAL_NEEDS_NOW)}
+            >
+              טפסים לחידוש מיידי ({countImmediateRenewal})
+            </button>
+            <button
+              type="button"
+              className={casesFilter === RENEWAL_IN_6_MONTHS ? 'active' : ''}
+              onClick={() => setCasesFilter(RENEWAL_IN_6_MONTHS)}
+            >
+              טפסים לחידוש עתידי (חצי שנה) ({countIn6Months})
+            </button>
+          </div>
+        )}
+        {mainSection === 'users' && (
+          <div className="admin-users-subtabs">
+            <button
+              type="button"
+              className={userSubTab === 'admins' ? 'active' : ''}
+              onClick={() => setUserSubTab('admins')}
+            >
+              מנהלים ({adminUsers.length})
+            </button>
+            <button
+              type="button"
+              className={userSubTab === 'clients' ? 'active' : ''}
+              onClick={() => setUserSubTab('clients')}
+            >
+              משתמשים רגילים ({clientUsers.length})
+            </button>
+          </div>
+        )}
       </div>
 
-      {(activeTab === 'users' || activeTab === 'admins') && (
+      {mainSection === 'users' && (
         <div className="admin-table-container">
           {successMessage && (
             <div className="admin-success-message" role="alert">
@@ -252,16 +310,16 @@ const AdminPanel = () => {
               </tr>
             </thead>
             <tbody>
-              {(activeTab === 'admins' ? adminUsers : users).length === 0 ? (
+              {(userSubTab === 'admins' ? adminUsers : clientUsers).length === 0 ? (
                 <tr>
                   <td colSpan="7" className="empty-state">
-                    {activeTab === 'admins'
-                      ? 'אין מנהלים במערכת. הרשאות מנהל ניתנות דרך create-admin או make-admin.'
-                      : 'אין משתמשים במערכת'}
+                    {userSubTab === 'admins'
+                      ? 'אין מנהלים במערכת.'
+                      : 'אין משתמשים במערכת.'}
                   </td>
                 </tr>
               ) : (
-                (activeTab === 'admins' ? adminUsers : users).map((user) => (
+                (userSubTab === 'admins' ? adminUsers : clientUsers).map((user) => (
                   <tr key={user.id}>
                     <td>{user.name}</td>
                     <td>{user.email}</td>
@@ -295,28 +353,8 @@ const AdminPanel = () => {
         </div>
       )}
 
-      {activeTab === 'cases' && (
+      {mainSection === 'cases' && (
         <>
-          <div className="admin-cases-filters">
-            <button
-              className={casesFilter === 'all' ? 'active' : ''}
-              onClick={() => setCasesFilter('all')}
-            >
-              כל התיקים ({cases.length})
-            </button>
-            <button
-              className={casesFilter === RENEWAL_NEEDS_NOW ? 'active' : ''}
-              onClick={() => setCasesFilter(RENEWAL_NEEDS_NOW)}
-            >
-              טפסים לחידוש מיידי ({countImmediateRenewal})
-            </button>
-            <button
-              className={casesFilter === RENEWAL_IN_6_MONTHS ? 'active' : ''}
-              onClick={() => setCasesFilter(RENEWAL_IN_6_MONTHS)}
-            >
-              טפסים לחידוש עתידי (חצי שנה) ({countIn6Months})
-            </button>
-          </div>
           <div className="admin-table-container">
             <table className="admin-table">
               <thead>
@@ -369,35 +407,6 @@ const AdminPanel = () => {
                           >
                             צפה בטופס
                           </button>
-                          {caseItem.status !== 'approved' && caseItem.status !== 'rejected' && caseItem.status !== 'closed' && (
-                            <button
-                              type="button"
-                              className="admin-approve-btn"
-                              onClick={() => handleUpdateCaseStatus(caseItem, 'approved')}
-                              disabled={statusUpdatingId === caseItem.id}
-                            >
-                              {statusUpdatingId === caseItem.id ? '...' : 'אושר/נשלח'}
-                            </button>
-                          )}
-                          {caseItem.status !== 'rejected' && caseItem.status !== 'closed' && (
-                            <button
-                              type="button"
-                              className="admin-close-btn"
-                              onClick={() => handleUpdateCaseStatus(caseItem, 'rejected')}
-                              disabled={statusUpdatingId === caseItem.id}
-                            >
-                              {statusUpdatingId === caseItem.id ? '...' : 'נסגר'}
-                            </button>
-                          )}
-                          {caseItem.renewalStatus === RENEWAL_PENDING_CONFIRMATION && (
-                            <button
-                              type="button"
-                              className="admin-confirm-completed-btn"
-                              onClick={() => handleConfirmCompleted(caseItem.id)}
-                            >
-                              אשר הושלם
-                            </button>
-                          )}
                           <button
                             type="button"
                             className="admin-remove-btn"
