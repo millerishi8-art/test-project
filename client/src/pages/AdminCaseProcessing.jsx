@@ -16,6 +16,7 @@ const AdminCaseProcessing = () => {
   const [cases, setCases] = useState([]);
   const [loading, setLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState(null);
+  const [updatingStage, setUpdatingStage] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
   const [rejectionModal, setRejectionModal] = useState(null);
   const [approvalModal, setApprovalModal] = useState(null);
@@ -66,6 +67,7 @@ const AdminCaseProcessing = () => {
 
   const submitProcessing = async (caseId, stage, rejectionReason = '', approvedBenefits = null) => {
     setUpdatingId(caseId);
+    setUpdatingStage(stage);
     setSuccessMessage('');
     try {
       await axios.patch(`/admin/cases/${caseId}/processing`, {
@@ -81,6 +83,7 @@ const AdminCaseProcessing = () => {
       alert(msg);
     } finally {
       setUpdatingId(null);
+      setUpdatingStage(null);
       setRejectionModal(null);
       setApprovalModal(null);
     }
@@ -183,7 +186,7 @@ const AdminCaseProcessing = () => {
                             disabled={updatingId === caseItem.id}
                             title={label}
                           >
-                            {updatingId === caseItem.id && isActive ? '...' : label}
+                            {updatingId === caseItem.id && updatingStage === stage ? '...' : label}
                           </button>
                         );
                       })}
