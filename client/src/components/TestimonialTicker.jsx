@@ -58,10 +58,10 @@ export default function TestimonialTicker() {
         
         <div className="ticker-scroll-area">
           <div className="ticker-content">
-            {/* Render the list twice for an infinite loop effect */}
+            {/* Render the list twice for an infinite loop effect – key includes index in duplicated list for uniqueness */}
             {[...REVIEWS, ...REVIEWS].map((review, index) => (
-              <div 
-                key={index} 
+              <div
+                key={`${review.name}-${review.time}-${index}`}
                 className="ticker-item wa-preview-bubble"
                 onClick={() => setSelectedReview(review)}
               >

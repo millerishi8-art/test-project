@@ -75,18 +75,7 @@ export function isEmailConfigured() {
  * Send 6-digit verification code email (no link).
  * Never throws – returns false on failure and logs errors.
  */
-export async function sendVerificationCodeEmail(to, name, code) {  
-//   if (true){
-//     console.log(`to ${to}`);  
-// console.log(`name ${name}`);
-// console.log(`code ${code}`);
-// return {success: true};
-//   }
-// else {console.log(`send emaeil to ${name}`);
-// }
-
-
-
+export async function sendVerificationCodeEmail(to, name, code) {
 
 
 

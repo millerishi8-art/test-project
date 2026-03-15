@@ -173,7 +173,7 @@ const AdminCaseProcessing = () => {
                   <td>
                     <div className="admin-processing-buttons">
                       {STAGES.map(({ stage, label, isRejection, isApproval }) => {
-                        const isActive = caseItem.processingStage === stage;
+                        const isActive = (caseItem.detailedAdminStatus || '').trim() === label;
                         return (
                           <button
                             key={stage}

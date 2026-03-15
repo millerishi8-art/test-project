@@ -11,12 +11,9 @@ export const useAuth = () => {
   return context;
 };
 
-// ב-Vercel הקליינט וה-API על אותו דומיין – משתמשים ב-/api. בפיתוח מקומי – localhost:5000
+// בפיתוח: /api עובר דרך ה-proxy של Vite (vite.config.js) ל-backend. ב-production: /api על אותו דומיין (Vercel).
 const getApiUrl = () => {
-  let url = import.meta.env.VITE_API_URL;
-  if (!url) {
-    url = import.meta.env.DEV ? 'http://localhost:5000/api' : '/api';
-  }
+  const url = import.meta.env.VITE_API_URL || '/api';
   return url.replace(/\/+$/, '');
 };
 
