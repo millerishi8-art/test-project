@@ -6,7 +6,8 @@ node_modules/
 .env.local
 server/.env
 *.log
-data/
+# Only ignore server data folder (cases.json etc.). Keep client/src/data/ for benefitsFallback etc.
+server/data/
 
 # Build output
 dist/

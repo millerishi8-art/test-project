@@ -4,7 +4,7 @@ import axios from 'axios';
 import { useLanguage } from '../context/LanguageContext';
 import { productDescriptionTranslations } from '../translations/productDescription';
 import { benefitDetailTranslations } from '../translations/benefitDetail';
-import { BENEFITS_FALLBACK } from '../data/benefitsFallback';
+import { BENEFITS_FALLBACK } from '../data/benefitsFallback.js';
 import './BenefitDetail.css';
 
 const BenefitDetail = () => {
