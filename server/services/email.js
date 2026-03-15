@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
 
+/** Uses process.env.EMAIL_USER and process.env.EMAIL_PASS for Gmail; or SMTP_* for custom SMTP. */
 function getConfig() {
   const EMAIL_USER = (process.env.EMAIL_USER || '').trim();
   const EMAIL_PASS = (process.env.EMAIL_PASS || '').trim();
@@ -129,11 +130,18 @@ export async function sendVerificationCodeEmail(to, name, code) {
   } catch (err) {
     const msg = err?.message || String(err);
     const errCode = err?.code || err?.responseCode;
-    console.error('[Email] Send verification code failed:', msg);
+    console.error('[Email] Send verification code failed – full error for Vercel/debug:', {
+      message: msg,
+      code: errCode,
+      response: err?.response,
+      responseCode: err?.responseCode,
+      command: err?.command,
+      stack: err?.stack,
+    });
     if (errCode) console.error('[Email] Error code:', errCode);
     if (err?.response) console.error('[Email] SMTP response:', err.response);
-    if (errCode === 534 || msg.includes('Application-specific password') || msg.includes('app password')) {
-      console.error('[Email] Gmail requires an App Password.');
+    if (errCode === 534 || msg.includes('Application-specific password') || msg.includes('app password') || msg.includes('Authentication')) {
+      console.error('[Email] Gmail requires an App Password (EMAIL_PASS). Use process.env.EMAIL_USER and process.env.EMAIL_PASS.');
     }
     return false;
   }

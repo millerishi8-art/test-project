@@ -99,12 +99,11 @@ export const AuthProvider = ({ children }) => {
         phone,
         password
       });
-      const { message, emailSent, devCode } = response.data;
+      const { message, emailSent } = response.data;
       return {
         success: true,
         message: message || (emailSent ? 'נשלח קוד אימות לאימייל.' : 'הרשמה בוצעה. שליחת הקוד נכשלה – השתמש ב"שלח שוב אימייל אימות" בדף ההתחברות.'),
         emailSent: !!emailSent,
-        devCode: devCode || null,
       };
     } catch (error) {
       logAuthError('Register request failed', error);

@@ -143,15 +143,11 @@ export const register = async (req, res) => {
       console.error('[Backend] Registration sanitizeUser:', sanitizeErr?.message || sanitizeErr);
       userSafe = { id: newUser.id, name: newUser.name, email: newUser.email, role: newUser.role };
     }
-    const payload = {
+    return res.status(201).json({
       message,
       emailSent,
       user: userSafe,
-    };
-    if (process.env.NODE_ENV !== 'production' && !emailSent) {
-      payload.devCode = verificationCode;
-    }
-    return res.status(201).json(payload);
+    });
   } catch (error) {
     const errMsg = error?.message || String(error);
     const errCode = error?.code;

@@ -15,11 +15,10 @@ const VerifyEmail = () => {
   const location = useLocation();
   const emailFromState = location.state?.email || '';
   const emailSent = location.state?.emailSent ?? true;
-  const devCode = location.state?.devCode ?? null;
   const fromLogin = location.state?.fromLogin ?? false;
 
   const [email, setEmail] = useState(emailFromState);
-  const [code, setCode] = useState(devCode || '');
+  const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [resendLoading, setResendLoading] = useState(false);
   const [resendMessage, setResendMessage] = useState('');
@@ -94,11 +93,6 @@ const VerifyEmail = () => {
             {!emailSent && (
               <p className="verify-message verify-warning">
                 שליחת האימייל נכשלה. בדף ההתחברות השתמש ב&quot;שלח שוב אימייל אימות&quot; או בדוק את תיקיית Spam.
-              </p>
-            )}
-            {devCode && (
-              <p className="verify-message verify-dev-code">
-                [פיתוח] הקוד שנשלח: <strong>{devCode}</strong>
               </p>
             )}
             {fromLogin && (

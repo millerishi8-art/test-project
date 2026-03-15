@@ -113,7 +113,6 @@ const Register = () => {
           email: formData.email,
           message: result.message,
           emailSent: result.emailSent,
-          devCode: result.devCode ?? null,
         },
       });
       return;
