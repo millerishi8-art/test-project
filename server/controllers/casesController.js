@@ -6,7 +6,7 @@ import {
   updateCase,
 } from '../models/Case.js';
 import { CASE_STATUS, ERROR_MESSAGES, SUCCESS_MESSAGES, RENEWAL_MONTHS } from '../components/constants.js';
-import { uploadBase64 } from '../services/cloudinary.js';
+import { uploadToSupabase } from '../services/supabaseStorage.js';
 
 function isBase64DataUrl(str) {
   return typeof str === 'string' && str.trim().startsWith('data:image');
@@ -15,8 +15,10 @@ function isBase64DataUrl(str) {
 async function resolveImageField(value, folder = 'cases') {
   if (!value || typeof value !== 'string') return null;
   if (isBase64DataUrl(value)) {
-    const url = await uploadBase64(value, folder);
-    return url || value;
+    const baseName = (folder.split('/').pop() || 'image').replace(/\s+/g, '-');
+    const fileName = `${baseName}.png`;
+    const path = await uploadToSupabase(value, fileName);
+    return path || value;
   }
   return value;
 }

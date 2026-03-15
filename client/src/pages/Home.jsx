@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { homeTranslations } from '../translations/home';
@@ -19,9 +20,8 @@ const Home = () => {
 
   const fetchBenefits = async () => {
     try {
-      const response = await fetch('/api/benefits');
-      if (!response.ok) throw new Error('Failed to fetch');
-      const data = await response.json();
+      const response = await axios.get('/benefits');
+      const data = response.data;
       if (data && (data.family || data.individual || data.minor)) {
         setBenefits(data);
       } else {

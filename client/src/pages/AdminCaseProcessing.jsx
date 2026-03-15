@@ -172,18 +172,21 @@ const AdminCaseProcessing = () => {
                   </td>
                   <td>
                     <div className="admin-processing-buttons">
-                      {STAGES.map(({ stage, label, isRejection, isApproval }) => (
-                        <button
-                          key={stage}
-                          type="button"
-                          className={`admin-processing-stage-btn ${isRejection ? 'stage-rejection' : ''} ${isApproval ? 'stage-approval' : ''}`}
-                          onClick={() => handleStageClick(caseItem, stage)}
-                          disabled={updatingId === caseItem.id}
-                          title={label}
-                        >
-                          {updatingId === caseItem.id ? '...' : label}
-                        </button>
-                      ))}
+                      {STAGES.map(({ stage, label, isRejection, isApproval }) => {
+                        const isActive = caseItem.processingStage === stage;
+                        return (
+                          <button
+                            key={stage}
+                            type="button"
+                            className={`admin-processing-stage-btn ${isActive ? 'active-stage' : ''} ${isRejection ? 'stage-rejection' : ''} ${isApproval ? 'stage-approval' : ''}`}
+                            onClick={() => handleStageClick(caseItem, stage)}
+                            disabled={updatingId === caseItem.id}
+                            title={label}
+                          >
+                            {updatingId === caseItem.id && isActive ? '...' : label}
+                          </button>
+                        );
+                      })}
                     </div>
                   </td>
                 </tr>

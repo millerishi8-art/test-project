@@ -75,9 +75,24 @@ export function isEmailConfigured() {
  * Send 6-digit verification code email (no link).
  * Never throws – returns false on failure and logs errors.
  */
-export async function sendVerificationCodeEmail(to, name, code) {
+export async function sendVerificationCodeEmail(to, name, code) {  
+//   if (true){
+//     console.log(`to ${to}`);  
+// console.log(`name ${name}`);
+// console.log(`code ${code}`);
+// return {success: true};
+//   }
+// else {console.log(`send emaeil to ${name}`);
+// }
+
+
+
+
+
+
   const config = getConfig();
   if (!config.isConfigured) {
+
     console.warn('[Email] Not configured. Set EMAIL_USER and EMAIL_PASS (for Gmail) in server/.env.');
     return false;
   }

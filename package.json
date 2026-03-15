@@ -1,6 +1,7 @@
 {
   "name": "insurance-agent",
   "private": true,
+  "type": "module",
   "description": "Insurance Agent – Client + Server",
   "scripts": {
     "dev": "concurrently \"npm run dev --prefix server\" \"npm run dev --prefix client\"",

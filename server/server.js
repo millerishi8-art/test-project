@@ -1,37 +1,11 @@
-import express from 'express';
-import cors from 'cors';
-import dotenv from 'dotenv';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import routes from './routes/index.js';
+/**
+ * כניסה להרצה מקומית – טוען את אפליקציית Express, מתחבר ל-MongoDB ומאזין על הפורט.
+ * ב-Vercel משתמשים ב-api/index.js (Serverless) ללא קובץ זה.
+ */
+import app from './app.js';
 import { connectToMongoDB, closeMongoDB } from './db/mongodb.js';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-dotenv.config({ path: path.join(__dirname, '.env') });
-
-const app = express();
 const PORT = process.env.PORT || 5000;
-
-app.use(cors());
-// גודל body מוגדל להעלאת תמונות (חתימה וכו') כ-base64
-app.use(express.json({ limit: '10mb' }));
-
-// וידוא שתיקיית data קיימת לשמירת קייסים (cases.json)
-const dataDir = path.join(__dirname, 'data');
-if (!fs.existsSync(dataDir)) {
-  fs.mkdirSync(dataDir, { recursive: true });
-  console.log('נוצרה תיקיית data לשמירת קייסים');
-}
-
-app.use('/api', routes);
-
-// תפיסת שגיאות שלא נתפסו ב-controllers (מחזיר JSON במקום HTML)
-app.use((err, req, res, next) => {
-  console.error('Unhandled server error:', err);
-  res.status(500).json({ error: err?.message || 'שגיאת שרת' });
-});
-
 let server;
 
 async function start() {
@@ -53,7 +27,7 @@ async function start() {
     console.log(`Server is running on http://localhost:${PORT}`);
     console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
     const hasEmail = !!(process.env.EMAIL_USER && process.env.EMAIL_PASS);
-    console.log(hasEmail ? '[Email] מוגדר (EMAIL_USER קיים) – קוד אימות יישלח באימייל' : '[Email] לא מוגדר – הגדר EMAIL_USER ו-EMAIL_PASS ב-server/.env');
+    console.log(hasEmail ? '[Email] מוגדר' : '[Email] לא מוגדר – הגדר EMAIL_USER ו-EMAIL_PASS ב-server/.env');
   });
 }
 

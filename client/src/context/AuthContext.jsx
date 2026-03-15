@@ -11,8 +11,16 @@ export const useAuth = () => {
   return context;
 };
 
-// In dev we use relative /api so Vite proxy forwards to the backend (no direct connection to :5000)
-const API_URL = import.meta.env.VITE_API_URL || (import.meta.env.DEV ? '/api' : 'http://localhost:5000/api');
+// ב-Vercel הקליינט וה-API על אותו דומיין – משתמשים ב-/api. בפיתוח מקומי – localhost:5000
+const getApiUrl = () => {
+  let url = import.meta.env.VITE_API_URL;
+  if (!url) {
+    url = import.meta.env.DEV ? 'http://localhost:5000/api' : '/api';
+  }
+  return url.replace(/\/+$/, '');
+};
+
+const API_URL = getApiUrl();
 const isDev = import.meta.env.DEV;
 
 /** Log auth error with location, server payload, status, and optional stack in dev */

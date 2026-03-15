@@ -15,6 +15,7 @@ import AdminPanel from './pages/AdminPanel';
 import AdminCaseDetail from './pages/AdminCaseDetail';
 import AdminCaseProcessing from './pages/AdminCaseProcessing';
 import WhatsAppButton from './components/WhatsAppButton';
+import TestimonialTicker from './components/TestimonialTicker';
 import './App.css';
 
 function App() {
@@ -24,6 +25,7 @@ function App() {
         <div className="app">
         <Navbar />
         <WhatsAppButton />
+        <TestimonialTicker />
         <Routes>
           <Route path="/register" element={<Register />} />
           <Route path="/login" element={<Login />} />
@@ -97,6 +99,7 @@ function App() {
         </div>
       </AuthProvider>
     </LanguageProvider>
+ 
   );
 }
 

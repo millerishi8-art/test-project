@@ -7,16 +7,57 @@ const Register = () => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    phone: '',
+    phonePrefix: '050',
+    phoneBody: '',
     password: '',
     confirmPassword: ''
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState('');
+  const [emailError, setEmailError] = useState('');
   const [loading, setLoading] = useState(false);
   const { register } = useAuth();
   const navigate = useNavigate();
+
+  const handleEmailChange = (e) => {
+    // Restrict input to English letters, numbers, and allowed symbols
+    const val = e.target.value;
+    const sanitized = val.replace(/[^a-zA-Z0-9@._-]/g, '');
+    setFormData({ ...formData, email: sanitized });
+    setError('');
+    setEmailError('');
+  };
+
+  const handleEmailBlur = async () => {
+    const { email } = formData;
+    if (!email) return;
+    
+    // Strict Regex for valid email format
+    const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
+    if (!emailRegex.test(email)) {
+      setEmailError('פורמט אימייל לא חוקי. אנא הזן כתובת תקינה.');
+      return;
+    }
+
+    // Placeholder for API check (e.g. checking if email exists/valid in DB or via external service)
+    try {
+      // Simulate an API call
+      // const response = await fetch(`/api/check-email?email=${email}`);
+      // const data = await response.json();
+      // if (!data.isValid) { setEmailError('כתובת האימייל אינה תקינה או לא קיימת.'); }
+      setEmailError(''); // Clear error if all good
+    } catch (err) {
+      console.error('Email validation check failed', err);
+    }
+  };
+
+  const handlePhoneBodyChange = (e) => {
+    // Only allow up to 7 digits
+    const val = e.target.value.replace(/\D/g, '').slice(0, 7);
+    setFormData({ ...formData, phoneBody: val });
+    setError('');
+  };
 
   const handleChange = (e) => {
     setFormData({
@@ -43,10 +84,24 @@ const Register = () => {
       return;
     }
 
+    if (formData.phoneBody.length < 7) {
+      setError('מספר טלפון חייב להכיל בדיוק 7 ספרות (ללא הקידומת)');
+      setLoading(false);
+      return;
+    }
+    
+    if (emailError) {
+      setError('אנא תקן את שגיאות האימייל לפני ההרשמה');
+      setLoading(false);
+      return;
+    }
+
+    const fullPhone = `${formData.phonePrefix}${formData.phoneBody}`;
+
     const result = await register(
       formData.name,
       formData.email,
-      formData.phone,
+      fullPhone,
       formData.password
     );
 
@@ -89,19 +144,41 @@ const Register = () => {
               type="email"
               name="email"
               value={formData.email}
-              onChange={handleChange}
+              onChange={handleEmailChange}
+              onBlur={handleEmailBlur}
               required
+              dir="ltr"
+              placeholder="example@mail.com"
             />
+            {emailError && <div className="field-error-message" style={{ color: '#d32f2f', fontSize: '0.85rem', marginTop: '0.3rem' }}>{emailError}</div>}
           </div>
           <div className="form-group">
             <label>מספר טלפון</label>
-            <input
-              type="tel"
-              name="phone"
-              value={formData.phone}
-              onChange={handleChange}
-              required
-            />
+            <div className="phone-input-group" style={{ display: 'flex', gap: '0.5rem', direction: 'ltr' }}>
+              <select 
+                name="phonePrefix" 
+                value={formData.phonePrefix} 
+                onChange={handleChange}
+                className="phone-prefix"
+                style={{ width: '90px', padding: '0.75rem', borderRadius: '8px', border: '2px solid #e0e0e0', fontSize: '1rem' }}
+              >
+                <option value="050">050</option>
+                <option value="052">052</option>
+                <option value="053">053</option>
+                <option value="054">054</option>
+                <option value="055">055</option>
+                <option value="058">058</option>
+              </select>
+              <input
+                type="tel"
+                name="phoneBody"
+                value={formData.phoneBody}
+                onChange={handlePhoneBodyChange}
+                placeholder="1234567"
+                required
+                style={{ flex: 1 }}
+              />
+            </div>
           </div>
           <div className="form-group">
             <label>סיסמה</label>
