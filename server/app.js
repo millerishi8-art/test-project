@@ -16,23 +16,16 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const app = express();
 
-// CORS – נדרש כדי שהקליינט (localhost:3000 או Vercel) יוכל לשלוח בקשות ל-API
-const allowedOrigins = [
-  'https://project-client-sandy.vercel.app',
-  'http://localhost:3000',
-  'http://localhost:5000',
-];
-
-app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
+// CORS – תצורה גמישה יותר (כולל Vercel) עם תמיכה ב-Credentials ו-Preflight
+const corsOptions = {
+  origin: true, // מאפשר כל origin (בשלב בדיקות; ניתן להחליף לרשימה מצומצמת בהמשך)
   credentials: true,
-}));
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+};
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions)); // טיפול בבקשות OPTIONS (Preflight)
 
 // גודל body מוגדר להעלאת תמונות (חתימה וכו') כ-base64
 app.use(express.json({ limit: '10mb' }));
