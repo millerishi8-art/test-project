@@ -11,6 +11,7 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import routes from './routes/index.js';
+import { connectToMongoDB } from './db/mongodb.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -29,6 +30,21 @@ app.options('*', cors(corsOptions)); // טיפול בבקשות OPTIONS (Preflig
 
 // גודל body מוגדר להעלאת תמונות (חתימה וכו') כ-base64
 app.use(express.json({ limit: '10mb' }));
+
+// חיבור MongoDB גם בסביבת Serverless (Vercel) – רץ פעם אחת על cold start
+(async () => {
+  try {
+    const uri = (process.env.MONGODB_URI || '').trim();
+    if (!uri) {
+      console.log('MongoDB: לא הוגדר MONGODB_URI (ודא משתני סביבה ב-Vercel / server/.env)');
+      return;
+    }
+    await connectToMongoDB();
+    console.log('MongoDB: מחובר בהצלחה (serverless/Vercel)');
+  } catch (err) {
+    console.error('MongoDB: שגיאה בחיבור בסביבת serverless –', err?.message || err);
+  }
+})();
 
 // וידוא שתיקיית data קיימת (להרצה מקומית; ב-Vercel אין filesystem מתמשך)
 const dataDir = path.join(__dirname, 'data');
