@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 import { findUserById } from '../models/User.js';
 import { ERROR_MESSAGES, ROLES } from '../components/constants.js';
+import { connectToMongoDB } from '../db/mongodb.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this';
 
@@ -16,6 +17,9 @@ export const authenticateToken = async (req, res, next) => {
   }
 
   try {
+    // חשוב ב-Vercel לוודא שמונגו מחובר לפני שננסה לקרוא את המשתמש במסנן (Middleware)
+    await connectToMongoDB();
+    
     const decoded = jwt.verify(token, JWT_SECRET);
     const user = await findUserById(decoded.id);
     if (!user) {
