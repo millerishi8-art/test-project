@@ -13,8 +13,11 @@ export const useAuth = () => {
 
 // בפיתוח: /api עובר דרך ה-proxy של Vite (vite.config.js) ל-backend. ב-production: /api על אותו דומיין (Vercel).
 const getApiUrl = () => {
-  const url = import.meta.env.VITE_API_URL || '/api';
-  return url.replace(/\/+$/, '');
+  if (import.meta.env.VITE_API_URL) {
+    return import.meta.env.VITE_API_URL.replace(/\/+$/, '');
+  }
+  // בסביבת פרודקשן של ורסל אנחנו מנותבים ל- /api/
+  return '/api';
 };
 
 const API_URL = getApiUrl();
@@ -32,6 +35,7 @@ function logAuthError(location, error, opts = {}) {
   if (isDev && error?.stack) console.error(`[Frontend] ${location} stack:`, error.stack);
 }
 
+// נוודא שאין slash בסוף כדי לא לקבל טעויות של 404 על נתיבים
 axios.defaults.baseURL = API_URL;
 
 export const AuthProvider = ({ children }) => {

@@ -19,10 +19,10 @@ const app = express();
 
 // CORS – תצורה גמישה יותר (כולל Vercel) עם תמיכה ב-Credentials ו-Preflight
 const corsOptions = {
-  origin: true, // מאפשר כל origin (בשלב בדיקות; ניתן להחליף לרשימה מצומצמת בהמשך)
+  origin: ['https://test-project-tan-chi.vercel.app', 'http://localhost:3000', 'http://localhost:5000'], // אפשר להחליף לרשימה ספציפית אבל ב-Vercel חשוב לאפשר את הדומיין
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
 };
 
 app.use(cors(corsOptions));
