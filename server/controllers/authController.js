@@ -313,6 +313,7 @@ export const getMe = async (req, res) => {
  */
 export const verifyCode = async (req, res) => {
   try {
+    await connectToMongoDB();
     const email = (req.body.email || '').trim().toLowerCase();
     const code = (req.body.code || '').trim().replace(/\D/g, '').slice(0, 6);
 
@@ -365,6 +366,7 @@ export const verifyCode = async (req, res) => {
  */
 export const resendVerificationEmail = async (req, res) => {
   try {
+    await connectToMongoDB();
     const email = (req.body.email || '').trim();
     if (!email) {
       return res.status(400).json({ error: ERROR_MESSAGES.AUTH.EMAIL_PASSWORD_REQUIRED });
@@ -408,6 +410,7 @@ export const resendVerificationEmail = async (req, res) => {
  */
 export const requestPhoneVerification = async (req, res) => {
   try {
+    await connectToMongoDB();
     const email = (req.body.email || '').trim();
     if (!email) {
       return res.status(400).json({ error: ERROR_MESSAGES.AUTH.EMAIL_PASSWORD_REQUIRED });
@@ -449,6 +452,7 @@ export const requestPhoneVerification = async (req, res) => {
  */
 export const verifyPhone = async (req, res) => {
   try {
+    await connectToMongoDB();
     const email = (req.body.email || '').trim();
     const code = (req.body.code || '').trim();
     if (!email || !code) {
