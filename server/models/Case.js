@@ -1,89 +1,52 @@
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
+// בקובץ זה נישאר רק עם השלד המקורי או שנעדכן אותו לעבוד מול מונגו
+import { getDb } from '../db/mongodb.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-const dataDir = path.join(__dirname, '..', 'data');
-const casesFile = path.join(dataDir, 'cases.json');
-
-/**
- * מבנה תיק (Case)
- * @typedef {Object} Case
- * @property {string} id
- * @property {string} userId
- * @property {string} benefitType - family | individual | minor
- * @property {string} address
- * @property {string} [familyBackground]
- * @property {Object} personalDetails
- * @property {boolean} [signature]
- * @property {string} status - submitted | pending | approved | rejected | closed
- * @property {string} [detailedAdminStatus] - שלב עיבוד מנהל (תצוגה ללקוח לפי לוגיקה)
- * @property {string} [rejectionReason] - סיבת סגירה/דחייה כשהמנהל לוחץ "הממשלה סגרה"
- * @property {Object} [approvedBenefits] - פרטי הטבות מאושרות (שלב 5 – אושר על ידי הממשלה)
- * @property {string} [approvedBenefits.rentAssistance] - סיוע בשכר דירה (כן/לא או סכום)
- * @property {string} [approvedBenefits.foodStamps] - תלושי מזון (כן/לא או סכום)
- * @property {string} [approvedBenefits.financialAid] - סיוע כלכלי (סכום)
- * @property {string} [approvedBenefits.totalDeposited] - סה״כ כסף שנכנס לחשבון
- * @property {string} createdAt - ISO date
- * @property {string} renewalDate - ISO date
- * @property {boolean} isRenewed
- * @property {string} [lastRenewedAt] - ISO date
- */
-
-export const readCases = () => {
+export const readCases = async () => {
   try {
-    if (fs.existsSync(casesFile)) {
-      return JSON.parse(fs.readFileSync(casesFile, 'utf8'));
-    }
+    const db = getDb();
+    return await db.collection('cases').find({}).toArray();
+  } catch (error) {
+    console.error('Error reading cases from DB:', error);
     return [];
+  }
+};
+
+export const findCaseById = async (id) => {
+  try {
+    const db = getDb();
+    return await db.collection('cases').findOne({ id });
+  } catch (error) {
+    return null;
+  }
+};
+
+export const findCasesByUserId = async (userId) => {
+  try {
+    const db = getDb();
+    return await db.collection('cases').find({ userId }).toArray();
   } catch (error) {
     return [];
   }
 };
 
-export const writeCases = (cases) => {
-  if (!fs.existsSync(dataDir)) {
-    fs.mkdirSync(dataDir, { recursive: true });
-  }
-  fs.writeFileSync(casesFile, JSON.stringify(cases, null, 2));
-};
-
-export const findCaseById = (id) => {
-  const cases = readCases();
-  return cases.find((c) => c.id === id);
-};
-
-export const findCasesByUserId = (userId) => {
-  const cases = readCases();
-  return cases.filter((c) => c.userId === userId);
-};
-
-export const createCase = (caseData) => {
-  const cases = readCases();
-  cases.push(caseData);
-  writeCases(cases);
+export const createCase = async (caseData) => {
+  const db = getDb();
+  await db.collection('cases').insertOne(caseData);
   return caseData;
 };
 
-export const updateCase = (caseId, updates) => {
-  const cases = readCases();
-  const index = cases.findIndex((c) => c.id === caseId);
-  if (index === -1) return null;
-  cases[index] = { ...cases[index], ...updates };
-  writeCases(cases);
-  return cases[index];
+export const updateCase = async (caseId, updates) => {
+  const db = getDb();
+  const result = await db.collection('cases').findOneAndUpdate(
+    { id: caseId },
+    { $set: updates },
+    { returnDocument: 'after' }
+  );
+  return result.value;
 };
 
-/**
- * מוחק תיק לצמיתות לפי מזהה
- */
-export const deleteCase = (caseId) => {
-  const cases = readCases();
-  const index = cases.findIndex((c) => c.id === caseId);
-  if (index === -1) return null;
-  const removed = cases.splice(index, 1)[0];
-  writeCases(cases);
-  return removed;
+export const deleteCase = async (caseId) => {
+  const db = getDb();
+  const result = await db.collection('cases').findOneAndDelete({ id: caseId });
+  return result.value;
 };

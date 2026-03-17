@@ -7,6 +7,7 @@ import {
 } from '../models/Case.js';
 import { CASE_STATUS, ERROR_MESSAGES, SUCCESS_MESSAGES, RENEWAL_MONTHS } from '../components/constants.js';
 import { uploadToSupabase } from '../services/supabaseStorage.js';
+import { connectToMongoDB } from '../db/mongodb.js';
 
 function isBase64DataUrl(str) {
   return typeof str === 'string' && str.trim().startsWith('data:image');
@@ -28,6 +29,7 @@ async function resolveImageField(value, folder = 'cases') {
  */
 export const submitCase = async (req, res) => {
   try {
+    await connectToMongoDB();
     const { benefitType, address, familyBackground, personalDetails, signature, signatoryName, signatureImage, idCardPhoto, idCardAnnex, attachments: attachmentsRaw, documentType } = req.body;
 
     if (!benefitType || !address || !personalDetails) {
@@ -67,7 +69,7 @@ export const submitCase = async (req, res) => {
       isRenewed: false,
     };
 
-    createCase(newCase);
+    await createCase(newCase);
     res.status(201).json({
       message: SUCCESS_MESSAGES.CASES.SUBMITTED,
       case: newCase,
@@ -81,18 +83,25 @@ export const submitCase = async (req, res) => {
 /**
  * קבלת תיקים של המשתמש המחובר
  */
-export const getMyCases = (req, res) => {
-  const userCases = findCasesByUserId(req.user.id);
-  res.json(userCases);
+export const getMyCases = async (req, res) => {
+  try {
+    await connectToMongoDB();
+    const userCases = await findCasesByUserId(req.user.id);
+    res.json(userCases);
+  } catch (error) {
+    console.error('Error fetching user cases:', error);
+    res.status(500).json({ error: 'שגיאה בשליפת התיקים' });
+  }
 };
 
 /**
  * חידוש תיק
  */
-export const renewCase = (req, res) => {
+export const renewCase = async (req, res) => {
   try {
+    await connectToMongoDB();
     const { caseId } = req.params;
-    const cases = readCases();
+    const cases = await readCases();
     const caseIndex = cases.findIndex((c) => c.id === caseId && c.userId === req.user.id);
 
     if (caseIndex === -1) {
@@ -102,7 +111,7 @@ export const renewCase = (req, res) => {
     const renewalDate = new Date();
     renewalDate.setMonth(renewalDate.getMonth() + RENEWAL_MONTHS);
 
-    const updated = updateCase(caseId, {
+    const updated = await updateCase(caseId, {
       renewalDate: renewalDate.toISOString(),
       isRenewed: true,
       lastRenewedAt: new Date().toISOString(),
