@@ -33,7 +33,7 @@ app.use(express.json({ limit: '10mb' }));
 
 // חיבור MongoDB גם בסביבת Serverless (Vercel) – רץ פעם אחת על cold start
 // אנחנו מפעילים את זה רק אם אנחנו רצים ב-Vercel (VERCEL_ENV קיים) כדי למנוע כפילויות עם server.js
-if (process.env.VERCEL) {
+if (process.env.VERCEL || process.env.VERCEL_ENV || process.env.NODE_ENV === 'production') {
   (async () => {
     try {
       const uri = (process.env.MONGODB_URI || '').trim();
