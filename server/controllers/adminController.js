@@ -6,62 +6,75 @@ import { DEFAULT_UNKNOWN, ROLES, CASE_STATUS } from '../components/constants.js'
  * קבלת תיק בודד לפי מזהה (מנהל בלבד) – כולל כל פרטי הטופס
  */
 export const getCaseById = async (req, res) => {
-  const { id } = req.params;
-  const caseData = findCaseById(id);
-  if (!caseData) {
-    return res.status(404).json({ error: 'תיק לא נמצא' });
+  try {
+    const { id } = req.params;
+    const caseData = await findCaseById(id);
+    if (!caseData) {
+      return res.status(404).json({ error: 'תיק לא נמצא' });
+    }
+    const users = await readUsers();
+    const user = users.find((u) => u.id === caseData.userId);
+    res.json({
+      ...caseData,
+      userName: user?.name ?? DEFAULT_UNKNOWN,
+      userEmail: user?.email ?? DEFAULT_UNKNOWN,
+      userPhone: user?.phone ?? DEFAULT_UNKNOWN,
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'שגיאה בשליפת התיק' });
   }
-  const users = await readUsers();
-  const user = users.find((u) => u.id === caseData.userId);
-  res.json({
-    ...caseData,
-    userName: user?.name ?? DEFAULT_UNKNOWN,
-    userEmail: user?.email ?? DEFAULT_UNKNOWN,
-    userPhone: user?.phone ?? DEFAULT_UNKNOWN,
-  });
 };
 
 /**
  * קבלת כל התיקים (עם פרטי משתמש) – נתונים מעושרים מ-models + components
  */
 export const getAllCases = async (req, res) => {
-  const cases = readCases();
-  const users = await readUsers();
+  try {
+    const cases = await readCases();
+    const users = await readUsers();
 
-  const enrichedCases = cases.map((c) => {
-    const user = users.find((u) => u.id === c.userId);
-    return {
-      ...c,
-      userName: user?.name ?? DEFAULT_UNKNOWN,
-      userEmail: user?.email ?? DEFAULT_UNKNOWN,
-      userPhone: user?.phone ?? DEFAULT_UNKNOWN,
-    };
-  });
+    const enrichedCases = cases.map((c) => {
+      const user = users.find((u) => u.id === c.userId);
+      return {
+        ...c,
+        userName: user?.name ?? DEFAULT_UNKNOWN,
+        userEmail: user?.email ?? DEFAULT_UNKNOWN,
+        userPhone: user?.phone ?? DEFAULT_UNKNOWN,
+      };
+    });
 
-  res.json(enrichedCases);
+    res.json(enrichedCases);
+  } catch (error) {
+    res.status(500).json({ error: 'שגיאה בשליפת התיקים' });
+  }
 };
 
 /**
  * קבלת כל המשתמשים (עם מספר תיקים ותיקיהם) – נתונים מ-models
  */
 export const getAllUsers = async (req, res) => {
-  const users = await readUsers();
+  try {
+    const users = await readUsers();
+    
+    // בגלל שזה במערך ולולאה, נעשה את זה בצורה אסינכרונית בטוחה
+    const enrichedUsers = await Promise.all(users.map(async (user) => {
+      const userCases = await findCasesByUserId(user.id);
+      return {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+        createdAt: user.createdAt,
+        casesCount: userCases.length,
+        cases: userCases,
+      };
+    }));
 
-  const enrichedUsers = users.map((user) => {
-    const userCases = findCasesByUserId(user.id);
-    return {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      phone: user.phone,
-      role: user.role,
-      createdAt: user.createdAt,
-      casesCount: userCases.length,
-      cases: userCases,
-    };
-  });
-
-  res.json(enrichedUsers);
+    res.json(enrichedUsers);
+  } catch (error) {
+    res.status(500).json({ error: 'שגיאה בשליפת המשתמשים' });
+  }
 };
 
 /**
@@ -110,11 +123,11 @@ export const updateCaseStatus = async (req, res) => {
     if (!ALLOWED_STATUSES.includes(status)) {
       return res.status(400).json({ error: 'סטטוס לא תקין. אפשרויות: submitted, pending, approved, rejected, closed' });
     }
-    const caseData = findCaseById(id);
+    const caseData = await findCaseById(id);
     if (!caseData) {
       return res.status(404).json({ error: 'תיק לא נמצא' });
     }
-    const updated = updateCase(id, { status });
+    const updated = await updateCase(id, { status });
     return res.json({ message: 'סטטוס התיק עודכן', case: updated });
   } catch (error) {
     console.error('updateCaseStatus error:', error);
@@ -128,11 +141,11 @@ export const updateCaseStatus = async (req, res) => {
 export const confirmCaseCompleted = async (req, res) => {
   try {
     const { id } = req.params;
-    const caseData = findCaseById(id);
+    const caseData = await findCaseById(id);
     if (!caseData) {
       return res.status(404).json({ error: 'תיק לא נמצא' });
     }
-    const updated = updateCase(id, {
+    const updated = await updateCase(id, {
       adminConfirmedCompleted: true,
       adminConfirmedAt: new Date().toISOString(),
     });
@@ -165,7 +178,7 @@ export const updateCaseProcessing = async (req, res) => {
     if (!Number.isInteger(stageNum) || stageNum < 1 || stageNum > 5) {
       return res.status(400).json({ error: 'סטטוס לא תקין. שלב חייב להיות 1–5.' });
     }
-    const caseData = findCaseById(id);
+    const caseData = await findCaseById(id);
     if (!caseData) {
       return res.status(404).json({ error: 'תיק לא נמצא' });
     }
@@ -197,7 +210,7 @@ export const updateCaseProcessing = async (req, res) => {
       if (stageNum !== 4) updates.rejectionReason = null;
       updates.approvedBenefits = null;
     }
-    const updated = updateCase(id, updates);
+    const updated = await updateCase(id, updates);
     return res.json({ message: 'סטטוס העיבוד עודכן', case: updated });
   } catch (error) {
     console.error('updateCaseProcessing error:', error);
@@ -211,11 +224,11 @@ export const updateCaseProcessing = async (req, res) => {
 export const deleteCasePermanent = async (req, res) => {
   try {
     const { id } = req.params;
-    const caseData = findCaseById(id);
+    const caseData = await findCaseById(id);
     if (!caseData) {
       return res.status(404).json({ error: 'תיק לא נמצא' });
     }
-    const removed = deleteCase(id);
+    const removed = await deleteCase(id);
     if (!removed) {
       return res.status(500).json({ error: 'שגיאה במחיקת התיק' });
     }
