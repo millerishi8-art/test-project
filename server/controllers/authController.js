@@ -6,6 +6,7 @@ import { findUserByEmail, findUserById, createUser, updateUserById, sanitizeUser
 import { ROLES, ERROR_MESSAGES, SUCCESS_MESSAGES } from '../components/constants.js';
 import { sendVerificationCodeEmail, sendPasswordResetCodeEmail } from '../services/email.js';
 import { sendVerificationSms } from '../services/sms.js';
+import { connectToMongoDB } from '../db/mongodb.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this';
 const isDev = process.env.NODE_ENV !== 'production';
@@ -59,6 +60,9 @@ function phoneCodeExpiresAt() {
  */
 export const register = async (req, res) => {
   try {
+    // בVercel, המשתנים לפעמים לא זמינים מיד או שהחיבור ל-DB לא הושלם. נוודא חיבור פה גם.
+    await connectToMongoDB();
+
     if (!ROLES?.USER || !ERROR_MESSAGES?.AUTH?.FIELDS_REQUIRED) {
       console.error('[Backend] Registration: ROLES or ERROR_MESSAGES missing – check server/components/constants.js');
       return res.status(500).json({ error: ERROR_MESSAGES?.SERVER?.REGISTRATION || 'שגיאת שרת בהרשמה' });
@@ -151,7 +155,7 @@ export const register = async (req, res) => {
   } catch (error) {
     const errMsg = error?.message || String(error);
     const errCode = error?.code;
-    const isDbError = errMsg.includes('MongoDB') || errMsg.includes('לא מחובר') || errCode === 'ECONNREFUSED' || errMsg.includes('E11000') || errMsg.includes('duplicate key');
+    const isDbError = errMsg.includes('MongoDB') || errMsg.includes('לא מחובר') || errCode === 'ECONNREFUSED' || errMsg.includes('E11000') || errMsg.includes('duplicate key') || errMsg.includes('getaddrinfo') || errMsg.includes('timeout');
     const status = isDbError ? 503 : 500;
     console.error('[Backend] Registration (outer catch) – root cause of 500:', errMsg);
     if (isDev && error?.stack) console.error('[Backend] Registration stack:', error.stack);
@@ -174,6 +178,8 @@ export const register = async (req, res) => {
  */
 export const login = async (req, res) => {
   try {
+    // בVercel, המשתנים לפעמים לא זמינים מיד או שהחיבור ל-DB לא הושלם. נוודא חיבור פה גם.
+    await connectToMongoDB();
     if (!ERROR_MESSAGES?.AUTH?.EMAIL_PASSWORD_REQUIRED) {
       console.error('[Backend] Login: ERROR_MESSAGES missing – check server/components/constants.js');
       return res.status(500).json({ error: 'שגיאת שרת בהתחברות' });

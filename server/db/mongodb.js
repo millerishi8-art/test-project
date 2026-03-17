@@ -19,21 +19,39 @@ function getConnectionUri() {
  * מתחבר ל-MongoDB Atlas ומחזיר את ה-DB.
  * חובה: MONGODB_URI ב-.env. אופציונלי: MONGODB_DB_NAME.
  */
+let isConnecting = false;
+let connectionPromise = null;
+
 export async function connectToMongoDB() {
   if (db) return db;
-
-  const uri = getConnectionUri();
-  client = new MongoClient(uri, { serverSelectionTimeoutMS: 20000 });
-
-  try {
-    await client.connect();
-    db = client.db(DB_NAME);
-    console.log('MongoDB: חיבור ל-DB הצליח');
-    return db;
-  } catch (err) {
-    console.error('MongoDB: שגיאה בחיבור', err.message);
-    throw err;
+  
+  if (isConnecting && connectionPromise) {
+    return connectionPromise;
   }
+  
+  isConnecting = true;
+  connectionPromise = (async () => {
+    try {
+      const uri = getConnectionUri();
+      client = new MongoClient(uri, { 
+        serverSelectionTimeoutMS: 5000, // הקטנתי ל-5 שניות לזיהוי מהיר יותר ב-Vercel
+        connectTimeoutMS: 10000
+      });
+      
+      await client.connect();
+      db = client.db(DB_NAME);
+      console.log('MongoDB: חיבור ל-DB הצליח');
+      isConnecting = false;
+      return db;
+    } catch (err) {
+      isConnecting = false;
+      connectionPromise = null;
+      console.error('MongoDB: שגיאה בחיבור', err.message);
+      throw err;
+    }
+  })();
+  
+  return connectionPromise;
 }
 
 /**

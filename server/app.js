@@ -32,22 +32,11 @@ app.options('*', cors(corsOptions)); // טיפול בבקשות OPTIONS (Preflig
 app.use(express.json({ limit: '10mb' }));
 
 // חיבור MongoDB גם בסביבת Serverless (Vercel) – רץ פעם אחת על cold start
-// אנחנו מפעילים את זה רק אם אנחנו רצים ב-Vercel (VERCEL_ENV קיים) כדי למנוע כפילויות עם server.js
-if (process.env.VERCEL || process.env.VERCEL_ENV || process.env.NODE_ENV === 'production') {
-  (async () => {
-    try {
-      const uri = (process.env.MONGODB_URI || '').trim();
-      if (!uri) {
-        console.log('MongoDB: לא הוגדר MONGODB_URI (ודא משתני סביבה ב-Vercel / server/.env)');
-        return;
-      }
-      await connectToMongoDB();
-      console.log('MongoDB: מחובר בהצלחה (serverless/Vercel)');
-    } catch (err) {
-      console.error('MongoDB: שגיאה בחיבור בסביבת serverless –', err?.message || err);
-    }
-  })();
-}
+// אנחנו מפעילים את זה רק אם אנחנו רצים ב-Vercel או בסביבת פרודקשן כדי למנוע כפילויות עם server.js
+let dbPromise;
+dbPromise = connectToMongoDB()
+  .then(() => console.log('MongoDB: מחובר בהצלחה (serverless/Vercel)'))
+  .catch(err => console.error('MongoDB: שגיאה בחיבור בסביבת serverless –', err?.message || err));
 
 // וידוא שתיקיית data קיימת (להרצה מקומית; ב-Vercel אין filesystem מתמשך)
 const dataDir = path.join(__dirname, 'data');
