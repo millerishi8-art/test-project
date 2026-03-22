@@ -118,6 +118,13 @@
   line-height: 1.6;
 }
 
+.signature-section-intro {
+  margin: 0 0 1rem;
+  color: #555;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
 .signature-section .signature-block {
   margin-top: 1.25rem;
   padding: 1.25rem;

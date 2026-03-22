@@ -5,19 +5,26 @@ import {
   createCase,
   updateCase,
 } from '../models/Case.js';
-import { CASE_STATUS, ERROR_MESSAGES, SUCCESS_MESSAGES, RENEWAL_MONTHS } from '../components/constants.js';
+import {
+  CASE_STATUS,
+  ERROR_MESSAGES,
+  SUCCESS_MESSAGES,
+  RENEWAL_MONTHS,
+  FOOD_STAMPS_DECLARATIONS_HEBREW,
+} from '../components/constants.js';
 import { uploadToSupabase } from '../services/supabaseStorage.js';
 import { connectToMongoDB } from '../db/mongodb.js';
 
 function isBase64DataUrl(str) {
-  return typeof str === 'string' && str.trim().startsWith('data:image');
+  return typeof str === 'string' && /^data:[^;]+;base64,/i.test(str.trim());
 }
 
-async function resolveImageField(value, folder = 'cases') {
+async function resolveMediaField(value, folder = 'cases') {
   if (!value || typeof value !== 'string') return null;
   if (isBase64DataUrl(value)) {
-    const baseName = (folder.split('/').pop() || 'image').replace(/\s+/g, '-');
-    const fileName = `${baseName}.png`;
+    const baseName = (folder.split('/').pop() || 'file').replace(/\s+/g, '-');
+    const isPdf = value.trim().toLowerCase().startsWith('data:application/pdf');
+    const fileName = `${baseName}.${isPdf ? 'pdf' : 'png'}`;
     const path = await uploadToSupabase(value, fileName);
     return path || value;
   }
@@ -27,12 +34,75 @@ async function resolveImageField(value, folder = 'cases') {
 /**
  * שליחת תיק חדש
  */
+function normalizePersonalDetails(body) {
+  let { personalDetails, address, fullName } = body;
+  if (personalDetails && typeof personalDetails === 'object' && !Array.isArray(personalDetails)) {
+    return { personalDetails, address: address || personalDetails.address };
+  }
+  if (fullName && body.dob) {
+    const {
+      fullName: fn,
+      dob,
+      birthPlace,
+      fatherName,
+      motherName,
+      maritalStatus,
+      dependentsCount,
+      additionalCitizenship,
+      previousCase,
+      activeCase,
+      caseEmail,
+      casePassword,
+      dec1,
+      dec2,
+      dec3,
+      dec4,
+    } = body;
+    return {
+      address,
+      personalDetails: {
+        form: 'food_stamps_eligibility',
+        fullName: fn,
+        dob,
+        birthPlace,
+        fatherName,
+        motherName,
+        maritalStatus,
+        dependentsCount,
+        additionalCitizenship,
+        previousCase,
+        activeCase,
+        caseEmail: caseEmail || '',
+        casePassword: casePassword || '',
+        declarationsAccepted: { dec1, dec2, dec3, dec4 },
+      },
+    };
+  }
+  if (typeof personalDetails === 'string' && personalDetails.trim()) {
+    return { personalDetails, address };
+  }
+  return { personalDetails: null, address };
+}
+
 export const submitCase = async (req, res) => {
   try {
     await connectToMongoDB();
-    const { benefitType, address, familyBackground, personalDetails, signature, signatoryName, signatureImage, idCardPhoto, idCardAnnex, attachments: attachmentsRaw, documentType } = req.body;
+    const {
+      familyBackground,
+      signature,
+      signatoryName,
+      signatureImage,
+      idCardPhoto,
+      idCardAnnex,
+      attachments: attachmentsRaw,
+      documentType,
+    } = req.body;
 
-    if (!benefitType || !address || !personalDetails) {
+    const { personalDetails: pdNorm, address: addrNorm } = normalizePersonalDetails(req.body);
+    const benefitType = req.body.benefitType;
+    const address = addrNorm || req.body.address;
+
+    if (!benefitType || !address || !pdNorm) {
       return res.status(400).json({ error: ERROR_MESSAGES.CASES.REQUIRED_FIELDS });
     }
 
@@ -41,12 +111,22 @@ export const submitCase = async (req, res) => {
     const signedAt = new Date().toISOString();
 
     const attachmentsArray = Array.isArray(attachmentsRaw) ? attachmentsRaw : [];
+    const attachmentPromises = attachmentsArray.map((item) => {
+      const raw = typeof item === 'string' ? item : item?.data;
+      const cat = typeof item === 'object' && item?.category ? String(item.category) : 'general';
+      const safeCat = cat.replace(/[^a-z0-9_-]/gi, '') || 'general';
+      return resolveMediaField(raw, `cases/attachments/${safeCat}`);
+    });
+
     const [signatureImageUrl, idCardPhotoUrl, idCardAnnexUrl, ...attachmentUrls] = await Promise.all([
-      resolveImageField(signatureImage, 'cases/signatures'),
-      resolveImageField(idCardPhoto, 'cases/id-cards'),
-      resolveImageField(idCardAnnex, 'cases/id-annex'),
-      ...attachmentsArray.map((img) => resolveImageField(img, 'cases/attachments')),
+      resolveMediaField(signatureImage, 'cases/signatures'),
+      resolveMediaField(idCardPhoto, 'cases/id-cards'),
+      resolveMediaField(idCardAnnex, 'cases/id-annex'),
+      ...attachmentPromises,
     ]);
+
+    const declarationsHebrew =
+      pdNorm && pdNorm.form === 'food_stamps_eligibility' ? { ...FOOD_STAMPS_DECLARATIONS_HEBREW } : null;
 
     const newCase = {
       id: uuidv4(),
@@ -54,13 +134,18 @@ export const submitCase = async (req, res) => {
       benefitType,
       address,
       familyBackground: familyBackground || '',
-      personalDetails,
+      personalDetails: pdNorm,
+      declarationsHebrew,
       signature: signature || false,
       signatoryName: (signatoryName || '').trim() || null,
       signatureImage: signatureImageUrl || null,
       idCardPhoto: idCardPhotoUrl || null,
       idCardAnnex: idCardAnnexUrl || null,
       attachments: attachmentUrls.filter(Boolean),
+      attachmentMeta: attachmentsArray.map((item, i) => ({
+        category: typeof item === 'object' && item?.category ? item.category : 'general',
+        path: attachmentUrls[i] || null,
+      })),
       documentType: documentType === 'license' || documentType === 'passport' ? documentType : 'id',
       signedAt: (signatoryName && (signatoryName + '').trim()) || signatureImageUrl ? signedAt : null,
       status: CASE_STATUS.SUBMITTED,

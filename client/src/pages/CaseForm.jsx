@@ -12,12 +12,13 @@ const SIGNATURE_PAD_HEIGHT = 160;
 
 const CaseForm = () => {
   const { type } = useParams();
+  /** Food Stamps extended rules (uploads, credentials, English-only §1) apply only to individual benefit. */
+  const isFoodStampsIndividual = type === 'individual';
   const navigate = useNavigate();
   const { token } = useAuth();
   const { language, toggleLanguage } = useLanguage();
   const t = caseFormTranslations[language];
   const canvasRef = useRef(null);
-  const fileInputRef = useRef(null);
   const [formData, setFormData] = useState({
     // Section 1
     fullName: '',
@@ -48,15 +49,9 @@ const CaseForm = () => {
     signatoryName: '',
     signatureImage: ''
   });
-  const [attachments, setAttachments] = useState([]); // { id, data } base64
-  const [documentType, setDocumentType] = useState('id'); // id | license | passport
+  /** @type {{ id: string, data: string, category: 'birth'|'ssn'|'passport'|'payment' }[]} */
+  const [attachments, setAttachments] = useState([]);
   const [isDrawing, setIsDrawing] = useState(false);
-
-  const documentTypeOptions = [
-    { value: 'id', labelKey: 'docTypeId' },
-    { value: 'license', labelKey: 'docTypeLicense' },
-    { value: 'passport', labelKey: 'docTypePassport' },
-  ];
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [loadingBenefit, setLoadingBenefit] = useState(true);
@@ -168,14 +163,15 @@ const CaseForm = () => {
       reader.readAsDataURL(file);
     });
 
-  const handleDeviceFiles = async (e) => {
+  const handleCategoryFiles = (category) => async (e) => {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
-    const imageFiles = files.filter((f) => f.type.startsWith('image/') || f.type === 'application/pdf');
+    const okFiles = files.filter((f) => f.type.startsWith('image/') || f.type === 'application/pdf');
     const newItems = await Promise.all(
-      imageFiles.map(async (file) => ({
+      okFiles.map(async (file) => ({
         id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-        data: await readFileAsDataUrl(file)
+        data: await readFileAsDataUrl(file),
+        category,
       }))
     );
     setAttachments((prev) => [...prev, ...newItems]);
@@ -230,8 +226,8 @@ const CaseForm = () => {
           ...formData,
           signatoryName: (formData.signatoryName || '').trim() || undefined,
           signatureImage: formData.signatureImage || undefined,
-          attachments: attachments.map((a) => a.data),
-          documentType,
+          attachments: attachments.map((a) => ({ data: a.data, category: a.category })),
+          documentType: 'passport',
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -268,22 +264,57 @@ const CaseForm = () => {
       !formData.motherName ||
       !formData.maritalStatus ||
       formData.dependentsCount === '' ||
+      Number(formData.dependentsCount) < 0 ||
       !formData.additionalCitizenship
     ) {
       setError(t.errorFillRequired);
       return;
     }
 
-    // Validate English only for Section 1 fields
-    const englishOnlyRegex = /^[A-Za-z0-9\s.,#'/-]+$/;
-    if (
-      !englishOnlyRegex.test(formData.fullName) ||
-      !englishOnlyRegex.test(formData.address) ||
-      !englishOnlyRegex.test(formData.fatherName) ||
-      !englishOnlyRegex.test(formData.motherName)
-    ) {
-      setError(t.errorEnglishOnly);
-      return;
+    if (isFoodStampsIndividual && (formData.previousCase || formData.activeCase)) {
+      const em = (formData.caseEmail || '').trim();
+      const pw = (formData.casePassword || '').trim();
+      if (!em || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) {
+        setError(t.errorCaseEmailInvalid);
+        return;
+      }
+      if (!pw) {
+        setError(t.errorCasePasswordRequired);
+        return;
+      }
+    }
+
+    if (isFoodStampsIndividual) {
+      if (!attachments.some((a) => a.category === 'birth')) {
+        setError(t.errorMissingBirthCerts);
+        return;
+      }
+      if (!attachments.some((a) => a.category === 'ssn')) {
+        setError(t.errorMissingSSN);
+        return;
+      }
+      if (!attachments.some((a) => a.category === 'passport')) {
+        setError(t.errorMissingPassport);
+        return;
+      }
+      if (!attachments.some((a) => a.category === 'payment')) {
+        setError(t.errorMissingPayment);
+        return;
+      }
+    }
+
+    // Section 1: English characters only (Food Stamps / individual)
+    if (isFoodStampsIndividual) {
+      const englishOnlyRegex = /^[A-Za-z0-9\s.,#'/-]+$/;
+      if (
+        !englishOnlyRegex.test(formData.fullName) ||
+        !englishOnlyRegex.test(formData.address) ||
+        !englishOnlyRegex.test(formData.fatherName) ||
+        !englishOnlyRegex.test(formData.motherName)
+      ) {
+        setError(t.errorEnglishOnly);
+        return;
+      }
     }
 
     if (!formData.dec1 || !formData.dec2 || !formData.dec3 || !formData.dec4 || !formData.signature) {
@@ -331,7 +362,9 @@ const CaseForm = () => {
 
       <div className="case-form-card">
         <h1>{t.pageTitle} – {benefitTitle}</h1>
-        <p className="form-subtitle">{t.formSubtitle}</p>
+        <p className="form-subtitle">
+          {type === 'individual' ? t.formSubtitleFoodStamps : t.formSubtitle}
+        </p>
 
         <form onSubmit={handleSubmit}>
           <div className="form-section">
@@ -538,7 +571,7 @@ const CaseForm = () => {
                       accept="image/*,.pdf"
                       multiple
                       className="hidden-file-input"
-                      onChange={handleDeviceFiles}
+                      onChange={handleCategoryFiles('birth')}
                       id="upload-birth"
                     />
                     <button
@@ -560,7 +593,7 @@ const CaseForm = () => {
                       accept="image/*,.pdf"
                       multiple
                       className="hidden-file-input"
-                      onChange={handleDeviceFiles}
+                      onChange={handleCategoryFiles('ssn')}
                       id="upload-ssn"
                     />
                     <button
@@ -582,7 +615,7 @@ const CaseForm = () => {
                       accept="image/*,.pdf"
                       multiple
                       className="hidden-file-input"
-                      onChange={handleDeviceFiles}
+                      onChange={handleCategoryFiles('passport')}
                       id="upload-passport"
                     />
                     <button
@@ -603,7 +636,7 @@ const CaseForm = () => {
                       accept="image/*,.pdf"
                       multiple
                       className="hidden-file-input"
-                      onChange={handleDeviceFiles}
+                      onChange={handleCategoryFiles('payment')}
                       id="upload-payment"
                     />
                     <button
@@ -683,6 +716,7 @@ const CaseForm = () => {
 
           <div className="form-section signature-section">
             <h2>{t.sectionSignature}</h2>
+            <p className="signature-section-intro">{t.sectionSignatureIntro}</p>
             <div className="checkbox-group">
               <input
                 type="checkbox"

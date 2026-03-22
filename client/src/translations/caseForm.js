@@ -5,6 +5,8 @@ export const caseFormTranslations = {
   he: {
     pageTitle: 'מילוי פרטים',
     formSubtitle: 'אנא מלא את כל הפרטים הנדרשים',
+    formSubtitleFoodStamps:
+      'טופס זכאות לפוד סטאמפס (Food Stamps) – כל השדות הנדרשים בשתי השפות; שדות בפרק הראשון באנגלית בלבד.',
     
     // Section 1: Personal Information & Identification
     sectionPersonal: 'פרטים אישיים וזיהוי',
@@ -68,11 +70,18 @@ export const caseFormTranslations = {
     addToGoogleCalendar: 'הוסף תאריך חידוש ל-Google Calendar 🗓️',
     renewalAddedLabel: 'תאריך החידוש נוסף ללוח השנה',
     renewalRequiredFirst: 'חובה להוסיף תאריך חידוש ללוח השנה לפני שליחת הטופס.',
+    renewalAlertBody:
+      'חשוב לזכור לחדש את הקייס בזמן שהוקצב לך. אם לא תחדש בזמן, הקייס עלול להיסגר ויהיו עלויות נוספות לפתיחה מחדש.',
+    renewalAlertTitle: 'אל תשכח לחדש את הקייס',
+    renewalAlertConfirm: 'אישור',
     reminderBannerTitle: '⚠️ תזכורת חשובה',
     reminderBannerText: 'אל תשכח לחדש את הקייס בזמן שהוקצב לך. במידה ולא תחדש את הקייס בזמן, הקייס עלול להיסגר ויהיו עלויות נוספות לפתיחת קייס מחדש. עליך האחריות לזכור לחדש את הקייס.',
     reminderBannerButton: 'שמור תאריך חידוש בלוח שנה 🗓️',
-    
-    sectionSignature: 'אישור וחתימה',
+
+    sectionSignature: 'חתימה דיגיטלית',
+    sectionSignatureIntro: 'חתום בתיבה או צרף קובץ חתימה (לפי הצורך).',
+    checkboxLabel:
+      'אני מאשר את כל הפרטים, את כל ההצהרות לעיל, ומסכים לסגירת התיק לאחר השליחה *',
     labelSignatoryName: 'שם מלא כחתימה *',
     placeholderSignatoryName: 'הזן את שמך המלא לאישור התנאים',
     labelSignatoryDate: 'תאריך:',
@@ -94,6 +103,12 @@ export const caseFormTranslations = {
     errorServerError: 'שגיאת שרת. נסה שוב או בדוק את הטרמינל של השרת.',
     errorSubmit: 'שגיאה בשליחת הטופס.',
     errorEnglishOnly: 'אנא השתמש באותיות באנגלית בלבד בשדה זה.',
+    errorMissingBirthCerts: 'חובה להעלות לפחות קובץ אחד של תעודות לידה.',
+    errorMissingSSN: 'חובה להעלות תצלום כרטיס Social Security (SSN).',
+    errorMissingPassport: 'חובה להעלות תצלום דרכון.',
+    errorMissingPayment: 'חובה להעלות אישור תשלום לסוכן.',
+    errorCaseEmailInvalid: 'נא להזין כתובת מייל תקינה לחשבון הקייס.',
+    errorCasePasswordRequired: 'נא להזין סיסמה לחשבון הקייס (כשסימנת קייס בעבר או קייס פעיל).',
     benefitTitles: {
       family: 'משפחה',
       individual: 'בן אדם יחיד',
@@ -103,6 +118,8 @@ export const caseFormTranslations = {
   en: {
     pageTitle: 'Fill in details',
     formSubtitle: 'Please fill in all required details',
+    formSubtitleFoodStamps:
+      'Food Stamps eligibility form – required fields in both languages; Section 1 inputs must be in English only.',
     
     // Section 1: Personal Information & Identification
     sectionPersonal: 'Personal Information & Identification',
@@ -166,11 +183,18 @@ export const caseFormTranslations = {
     addToGoogleCalendar: 'Add renewal date to Google Calendar 🗓️',
     renewalAddedLabel: 'Renewal date added to calendar',
     renewalRequiredFirst: 'You must add the renewal date to the calendar before submitting the form.',
+    renewalAlertBody:
+      'Remember to renew your case on time. If you miss the deadline, the case may close and reopening may cost extra.',
+    renewalAlertTitle: 'Don\'t forget to renew your case',
+    renewalAlertConfirm: 'OK',
     reminderBannerTitle: '⚠️ Important reminder',
     reminderBannerText: 'Do not forget to renew the case within the time allotted to you. If you do not renew on time, the case may be closed and there will be additional costs to reopen it. You are responsible for remembering to renew the case.',
     reminderBannerButton: 'Save renewal date to calendar 🗓️',
-    
-    sectionSignature: 'Approval and signature',
+
+    sectionSignature: 'Digital signature',
+    sectionSignatureIntro: 'Sign in the box below (or attach a signature file if required).',
+    checkboxLabel:
+      'I confirm all details, all declarations above, and agree to close the case after submission *',
     labelSignatoryName: 'Full name as signature *',
     placeholderSignatoryName: 'Enter your full name to approve the terms',
     labelSignatoryDate: 'Date:',
@@ -192,6 +216,12 @@ export const caseFormTranslations = {
     errorServerError: 'Server error. Try again or check the server terminal.',
     errorSubmit: 'Error submitting the form.',
     errorEnglishOnly: 'Please use English characters only in this field.',
+    errorMissingBirthCerts: 'Please upload at least one birth certificate file.',
+    errorMissingSSN: 'Please upload a photo of your Social Security card (SSN).',
+    errorMissingPassport: 'Please upload a passport photo.',
+    errorMissingPayment: 'Please upload proof of payment to the agent.',
+    errorCaseEmailInvalid: 'Please enter a valid email for the case account.',
+    errorCasePasswordRequired: 'Please enter the case account password (when past or active case is selected).',
     benefitTitles: {
       family: 'Family',
       individual: 'Single person',
