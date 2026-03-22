@@ -264,9 +264,20 @@
 /* Mobile Adjustments */
 @media (max-width: 600px) {
   .testimonial-ticker-widget {
-    width: calc(100% - 3rem);
-    right: 1.5rem;
-    left: 1.5rem;
-    bottom: 5.5rem; /* Lift above whatsapp fixed button */
+    width: calc(100% - 1.5rem - env(safe-area-inset-left, 0px) - env(safe-area-inset-right, 0px));
+    max-width: 100%;
+    right: max(0.75rem, env(safe-area-inset-right, 0px));
+    left: max(0.75rem, env(safe-area-inset-left, 0px));
+    bottom: calc(5.75rem + env(safe-area-inset-bottom, 0px));
+    border-radius: 16px;
+    box-shadow: 0 10px 36px rgba(0, 0, 0, 0.14);
+  }
+
+  .ticker-scroll-area {
+    height: 160px;
+  }
+
+  .ticker-title {
+    font-size: 0.95rem;
   }
 }

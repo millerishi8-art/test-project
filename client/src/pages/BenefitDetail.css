@@ -333,3 +333,30 @@
     opacity: 0.5;
   }
 }
+
+@media (max-width: 768px) {
+  .benefit-detail-container {
+    padding: 1.25rem 1rem;
+    padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .benefit-detail-translate-btn {
+    top: calc(4.5rem + env(safe-area-inset-top, 0px));
+    left: 0.65rem;
+    right: auto;
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+    border-radius: 999px;
+  }
+
+  [dir='rtl'] .benefit-detail-translate-btn {
+    left: auto;
+    right: 0.65rem;
+  }
+
+  .benefit-product-description {
+    padding: 1.25rem 1rem;
+    font-size: 1.02rem;
+    line-height: 1.65;
+  }
+}

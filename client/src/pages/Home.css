@@ -175,3 +175,67 @@
     opacity: 0.5;
   }
 }
+
+/* —— מובייל: קריאות, מגע, רשת —— */
+@media (max-width: 768px) {
+  .home-container {
+    padding: 1.25rem 1rem;
+    padding-bottom: calc(6rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .home-translate-btn {
+    top: calc(4.25rem + env(safe-area-inset-top, 0px));
+    right: 0.75rem;
+    padding: 0.55rem 1rem;
+    font-size: 0.95rem;
+    border-radius: 999px;
+    box-shadow: 0 4px 16px rgba(30, 107, 184, 0.2);
+  }
+
+  [dir='rtl'] .home-translate-btn {
+    right: auto;
+    left: 0.75rem;
+  }
+
+  .home-header h1 {
+    font-size: clamp(1.5rem, 6vw, 2rem);
+    line-height: 1.25;
+  }
+
+  .home-header p {
+    font-size: 1.05rem;
+    line-height: 1.65;
+  }
+
+  .home-case-status-btn {
+    width: 100%;
+    max-width: 100%;
+    padding: 1rem 1.25rem;
+    font-size: 1.05rem;
+    min-height: 52px;
+    border-radius: 14px;
+  }
+
+  .benefits-grid {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+  }
+
+  .benefit-cube {
+    padding: 1.75rem 1.25rem;
+    border-radius: 18px;
+  }
+
+  .benefit-cube h2 {
+    font-size: 1.45rem;
+  }
+
+  .cube-icon {
+    font-size: 3rem;
+  }
+
+  .cube-description {
+    font-size: 1.02rem;
+    line-height: 1.65;
+  }
+}

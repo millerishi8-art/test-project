@@ -1,7 +1,7 @@
 .whatsapp-float-wrap {
   position: fixed;
-  bottom: 1.5rem;
-  right: 1.5rem;
+  bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
+  right: calc(1rem + env(safe-area-inset-right, 0px));
   z-index: 9998;
   display: flex;
   flex-direction: column;
@@ -10,7 +10,7 @@
 
 [dir="rtl"] .whatsapp-float-wrap {
   right: auto;
-  left: 1.5rem;
+  left: calc(1rem + env(safe-area-inset-left, 0px));
   align-items: flex-start;
 }
 

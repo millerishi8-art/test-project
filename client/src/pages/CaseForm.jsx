@@ -19,9 +19,31 @@ const CaseForm = () => {
   const canvasRef = useRef(null);
   const fileInputRef = useRef(null);
   const [formData, setFormData] = useState({
+    // Section 1
+    fullName: '',
+    dob: '',
+    birthPlace: 'Israel',
     address: '',
-    familyBackground: '',
-    personalDetails: '',
+    fatherName: '',
+    motherName: '',
+    
+    // Section 2
+    maritalStatus: 'Single',
+    dependentsCount: 0,
+    additionalCitizenship: 'No',
+    
+    // Section 3
+    previousCase: false,
+    activeCase: false,
+    caseEmail: '',
+    casePassword: '',
+
+    // Section 5
+    dec1: false,
+    dec2: false,
+    dec3: false,
+    dec4: false,
+
     signature: false,
     signatoryName: '',
     signatureImage: ''
@@ -149,7 +171,7 @@ const CaseForm = () => {
   const handleDeviceFiles = async (e) => {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
-    const imageFiles = files.filter((f) => f.type.startsWith('image/'));
+    const imageFiles = files.filter((f) => f.type.startsWith('image/') || f.type === 'application/pdf');
     const newItems = await Promise.all(
       imageFiles.map(async (file) => ({
         id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
@@ -237,11 +259,34 @@ const CaseForm = () => {
     e.preventDefault();
     setError('');
 
-    if (!formData.address || !formData.personalDetails) {
+    if (
+      !formData.fullName ||
+      !formData.dob ||
+      !formData.birthPlace ||
+      !formData.address ||
+      !formData.fatherName ||
+      !formData.motherName ||
+      !formData.maritalStatus ||
+      formData.dependentsCount === '' ||
+      !formData.additionalCitizenship
+    ) {
       setError(t.errorFillRequired);
       return;
     }
-    if (!formData.signature) {
+
+    // Validate English only for Section 1 fields
+    const englishOnlyRegex = /^[A-Za-z0-9\s.,#'/-]+$/;
+    if (
+      !englishOnlyRegex.test(formData.fullName) ||
+      !englishOnlyRegex.test(formData.address) ||
+      !englishOnlyRegex.test(formData.fatherName) ||
+      !englishOnlyRegex.test(formData.motherName)
+    ) {
+      setError(t.errorEnglishOnly);
+      return;
+    }
+
+    if (!formData.dec1 || !formData.dec2 || !formData.dec3 || !formData.dec4 || !formData.signature) {
       setError(t.errorConfirmSignature);
       return;
     }
@@ -291,6 +336,45 @@ const CaseForm = () => {
         <form onSubmit={handleSubmit}>
           <div className="form-section">
             <h2>{t.sectionPersonal}</h2>
+            
+            <div className="form-group">
+              <label>{t.labelFullName}</label>
+              <input
+                type="text"
+                name="fullName"
+                value={formData.fullName}
+                onChange={handleChange}
+                required
+                placeholder={t.placeholderFullName}
+                dir="ltr"
+              />
+            </div>
+
+            <div className="form-group">
+              <label>{t.labelDob}</label>
+              <input
+                type="date"
+                name="dob"
+                value={formData.dob}
+                onChange={handleChange}
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <label>{t.labelBirthPlace}</label>
+              <select
+                name="birthPlace"
+                value={formData.birthPlace}
+                onChange={handleChange}
+                required
+              >
+                <option value="Israel">{t.birthPlaceIsrael}</option>
+                <option value="New York">{t.birthPlaceNY}</option>
+                <option value="Other">{t.birthPlaceOther}</option>
+              </select>
+            </div>
+
             <div className="form-group">
               <label>{t.labelAddress}</label>
               <textarea
@@ -300,79 +384,248 @@ const CaseForm = () => {
                 rows="3"
                 required
                 placeholder={t.placeholderAddress}
+                dir="ltr"
               />
             </div>
 
             <div className="form-group">
-              <label>{t.labelFamilyBackground}</label>
-              <textarea
-                name="familyBackground"
-                value={formData.familyBackground}
-                onChange={handleChange}
-                rows="4"
-                placeholder={t.placeholderFamilyBackground}
-              />
+              <label>{t.labelParentalDetails}</label>
+              <div className="nested-group">
+                <label>{t.labelFatherName}</label>
+                <input
+                  type="text"
+                  name="fatherName"
+                  value={formData.fatherName}
+                  onChange={handleChange}
+                  required
+                  placeholder={t.placeholderFatherName}
+                  dir="ltr"
+                />
+                
+                <label style={{marginTop: '15px'}}>{t.labelMotherName}</label>
+                <input
+                  type="text"
+                  name="motherName"
+                  value={formData.motherName}
+                  onChange={handleChange}
+                  required
+                  placeholder={t.placeholderMotherName}
+                  dir="ltr"
+                />
+              </div>
             </div>
+          </div>
 
+          <div className="form-section">
+            <h2>{t.sectionFamily}</h2>
+            
             <div className="form-group">
-              <label>{t.labelPersonalDetails}</label>
-              <textarea
-                name="personalDetails"
-                value={formData.personalDetails}
+              <label>{t.labelMaritalStatus}</label>
+              <select
+                name="maritalStatus"
+                value={formData.maritalStatus}
                 onChange={handleChange}
-                rows="6"
                 required
-                placeholder={t.placeholderPersonalDetails}
+              >
+                <option value="Single">{t.maritalSingle}</option>
+                <option value="Married living with spouse">{t.maritalMarriedSpouse}</option>
+                <option value="Married living with spouse & children">{t.maritalMarriedChildren}</option>
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label>{t.labelDependents}</label>
+              <input
+                type="number"
+                name="dependentsCount"
+                value={formData.dependentsCount}
+                onChange={handleChange}
+                min="0"
+                required
+                placeholder={t.placeholderDependents}
               />
             </div>
+
+            <div className="form-group">
+              <label>{t.citizenshipQuestion}</label>
+              <div className="radio-group">
+                <label>
+                  <input
+                    type="radio"
+                    name="additionalCitizenship"
+                    value="Yes"
+                    checked={formData.additionalCitizenship === 'Yes'}
+                    onChange={handleChange}
+                  />
+                  {t.citizenshipYes}
+                </label>
+                <label>
+                  <input
+                    type="radio"
+                    name="additionalCitizenship"
+                    value="No"
+                    checked={formData.additionalCitizenship === 'No'}
+                    onChange={handleChange}
+                  />
+                  {t.citizenshipNo}
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <div className="form-section">
+            <h2>{t.sectionHistory}</h2>
+            
+            <div className="checkbox-group">
+              <input
+                type="checkbox"
+                id="previousCase"
+                name="previousCase"
+                checked={formData.previousCase}
+                onChange={handleChange}
+              />
+              <label htmlFor="previousCase">{t.labelPreviousCase}</label>
+            </div>
+
+            <div className="checkbox-group">
+              <input
+                type="checkbox"
+                id="activeCase"
+                name="activeCase"
+                checked={formData.activeCase}
+                onChange={handleChange}
+              />
+              <label htmlFor="activeCase">{t.labelActiveCase}</label>
+            </div>
+
+            {(formData.previousCase || formData.activeCase) && (
+              <div className="form-group nested-group" style={{marginTop: '15px'}}>
+                <label>{t.labelAccessCredentials}</label>
+                
+                <label style={{marginTop: '10px'}}>{t.labelCaseEmail}</label>
+                <input
+                  type="email"
+                  name="caseEmail"
+                  value={formData.caseEmail}
+                  onChange={handleChange}
+                  placeholder={t.placeholderCaseEmail}
+                  dir="ltr"
+                />
+                
+                <label style={{marginTop: '10px'}}>{t.labelCasePassword}</label>
+                <input
+                  type="password"
+                  name="casePassword"
+                  value={formData.casePassword}
+                  onChange={handleChange}
+                  placeholder={t.placeholderCasePassword}
+                  dir="ltr"
+                />
+              </div>
+            )}
           </div>
 
           <div className="form-section images-section">
             <div className="images-section-card">
               <h2 className="images-section-title">{t.sectionImages}</h2>
               <p className="images-section-hint">{t.sectionImagesHint}</p>
-              <div className="document-type-row">
-                <label htmlFor="documentType" className="document-type-label">
-                  {t.labelDocumentType}
-                </label>
-                <select
-                  id="documentType"
-                  value={documentType}
-                  onChange={(e) => setDocumentType(e.target.value)}
-                  className="document-type-select"
-                  aria-label={t.labelDocumentType}
-                >
-                  {documentTypeOptions.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
-                      {t[opt.labelKey]}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="upload-buttons-row">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  className="hidden-file-input"
-                  onChange={handleDeviceFiles}
-                  aria-label={t.uploadFromDevice}
-                />
-                <button
-                  type="button"
-                  className="upload-source-btn device-btn"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <span className="upload-btn-icon">📁</span>
-                  {t.uploadFromDevice}
-                </button>
+              <div className="document-type-row" style={{flexDirection: 'column', alignItems: 'flex-start', gap: '15px'}}>
+                <div style={{width: '100%'}}>
+                  <label className="document-type-label" style={{display: 'block', marginBottom: '5px'}}>{t.labelBirthCertificates}</label>
+                  <div className="upload-buttons-row">
+                    <input
+                      type="file"
+                      accept="image/*,.pdf"
+                      multiple
+                      className="hidden-file-input"
+                      onChange={handleDeviceFiles}
+                      id="upload-birth"
+                    />
+                    <button
+                      type="button"
+                      className="upload-source-btn device-btn"
+                      onClick={() => document.getElementById('upload-birth').click()}
+                    >
+                      <span className="upload-btn-icon">📁</span>
+                      {t.uploadFromDevice}
+                    </button>
+                  </div>
+                </div>
+
+                <div style={{width: '100%'}}>
+                  <label className="document-type-label" style={{display: 'block', marginBottom: '5px'}}>{t.labelSSN}</label>
+                  <div className="upload-buttons-row">
+                    <input
+                      type="file"
+                      accept="image/*,.pdf"
+                      multiple
+                      className="hidden-file-input"
+                      onChange={handleDeviceFiles}
+                      id="upload-ssn"
+                    />
+                    <button
+                      type="button"
+                      className="upload-source-btn device-btn"
+                      onClick={() => document.getElementById('upload-ssn').click()}
+                    >
+                      <span className="upload-btn-icon">📁</span>
+                      {t.uploadFromDevice}
+                    </button>
+                  </div>
+                </div>
+
+                <div style={{width: '100%'}}>
+                  <label className="document-type-label" style={{display: 'block', marginBottom: '5px'}}>{t.labelPassport}</label>
+                  <div className="upload-buttons-row">
+                    <input
+                      type="file"
+                      accept="image/*,.pdf"
+                      multiple
+                      className="hidden-file-input"
+                      onChange={handleDeviceFiles}
+                      id="upload-passport"
+                    />
+                    <button
+                      type="button"
+                      className="upload-source-btn device-btn"
+                      onClick={() => document.getElementById('upload-passport').click()}
+                    >
+                      <span className="upload-btn-icon">📁</span>
+                      {t.uploadFromDevice}
+                    </button>
+                  </div>
+                </div>
+                <div style={{width: '100%'}}>
+                  <label className="document-type-label" style={{display: 'block', marginBottom: '5px'}}>{t.labelProofOfPayment}</label>
+                  <div className="upload-buttons-row">
+                    <input
+                      type="file"
+                      accept="image/*,.pdf"
+                      multiple
+                      className="hidden-file-input"
+                      onChange={handleDeviceFiles}
+                      id="upload-payment"
+                    />
+                    <button
+                      type="button"
+                      className="upload-source-btn device-btn"
+                      onClick={() => document.getElementById('upload-payment').click()}
+                    >
+                      <span className="upload-btn-icon">📁</span>
+                      {t.uploadFromDevice}
+                    </button>
+                  </div>
+                </div>
               </div>
               {attachments.length > 0 && (
                 <div className="attachments-preview">
                   {attachments.map((att) => (
                     <div key={att.id} className="attachment-thumb-wrap">
-                      <img src={att.data} alt="" className="attachment-thumb" />
+                      {att.data.startsWith('data:application/pdf') ? (
+                        <div className="attachment-thumb pdf-thumb">PDF</div>
+                      ) : (
+                        <img src={att.data} alt="" className="attachment-thumb" />
+                      )}
                       <button
                         type="button"
                         className="attachment-remove"
@@ -386,6 +639,26 @@ const CaseForm = () => {
                   ))}
                 </div>
               )}
+            </div>
+          </div>
+
+          <div className="form-section declarations-section">
+            <h2>{t.sectionDeclarations}</h2>
+            <div className="checkbox-group">
+              <input type="checkbox" id="dec1" name="dec1" checked={formData.dec1} onChange={handleChange} required />
+              <label htmlFor="dec1">{t.dec1}</label>
+            </div>
+            <div className="checkbox-group">
+              <input type="checkbox" id="dec2" name="dec2" checked={formData.dec2} onChange={handleChange} required />
+              <label htmlFor="dec2">{t.dec2}</label>
+            </div>
+            <div className="checkbox-group">
+              <input type="checkbox" id="dec3" name="dec3" checked={formData.dec3} onChange={handleChange} required />
+              <label htmlFor="dec3">{t.dec3}</label>
+            </div>
+            <div className="checkbox-group">
+              <input type="checkbox" id="dec4" name="dec4" checked={formData.dec4} onChange={handleChange} required />
+              <label htmlFor="dec4">{t.dec4}</label>
             </div>
           </div>
 
