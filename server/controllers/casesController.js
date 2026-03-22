@@ -57,7 +57,25 @@ function normalizePersonalDetails(body) {
       dec2,
       dec3,
       dec4,
+      signatureLink,
+      familyChildrenDetails,
+      spouseIncluded,
+      spouseHealthStatus,
     } = body;
+
+    let familyChildren = [];
+    if (Array.isArray(familyChildrenDetails)) {
+      familyChildren = familyChildrenDetails.map((c) => ({
+        id: String(c?.id || '')
+          .replace(/[^a-zA-Z0-9_-]/g, '')
+          .slice(0, 80),
+        age: String(c?.age ?? '').slice(0, 20),
+        dob: String(c?.dob ?? '').slice(0, 32),
+        schoolClass: String(c?.schoolClass ?? '').slice(0, 500),
+        medicalIssues: String(c?.medicalIssues ?? '').slice(0, 2000),
+      }));
+    }
+
     return {
       address,
       personalDetails: {
@@ -75,6 +93,16 @@ function normalizePersonalDetails(body) {
         caseEmail: caseEmail || '',
         casePassword: casePassword || '',
         declarationsAccepted: { dec1, dec2, dec3, dec4 },
+        signatureLink: typeof signatureLink === 'string' ? signatureLink.trim() : '',
+        ...(familyChildren.length ? { familyChildren } : {}),
+        ...(spouseIncluded
+          ? {
+              spouse: {
+                passportAndSsnSubmitted: true,
+                healthStatus: String(spouseHealthStatus ?? '').slice(0, 2000),
+              },
+            }
+          : {}),
       },
     };
   }

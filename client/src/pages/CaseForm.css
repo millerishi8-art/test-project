@@ -125,6 +125,102 @@
   line-height: 1.5;
 }
 
+.upload-field-hint {
+  margin: 0 0 0.5rem;
+  font-size: 0.9rem;
+  color: #666;
+  line-height: 1.45;
+}
+
+.subsection-title {
+  margin: 1.25rem 0 0.5rem;
+  font-size: 1.15rem;
+  color: #1e6bb8;
+  font-weight: 600;
+}
+
+.digital-signature-block {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px dashed #e0e0e0;
+}
+
+.family-children-intro {
+  margin: 0 0 1rem;
+  color: #555;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.add-family-child-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-bottom: 1.25rem;
+  padding: 0.65rem 1.25rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #fff;
+  background: #1e6bb8;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  box-shadow: 0 2px 10px rgba(30, 107, 184, 0.3);
+  transition: background 0.2s ease, transform 0.15s ease;
+}
+
+.add-family-child-btn:hover {
+  background: #155a9e;
+  transform: translateY(-1px);
+}
+
+.family-child-card {
+  margin-bottom: 1.5rem;
+  padding: 1.25rem 1.5rem;
+  background: #f5f9ff;
+  border: 2px solid #d0e3f7;
+  border-radius: 14px;
+}
+
+.family-child-card-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #cfe2f5;
+}
+
+.family-child-card-title {
+  margin: 0;
+  font-size: 1.2rem;
+  color: #1e6bb8;
+}
+
+.remove-family-child-btn {
+  padding: 0.4rem 0.9rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #c62828;
+  background: #fff;
+  border: 2px solid #ffcdd2;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.remove-family-child-btn:hover {
+  background: #ffebee;
+}
+
+.child-file-attached {
+  margin: 0.35rem 0 0;
+  font-size: 0.9rem;
+  color: #2e7d32;
+  font-weight: 600;
+}
+
 .signature-section .signature-block {
   margin-top: 1.25rem;
   padding: 1.25rem;

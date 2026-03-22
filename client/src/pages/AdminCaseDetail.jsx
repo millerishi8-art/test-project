@@ -207,6 +207,16 @@ const AdminCaseDetail = () => {
             <span className="admin-case-detail-label">פרטים נוספים</span>
             <p className="admin-case-detail-value admin-case-detail-text">{c.personalDetails || '–'}</p>
           </div>
+          {typeof c.personalDetails === 'object' &&
+            c.personalDetails !== null &&
+            String(c.personalDetails?.spouse?.healthStatus || '').trim() !== '' && (
+              <div className="admin-case-detail-field admin-case-detail-field-block">
+                <span className="admin-case-detail-label">מצב בריאותי (בן/בת זוג)</span>
+                <p className="admin-case-detail-value admin-case-detail-text">
+                  {c.personalDetails.spouse.healthStatus}
+                </p>
+              </div>
+            )}
 
           {(c.idCardPhoto || c.idCardAnnex || (Array.isArray(c.attachments) && c.attachments.length > 0)) && (
             <>
