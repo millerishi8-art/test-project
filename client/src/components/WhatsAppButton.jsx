@@ -1,6 +1,6 @@
 import './WhatsAppButton.css';
 
-const WHATSAPP_URL = 'https://wa.me/972586770670';
+const WHATSAPP_URL = 'https://wa.me/19296518827';
 
 /** Inline WhatsApp logo SVG */
 function WhatsAppIcon({ size = 28 }) {
