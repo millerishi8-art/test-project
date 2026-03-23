@@ -1,6 +1,7 @@
 /**
- * Standalone script: set user with email "millerbitoach@gmail.com" to role "admin".
- * Loads MONGODB_URI from server/.env. Run from server folder: node make-admin.js
+ * Standalone script: set user by email to role "admin".
+ * Loads MONGODB_URI from server/.env. Run: node make-admin.js [email]
+ * Default email: millerbitoach@gmail.com
  */
 
 import { MongoClient } from 'mongodb';
@@ -11,7 +12,7 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.join(__dirname, '.env') });
 
-const EMAIL = 'millerbitoach@gmail.com';
+const EMAIL = (process.argv[2] || 'millerbitoach@gmail.com').trim().toLowerCase();
 const COLLECTION_NAME = 'users';
 const DB_NAME = process.env.MONGODB_DB_NAME || 'insurance-agent';
 
