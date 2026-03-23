@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useLanguage } from '../context/LanguageContext';
 import { confirmationTranslations } from '../translations/confirmation';
+import { getProcessingStageNumber } from '../utils/caseProcessingStages';
 import './Confirmation.css';
 
 const Confirmation = () => {
@@ -37,12 +38,15 @@ const Confirmation = () => {
     : '';
 
   const getClientStatusLabel = (c) => {
-    if (!c) return t.statusSubmitted;
+    if (!c) return t.processStep1;
     if (c.adminConfirmedCompleted) return t.statusNeedsRenewal;
-    const s = (c.status || '').toLowerCase();
-    if (s === 'approved') return t.statusApprovedWaitingGov;
-    if (s === 'pending') return t.statusInProgress;
-    return t.statusSubmitted;
+    const st = getProcessingStageNumber(c);
+    if (st === 4) return t.processStep4;
+    if (st === 5) return t.processStep5;
+    if (st === 0 || st === 1) return t.processStep1;
+    if (st === 2) return t.processStep2;
+    if (st === 3) return t.processStep3;
+    return t.processStep1;
   };
 
   return (

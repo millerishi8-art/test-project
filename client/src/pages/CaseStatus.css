@@ -293,6 +293,25 @@
   color: #94a3b8;
 }
 
+/* Skipped (e.g. שלב 4 כשהמסלול הוא אישור) */
+.timeline-step-skipped .timeline-bullet,
+.timeline-step-skipped .timeline-content strong {
+  color: #94a3b8;
+}
+
+.timeline-step-skipped .timeline-bullet {
+  background: #e2e8f0;
+}
+
+.timeline-step-skipped.has-line::before {
+  background: #e2e8f0;
+}
+
+.timeline-step-skipped .timeline-desc {
+  color: #94a3b8;
+  font-size: 0.85rem;
+}
+
 /* Rejected / Closed = Red */
 .timeline-step-rejected .timeline-bullet,
 .timeline-step-rejected .timeline-content strong {

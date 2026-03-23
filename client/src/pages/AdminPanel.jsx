@@ -144,17 +144,31 @@ const AdminPanel = () => {
 
   const handleRemoveCase = async (caseItem) => {
     if (!window.confirm('האם אתה בטוח שברצונך להסיר לצמיתות?')) return;
+    if (deletingCaseId) return;
     setDeletingCaseId(caseItem.id);
     setSuccessMessage('');
     try {
-      await axios.delete(`/admin/cases/${caseItem.id}`);
-      setCases((prev) => prev.filter((c) => c.id !== caseItem.id));
-      setSuccessMessage('התיק הוסר לצמיתות.');
+      const res = await axios.delete(`/admin/cases/${caseItem.id}`);
+      await fetchData();
+      if (res.data?.alreadyRemoved) {
+        setSuccessMessage('התיק כבר לא היה במערכת. הרשימה עודכנה.');
+      } else if (res.data?.userDeleted) {
+        setSuccessMessage('התיק והמשתמש ששייכו אליו הוסרו מהמערכת.');
+      } else {
+        setSuccessMessage('התיק הוסר לצמיתות.');
+      }
       setTimeout(() => setSuccessMessage(''), 4000);
     } catch (err) {
       console.error('Failed to delete case:', err);
-      const msg = err.response?.data?.error || 'שגיאה במחיקת התיק';
-      alert(msg);
+      const status = err.response?.status;
+      if (status === 404) {
+        await fetchData();
+        setSuccessMessage('התיק לא נמצא (אולי כבר נמחק). הרשימה סונכרנה מחדש.');
+        setTimeout(() => setSuccessMessage(''), 5000);
+      } else {
+        const msg = err.response?.data?.error || 'שגיאה במחיקת התיק';
+        alert(msg);
+      }
     } finally {
       setDeletingCaseId(null);
     }
@@ -411,7 +425,7 @@ const AdminPanel = () => {
                             type="button"
                             className="admin-remove-btn"
                             onClick={() => handleRemoveCase(caseItem)}
-                            disabled={deletingCaseId === caseItem.id}
+                            disabled={deletingCaseId !== null}
                           >
                             {deletingCaseId === caseItem.id ? 'מוחק...' : 'הסר'}
                           </button>

@@ -1,7 +1,9 @@
 {
-    "folders": [
-        {
-            "path": "."
-        }
-    ]
+  "folders": [
+    {
+      "name": "סוכן ביטוח",
+      "path": "."
+    }
+  ],
+  "settings": {}
 }

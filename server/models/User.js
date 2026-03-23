@@ -171,6 +171,21 @@ export async function findUserByVerificationToken(token) {
 }
 
 /**
+ * מוחק משתמש לפי id. מחזיר true אם נמחקה רשומה אחת.
+ */
+export async function deleteUserById(id) {
+  if (!id || typeof id !== 'string') return false;
+  try {
+    const collection = getCollection();
+    const result = await collection.deleteOne({ id });
+    return (result.deletedCount || 0) === 1;
+  } catch (error) {
+    console.error('User deleteUserById error:', error);
+    return false;
+  }
+}
+
+/**
  * מוחק משתמש/ים לפי אימייל (לא רגיש לאותיות) – מחזיר מספר רשומות שנמחקו
  */
 export async function deleteUserByEmail(email) {
