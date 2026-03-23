@@ -158,7 +158,7 @@ export const confirmCaseCompleted = async (req, res) => {
 
 /** שלבי עיבוד תיק – טקסט ל־detailedAdminStatus */
 const PROCESSING_STAGES = {
-  1: 'נפתח הבקשה באתר מחכה לראיון אישי',
+  1: 'נפתחה הבקשה באתר מחכה לראיון אישי',
   2: 'נעשה ראיון מחכה להגשת טפסים',
   3: 'הוגשו טפסים מחכה לאישור הממשלה',
   4: 'הממשלה סגרה את הכייס',
@@ -224,13 +224,14 @@ export const updateCaseProcessing = async (req, res) => {
 export const deleteCasePermanent = async (req, res) => {
   try {
     const { id } = req.params;
-    const caseData = await findCaseById(id);
-    if (!caseData) {
-      return res.status(404).json({ error: 'תיק לא נמצא' });
-    }
+    /** מחיקה אידמפוטנטית – אם התיק כבר לא קיים, עדיין 200 כדי שלא ייתקעו הלקוח / לחיצה כפולה */
     const removed = await deleteCase(id);
     if (!removed) {
-      return res.status(500).json({ error: 'שגיאה במחיקת התיק' });
+      return res.json({
+        message: 'התיק כבר לא היה במערכת',
+        id,
+        alreadyRemoved: true,
+      });
     }
     return res.json({ message: 'התיק הוסר לצמיתות', id });
   } catch (error) {

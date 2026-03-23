@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { LEGACY_HE_STAGE1 } from '../utils/caseProcessingStages';
 import './AdminCaseProcessing.css';
 
 const STAGES = [
-  { stage: 1, label: 'נפתח הבקשה באתר מחכה לראיון אישי' },
+  { stage: 1, label: 'נפתחה הבקשה באתר מחכה לראיון אישי' },
   { stage: 2, label: 'נעשה ראיון מחכה להגשת טפסים' },
   { stage: 3, label: 'הוגשו טפסים מחכה לאישור הממשלה' },
   { stage: 4, label: 'הממשלה סגרה את הכייס', isRejection: true },
@@ -176,7 +177,9 @@ const AdminCaseProcessing = () => {
                   <td>
                     <div className="admin-processing-buttons">
                       {STAGES.map(({ stage, label, isRejection, isApproval }) => {
-                        const isActive = (caseItem.detailedAdminStatus || '').trim() === label;
+                        const cur = (caseItem.detailedAdminStatus || '').trim();
+                        const isActive =
+                          cur === label || (stage === 1 && cur === LEGACY_HE_STAGE1);
                         return (
                           <button
                             key={stage}
@@ -235,7 +238,7 @@ const AdminCaseProcessing = () => {
         <div className="admin-processing-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="approval-modal-title">
           <div className="admin-processing-modal admin-processing-modal-benefits">
             <h2 id="approval-modal-title">אושר על ידי הממשלה – פרטי הטבות</h2>
-            <p className="admin-processing-modal-desc">הפרטים יוצגו ללקוח בדף סטטוס הכייס תחת שלב 3.</p>
+            <p className="admin-processing-modal-desc">הפרטים יוצגו ללקוח בדף סטטוס הכייס תחת שלב &quot;אושר על ידי הממשלה&quot;.</p>
             <div className="admin-processing-benefits-form">
               <label htmlFor="approval-rent">סיוע בשכר דירה (כן/לא או סכום)</label>
               <input type="text" id="approval-rent" className="admin-processing-modal-input" placeholder="למשל: כן / ₪500" dir="rtl" />

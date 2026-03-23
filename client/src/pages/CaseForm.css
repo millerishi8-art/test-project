@@ -95,6 +95,70 @@
   border-color: #1e6bb8;
 }
 
+/* שגיאות ולידציה לפי שדה */
+.form-group.field-has-error > label,
+.form-group.field-has-error .document-type-label {
+  color: #b71c1c;
+}
+
+.form-group.field-has-error input:not([type='checkbox']):not([type='radio']),
+.form-group.field-has-error textarea,
+.form-group.field-has-error select {
+  border-color: #c62828 !important;
+  box-shadow: 0 0 0 1px rgba(198, 40, 40, 0.25);
+}
+
+.form-group.field-has-error input:focus,
+.form-group.field-has-error textarea:focus,
+.form-group.field-has-error select:focus {
+  border-color: #c62828 !important;
+  box-shadow: 0 0 0 2px rgba(198, 40, 40, 0.2);
+}
+
+.case-form-inline-error {
+  margin: 0.35rem 0 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #b71c1c;
+  line-height: 1.4;
+}
+
+.case-form-doc-block.field-has-error {
+  padding: 0.75rem;
+  border: 2px solid #c62828;
+  border-radius: 10px;
+  background: #fff8f8;
+}
+
+.case-form-doc-block.field-has-error .document-type-label {
+  color: #b71c1c;
+}
+
+.checkbox-group.field-has-error {
+  flex-wrap: wrap;
+  border: 2px solid #c62828;
+  background: #fff5f5;
+}
+
+.checkbox-group.field-has-error .case-form-inline-error {
+  flex-basis: 100%;
+  width: 100%;
+  margin-top: 0.25rem;
+}
+
+.renewal-section-has-error {
+  border: 2px solid #c62828;
+  border-radius: 12px;
+  padding: 1rem 1rem 0.5rem;
+  background: #fff8f8;
+}
+
+.signature-pad-wrap.field-has-error {
+  border: 2px solid #c62828;
+  border-radius: 10px;
+  box-sizing: border-box;
+}
+
 .checkbox-group {
   display: flex;
   align-items: flex-start;

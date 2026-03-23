@@ -10,6 +10,23 @@ import './CaseForm.css';
 const SIGNATURE_PAD_WIDTH = 400;
 const SIGNATURE_PAD_HEIGHT = 160;
 
+const UPLOAD_CATEGORY_TO_FIELD_KEY = {
+  birth: 'doc_birth',
+  ssn: 'doc_ssn',
+  passport: 'doc_passport',
+  marriage_certificate_us: 'doc_marriage',
+  payment: 'doc_payment',
+};
+
+const CHILD_PATCH_TO_ERROR_KEY = {
+  passportImage: 'passport',
+  ssnImage: 'ssn',
+  age: 'age',
+  dob: 'dob',
+  schoolClass: 'class',
+  medicalFormsImage: 'medicalForms',
+};
+
 function newSpouseDocumentsEntry() {
   return {
     passportImage: '',
@@ -76,6 +93,8 @@ const CaseForm = () => {
   const [attachments, setAttachments] = useState([]);
   const [isDrawing, setIsDrawing] = useState(false);
   const [error, setError] = useState('');
+  /** @type {Record<string, string>} */
+  const [fieldErrors, setFieldErrors] = useState({});
   const [loading, setLoading] = useState(false);
   const [loadingBenefit, setLoadingBenefit] = useState(true);
   const [benefit, setBenefit] = useState(null);
@@ -91,7 +110,18 @@ const CaseForm = () => {
     setSpouseBlock(null);
     setRenewalAddedToCalendar(false);
     setError('');
+    setFieldErrors({});
   }, [type]);
+
+  const clearFieldErrorKey = (key) => {
+    if (!key) return;
+    setFieldErrors((prev) => {
+      if (!prev[key]) return prev;
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
+  };
 
   useEffect(() => {
     fetchBenefit();
@@ -155,6 +185,7 @@ const CaseForm = () => {
         try {
           const dataUrl = canvas.toDataURL('image/png', 0.85);
           setFormData((prev) => ({ ...prev, signatureImage: dataUrl }));
+          clearFieldErrorKey('signaturePad');
         } catch (_) {}
       }
     }
@@ -167,6 +198,7 @@ const CaseForm = () => {
     ctx.fillStyle = '#fff';
     ctx.fillRect(0, 0, SIGNATURE_PAD_WIDTH, SIGNATURE_PAD_HEIGHT);
     setFormData((prev) => ({ ...prev, signatureImage: '' }));
+    clearFieldErrorKey('signaturePad');
     setError('');
   };
 
@@ -187,6 +219,7 @@ const CaseForm = () => {
       ...prev,
       [name]: inputType === 'checkbox' ? checked : value,
     }));
+    if (name) clearFieldErrorKey(name);
     setError('');
   };
 
@@ -201,6 +234,10 @@ const CaseForm = () => {
   const updateFamilyChild = (childId, patch) => {
     setFamilyChildren((prev) => prev.map((c) => (c.id === childId ? { ...c, ...patch } : c)));
     setError('');
+    Object.keys(patch).forEach((k) => {
+      const suf = CHILD_PATCH_TO_ERROR_KEY[k];
+      if (suf) clearFieldErrorKey(`child_${childId}_${suf}`);
+    });
   };
 
   const handleChildFile = (childId, field) => async (e) => {
@@ -244,12 +281,14 @@ const CaseForm = () => {
     }
     const data = await readFileAsDataUrl(file);
     setSpouseBlock((prev) => (prev ? { ...prev, [field]: data } : prev));
+    clearFieldErrorKey(field === 'passportImage' ? 'spouse_passport' : 'spouse_ssn');
     e.target.value = '';
     setError('');
   };
 
   const updateSpouseBlock = (patch) => {
     setSpouseBlock((prev) => (prev ? { ...prev, ...patch } : prev));
+    if (Object.prototype.hasOwnProperty.call(patch, 'healthStatus')) clearFieldErrorKey('spouse_health');
     setError('');
   };
 
@@ -265,11 +304,27 @@ const CaseForm = () => {
       }))
     );
     setAttachments((prev) => [...prev, ...newItems]);
+    const fk = UPLOAD_CATEGORY_TO_FIELD_KEY[category];
+    if (fk) clearFieldErrorKey(fk);
     e.target.value = '';
   };
 
   const removeAttachment = (id) => {
-    setAttachments((prev) => prev.filter((a) => a.id !== id));
+    setAttachments((prev) => {
+      const next = prev.filter((a) => a.id !== id);
+      setTimeout(() => {
+        setFieldErrors((fe) => {
+          const n = { ...fe };
+          if (!next.some((a) => a.category === 'birth')) delete n.doc_birth;
+          if (!next.some((a) => a.category === 'ssn')) delete n.doc_ssn;
+          if (!next.some((a) => a.category === 'passport')) delete n.doc_passport;
+          if (!next.some((a) => a.category === 'marriage_certificate_us')) delete n.doc_marriage;
+          if (!next.some((a) => a.category === 'payment')) delete n.doc_payment;
+          return n;
+        });
+      }, 0);
+      return next;
+    });
   };
 
   const getRenewalDate = () => {
@@ -294,10 +349,12 @@ const CaseForm = () => {
   const handleAddToCalendar = () => {
     openGoogleCalendarInNewTab(getCalendarUrl());
     setRenewalAddedToCalendar(true);
+    clearFieldErrorKey('renewalCalendar');
   };
 
   const doActualSubmit = async () => {
     setError('');
+    setFieldErrors({});
     setLoading(true);
     try {
       const childAttachments =
@@ -374,123 +431,151 @@ const CaseForm = () => {
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
+  const buildFieldScrollOrder = () => {
+    const childOrder = familyChildren.flatMap((c) => [
+      `child_${c.id}_passport`,
+      `child_${c.id}_ssn`,
+      `child_${c.id}_age`,
+      `child_${c.id}_dob`,
+      `child_${c.id}_class`,
+      `child_${c.id}_medicalForms`,
+    ]);
+    return [
+      'fullName',
+      'dob',
+      'birthPlace',
+      'address',
+      'fatherName',
+      'motherName',
+      'maritalStatus',
+      'dependentsCount',
+      'additionalCitizenship',
+      'caseEmail',
+      'casePassword',
+      'doc_birth',
+      'doc_ssn',
+      'doc_passport',
+      ...(isFamilyCase ? ['doc_marriage'] : []),
+      'doc_payment',
+      ...(isFamilyCase && spouseBlock ? ['spouse_passport', 'spouse_ssn', 'spouse_health'] : []),
+      ...childOrder,
+      'signaturePad',
+      'dec1',
+      'dec2',
+      'dec3',
+      'dec4',
+      'finalSignature',
+      'renewalCalendar',
+    ];
+  };
 
-    if (!useExpandedFoodStampsForm) {
-      setError(t.errorFillRequired);
-      return;
-    }
+  const collectCaseFormFieldErrors = () => {
+    const errs = {};
+    const englishOnlyRegex = /^[A-Za-z0-9\s.,#'/-]+$/;
 
-    if (
-      !formData.fullName ||
-      !formData.dob ||
-      !formData.birthPlace ||
-      !formData.address ||
-      !formData.fatherName ||
-      !formData.motherName ||
-      !formData.maritalStatus ||
-      formData.dependentsCount === '' ||
-      Number(formData.dependentsCount) < 0 ||
-      !formData.additionalCitizenship
-    ) {
-      setError(t.errorFillRequired);
-      return;
+    if (!formData.fullName?.trim()) errs.fullName = t.errorFieldRequired;
+    else if (!englishOnlyRegex.test(formData.fullName)) errs.fullName = t.errorEnglishOnly;
+
+    if (!formData.dob) errs.dob = t.errorFieldRequired;
+    if (!formData.birthPlace) errs.birthPlace = t.errorFieldRequired;
+
+    if (!formData.address?.trim()) errs.address = t.errorFieldRequired;
+    else if (!englishOnlyRegex.test(formData.address)) errs.address = t.errorEnglishOnly;
+
+    if (!formData.fatherName?.trim()) errs.fatherName = t.errorFieldRequired;
+    else if (!englishOnlyRegex.test(formData.fatherName)) errs.fatherName = t.errorEnglishOnly;
+
+    if (!formData.motherName?.trim()) errs.motherName = t.errorFieldRequired;
+    else if (!englishOnlyRegex.test(formData.motherName)) errs.motherName = t.errorEnglishOnly;
+
+    if (!formData.maritalStatus) errs.maritalStatus = t.errorFieldRequired;
+    if (formData.dependentsCount === '' || Number(formData.dependentsCount) < 0) {
+      errs.dependentsCount = t.errorFieldRequired;
     }
+    if (!formData.additionalCitizenship) errs.additionalCitizenship = t.errorFieldRequired;
 
     if (formData.previousCase || formData.activeCase) {
       const em = (formData.caseEmail || '').trim();
       const pw = (formData.casePassword || '').trim();
-      if (!em || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) {
-        setError(t.errorCaseEmailInvalid);
-        return;
-      }
-      if (!pw) {
-        setError(t.errorCasePasswordRequired);
-        return;
-      }
+      if (!em) errs.caseEmail = t.errorFieldRequired;
+      else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) errs.caseEmail = t.errorCaseEmailInvalid;
+      if (!pw) errs.casePassword = t.errorCasePasswordRequired;
     }
 
-    if (!attachments.some((a) => a.category === 'birth')) {
-      setError(t.errorMissingBirthCerts);
-      return;
-    }
-    if (!attachments.some((a) => a.category === 'ssn')) {
-      setError(t.errorMissingSSN);
-      return;
-    }
-    if (!attachments.some((a) => a.category === 'passport')) {
-      setError(t.errorMissingPassport);
-      return;
-    }
+    if (!attachments.some((a) => a.category === 'birth')) errs.doc_birth = t.errorMissingBirthCerts;
+    if (!attachments.some((a) => a.category === 'ssn')) errs.doc_ssn = t.errorMissingSSN;
+    if (!attachments.some((a) => a.category === 'passport')) errs.doc_passport = t.errorMissingPassport;
     if (isFamilyCase && !attachments.some((a) => a.category === 'marriage_certificate_us')) {
-      setError(t.errorMissingAmericanMarriageCertificate);
-      return;
+      errs.doc_marriage = t.errorMissingAmericanMarriageCertificate;
     }
-    if (!attachments.some((a) => a.category === 'payment')) {
-      setError(t.errorMissingPayment);
-      return;
-    }
+    if (!attachments.some((a) => a.category === 'payment')) errs.doc_payment = t.errorMissingPayment;
 
     if (isFamilyCase && spouseBlock) {
-      if (!spouseBlock.passportImage?.trim() || !spouseBlock.ssnImage?.trim()) {
-        setError(t.errorSpouseIncomplete);
-        return;
-      }
-      if (!(spouseBlock.healthStatus || '').trim()) {
-        setError(t.errorSpouseHealthRequired);
-        return;
-      }
+      if (!spouseBlock.passportImage?.trim()) errs.spouse_passport = t.errorUploadRequired;
+      if (!spouseBlock.ssnImage?.trim()) errs.spouse_ssn = t.errorUploadRequired;
+      if (!(spouseBlock.healthStatus || '').trim()) errs.spouse_health = t.errorSpouseHealthRequired;
     }
 
     if (isFamilyCase && familyChildren.length > 0) {
       for (const c of familyChildren) {
         const ageOk = c.age !== '' && c.age != null && String(c.age).trim() !== '';
         const classOk = (c.schoolClass || '').trim().length > 0;
-        if (
-          !c.passportImage?.trim() ||
-          !c.ssnImage?.trim() ||
-          !c.dob ||
-          !ageOk ||
-          !classOk
-        ) {
-          setError(t.errorChildIncomplete);
-          return;
-        }
+        if (!c.passportImage?.trim()) errs[`child_${c.id}_passport`] = t.errorUploadRequired;
+        if (!c.ssnImage?.trim()) errs[`child_${c.id}_ssn`] = t.errorUploadRequired;
+        if (!ageOk) errs[`child_${c.id}_age`] = t.errorFieldRequired;
+        if (!c.dob) errs[`child_${c.id}_dob`] = t.errorFieldRequired;
+        if (!classOk) errs[`child_${c.id}_class`] = t.errorFieldRequired;
         if ((c.medicalIssues || '').trim() && !c.medicalFormsImage?.trim()) {
-          setError(t.errorChildMedicalDocs);
-          return;
+          errs[`child_${c.id}_medicalForms`] = t.errorChildMedicalDocs;
         }
       }
     }
 
-    if (!(formData.signatureImage || '').trim()) {
-      setError(t.errorDrawSignature);
+    if (!(formData.signatureImage || '').trim()) errs.signaturePad = t.errorDrawSignature;
+
+    if (!formData.dec1) errs.dec1 = t.errorConfirmSignature;
+    if (!formData.dec2) errs.dec2 = t.errorConfirmSignature;
+    if (!formData.dec3) errs.dec3 = t.errorConfirmSignature;
+    if (!formData.dec4) errs.dec4 = t.errorConfirmSignature;
+    if (!formData.signature) errs.finalSignature = t.errorConfirmSignature;
+
+    if (!renewalAddedToCalendar) errs.renewalCalendar = t.renewalRequiredFirst;
+
+    return errs;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+
+    if (!useExpandedFoodStampsForm) {
+      setFieldErrors({});
+      setError(t.errorFillRequired);
       return;
     }
 
-    const englishOnlyRegex = /^[A-Za-z0-9\s.,#'/-]+$/;
-    if (
-      !englishOnlyRegex.test(formData.fullName) ||
-      !englishOnlyRegex.test(formData.address) ||
-      !englishOnlyRegex.test(formData.fatherName) ||
-      !englishOnlyRegex.test(formData.motherName)
-    ) {
-      setError(t.errorEnglishOnly);
+    const errs = collectCaseFormFieldErrors();
+    const errKeys = Object.keys(errs);
+
+    if (errKeys.length > 0) {
+      setFieldErrors(errs);
+      setError(t.errorFormHasFieldErrors);
+      const order = buildFieldScrollOrder();
+      setTimeout(() => {
+        for (const k of order) {
+          if (errs[k]) {
+            document.getElementById(`case-field-${k}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            break;
+          }
+        }
+      }, 100);
       return;
     }
 
-    if (!formData.dec1 || !formData.dec2 || !formData.dec3 || !formData.dec4 || !formData.signature) {
-      setError(t.errorConfirmSignature);
-      return;
-    }
+    setFieldErrors({});
+
     if (!token) {
       setError(t.errorLoginRequired);
-      return;
-    }
-    if (!renewalAddedToCalendar) {
-      setError(t.renewalRequiredFirst);
       return;
     }
     await doActualSubmit();
@@ -498,6 +583,14 @@ const CaseForm = () => {
 
   const benefitTitle =
     type && t.benefitTitles?.[type] ? t.benefitTitles[type] : benefit?.title;
+
+  const inlineFieldError = (key) =>
+    fieldErrors[key] ? (
+      <p className="case-form-inline-error" role="alert">
+        {fieldErrors[key]}
+      </p>
+    ) : null;
+  const fgClass = (key) => (fieldErrors[key] ? 'form-group field-has-error' : 'form-group');
 
   if (loadingBenefit) {
     return (
@@ -532,9 +625,10 @@ const CaseForm = () => {
             <>
               <div className="form-section">
                 <h2>{t.sectionPersonal}</h2>
-                <div className="form-group">
-                  <label>{t.labelFullName}</label>
+                <div className={fgClass('fullName')} id="case-field-fullName">
+                  <label htmlFor="case-input-fullName">{t.labelFullName}</label>
                   <input
+                    id="case-input-fullName"
                     type="text"
                     name="fullName"
                     value={formData.fullName}
@@ -543,23 +637,43 @@ const CaseForm = () => {
                     placeholder={t.placeholderFullName}
                     dir="ltr"
                     autoComplete="name"
+                    aria-invalid={Boolean(fieldErrors.fullName)}
                   />
+                  {inlineFieldError('fullName')}
                 </div>
-                <div className="form-group">
-                  <label>{t.labelDob}</label>
-                  <input type="date" name="dob" value={formData.dob} onChange={handleChange} required />
+                <div className={fgClass('dob')} id="case-field-dob">
+                  <label htmlFor="case-input-dob">{t.labelDob}</label>
+                  <input
+                    id="case-input-dob"
+                    type="date"
+                    name="dob"
+                    value={formData.dob}
+                    onChange={handleChange}
+                    required
+                    aria-invalid={Boolean(fieldErrors.dob)}
+                  />
+                  {inlineFieldError('dob')}
                 </div>
-                <div className="form-group">
-                  <label>{t.labelBirthPlace}</label>
-                  <select name="birthPlace" value={formData.birthPlace} onChange={handleChange} required>
+                <div className={fgClass('birthPlace')} id="case-field-birthPlace">
+                  <label htmlFor="case-input-birthPlace">{t.labelBirthPlace}</label>
+                  <select
+                    id="case-input-birthPlace"
+                    name="birthPlace"
+                    value={formData.birthPlace}
+                    onChange={handleChange}
+                    required
+                    aria-invalid={Boolean(fieldErrors.birthPlace)}
+                  >
                     <option value="Israel">{t.birthPlaceIsrael}</option>
                     <option value="New York">{t.birthPlaceNY}</option>
                     <option value="Other">{t.birthPlaceOther}</option>
                   </select>
+                  {inlineFieldError('birthPlace')}
                 </div>
-                <div className="form-group">
-                  <label>{t.labelAddress}</label>
+                <div className={fgClass('address')} id="case-field-address">
+                  <label htmlFor="case-input-address">{t.labelAddress}</label>
                   <textarea
+                    id="case-input-address"
                     name="address"
                     value={formData.address}
                     onChange={handleChange}
@@ -567,48 +681,69 @@ const CaseForm = () => {
                     required
                     placeholder={t.placeholderAddress}
                     dir="ltr"
+                    aria-invalid={Boolean(fieldErrors.address)}
                   />
+                  {inlineFieldError('address')}
                 </div>
                 <div className="form-group">
                   <label>{t.labelParentalDetails}</label>
-                  <div className="nested-group">
-                    <label>{t.labelFatherName}</label>
-                    <input
-                      type="text"
-                      name="fatherName"
-                      value={formData.fatherName}
-                      onChange={handleChange}
-                      required
-                      placeholder={t.placeholderFatherName}
-                      dir="ltr"
-                    />
-                    <label style={{ marginTop: '15px' }}>{t.labelMotherName}</label>
-                    <input
-                      type="text"
-                      name="motherName"
-                      value={formData.motherName}
-                      onChange={handleChange}
-                      required
-                      placeholder={t.placeholderMotherName}
-                      dir="ltr"
-                    />
+                  <div className={`nested-group ${fieldErrors.fatherName || fieldErrors.motherName ? 'nested-has-error' : ''}`}>
+                    <div className={fgClass('fatherName')} id="case-field-fatherName">
+                      <label htmlFor="case-input-fatherName">{t.labelFatherName}</label>
+                      <input
+                        id="case-input-fatherName"
+                        type="text"
+                        name="fatherName"
+                        value={formData.fatherName}
+                        onChange={handleChange}
+                        required
+                        placeholder={t.placeholderFatherName}
+                        dir="ltr"
+                        aria-invalid={Boolean(fieldErrors.fatherName)}
+                      />
+                      {inlineFieldError('fatherName')}
+                    </div>
+                    <div className={fgClass('motherName')} id="case-field-motherName" style={{ marginTop: '15px' }}>
+                      <label htmlFor="case-input-motherName">{t.labelMotherName}</label>
+                      <input
+                        id="case-input-motherName"
+                        type="text"
+                        name="motherName"
+                        value={formData.motherName}
+                        onChange={handleChange}
+                        required
+                        placeholder={t.placeholderMotherName}
+                        dir="ltr"
+                        aria-invalid={Boolean(fieldErrors.motherName)}
+                      />
+                      {inlineFieldError('motherName')}
+                    </div>
                   </div>
                 </div>
               </div>
 
               <div className="form-section">
                 <h2>{t.sectionFamily}</h2>
-                <div className="form-group">
-                  <label>{t.labelMaritalStatus}</label>
-                  <select name="maritalStatus" value={formData.maritalStatus} onChange={handleChange} required>
+                <div className={fgClass('maritalStatus')} id="case-field-maritalStatus">
+                  <label htmlFor="case-input-maritalStatus">{t.labelMaritalStatus}</label>
+                  <select
+                    id="case-input-maritalStatus"
+                    name="maritalStatus"
+                    value={formData.maritalStatus}
+                    onChange={handleChange}
+                    required
+                    aria-invalid={Boolean(fieldErrors.maritalStatus)}
+                  >
                     <option value="Single">{t.maritalSingle}</option>
                     <option value="Married living with spouse">{t.maritalMarriedSpouse}</option>
                     <option value="Married living with spouse & children">{t.maritalMarriedChildren}</option>
                   </select>
+                  {inlineFieldError('maritalStatus')}
                 </div>
-                <div className="form-group">
-                  <label>{t.labelDependents}</label>
+                <div className={fgClass('dependentsCount')} id="case-field-dependentsCount">
+                  <label htmlFor="case-input-dependentsCount">{t.labelDependents}</label>
                   <input
+                    id="case-input-dependentsCount"
                     type="number"
                     name="dependentsCount"
                     value={formData.dependentsCount}
@@ -616,9 +751,11 @@ const CaseForm = () => {
                     min="0"
                     required
                     placeholder={t.placeholderDependents}
+                    aria-invalid={Boolean(fieldErrors.dependentsCount)}
                   />
+                  {inlineFieldError('dependentsCount')}
                 </div>
-                <div className="form-group">
+                <div className={fgClass('additionalCitizenship')} id="case-field-additionalCitizenship">
                   <label>{t.citizenshipQuestion}</label>
                   <div className="radio-group">
                     <label>
@@ -642,6 +779,7 @@ const CaseForm = () => {
                       {t.citizenshipNo}
                     </label>
                   </div>
+                  {inlineFieldError('additionalCitizenship')}
                 </div>
               </div>
 
@@ -670,24 +808,34 @@ const CaseForm = () => {
                 {(formData.previousCase || formData.activeCase) && (
                   <div className="form-group nested-group" style={{ marginTop: '15px' }}>
                     <label>{t.labelAccessCredentials}</label>
-                    <label style={{ marginTop: '10px' }}>{t.labelCaseEmail}</label>
-                    <input
-                      type="email"
-                      name="caseEmail"
-                      value={formData.caseEmail}
-                      onChange={handleChange}
-                      placeholder={t.placeholderCaseEmail}
-                      dir="ltr"
-                    />
-                    <label style={{ marginTop: '10px' }}>{t.labelCasePassword}</label>
-                    <input
-                      type="password"
-                      name="casePassword"
-                      value={formData.casePassword}
-                      onChange={handleChange}
-                      placeholder={t.placeholderCasePassword}
-                      dir="ltr"
-                    />
+                    <div className={fgClass('caseEmail')} id="case-field-caseEmail" style={{ marginTop: '10px' }}>
+                      <label htmlFor="case-input-caseEmail">{t.labelCaseEmail}</label>
+                      <input
+                        id="case-input-caseEmail"
+                        type="email"
+                        name="caseEmail"
+                        value={formData.caseEmail}
+                        onChange={handleChange}
+                        placeholder={t.placeholderCaseEmail}
+                        dir="ltr"
+                        aria-invalid={Boolean(fieldErrors.caseEmail)}
+                      />
+                      {inlineFieldError('caseEmail')}
+                    </div>
+                    <div className={fgClass('casePassword')} id="case-field-casePassword" style={{ marginTop: '10px' }}>
+                      <label htmlFor="case-input-casePassword">{t.labelCasePassword}</label>
+                      <input
+                        id="case-input-casePassword"
+                        type="password"
+                        name="casePassword"
+                        value={formData.casePassword}
+                        onChange={handleChange}
+                        placeholder={t.placeholderCasePassword}
+                        dir="ltr"
+                        aria-invalid={Boolean(fieldErrors.casePassword)}
+                      />
+                      {inlineFieldError('casePassword')}
+                    </div>
                   </div>
                 )}
               </div>
@@ -700,7 +848,11 @@ const CaseForm = () => {
                     className="document-type-row"
                     style={{ flexDirection: 'column', alignItems: 'flex-start', gap: '15px' }}
                   >
-                    <div style={{ width: '100%' }}>
+                    <div
+                      id="case-field-doc_birth"
+                      className={`case-form-doc-block ${fieldErrors.doc_birth ? 'field-has-error' : ''}`}
+                      style={{ width: '100%' }}
+                    >
                       <label className="document-type-label" style={{ display: 'block', marginBottom: '5px' }}>
                         {t.labelBirthCertificates}
                       </label>
@@ -723,9 +875,14 @@ const CaseForm = () => {
                           {t.uploadFromDevice}
                         </button>
                       </div>
+                      {inlineFieldError('doc_birth')}
                     </div>
 
-                    <div style={{ width: '100%' }}>
+                    <div
+                      id="case-field-doc_ssn"
+                      className={`case-form-doc-block ${fieldErrors.doc_ssn ? 'field-has-error' : ''}`}
+                      style={{ width: '100%' }}
+                    >
                       <label className="document-type-label" style={{ display: 'block', marginBottom: '5px' }}>
                         {t.labelSSN}
                       </label>
@@ -748,9 +905,14 @@ const CaseForm = () => {
                           {t.uploadFromDevice}
                         </button>
                       </div>
+                      {inlineFieldError('doc_ssn')}
                     </div>
 
-                    <div style={{ width: '100%' }}>
+                    <div
+                      id="case-field-doc_passport"
+                      className={`case-form-doc-block ${fieldErrors.doc_passport ? 'field-has-error' : ''}`}
+                      style={{ width: '100%' }}
+                    >
                       <label className="document-type-label" style={{ display: 'block', marginBottom: '5px' }}>
                         {t.labelPassport}
                       </label>
@@ -773,10 +935,15 @@ const CaseForm = () => {
                           {t.uploadFromDevice}
                         </button>
                       </div>
+                      {inlineFieldError('doc_passport')}
                     </div>
 
                     {isFamilyCase && (
-                      <div style={{ width: '100%' }}>
+                      <div
+                        id="case-field-doc_marriage"
+                        className={`case-form-doc-block ${fieldErrors.doc_marriage ? 'field-has-error' : ''}`}
+                        style={{ width: '100%' }}
+                      >
                         <label className="document-type-label" style={{ display: 'block', marginBottom: '5px' }}>
                           {t.labelAmericanMarriageCertificate}
                         </label>
@@ -799,10 +966,15 @@ const CaseForm = () => {
                             {t.uploadFromDevice}
                           </button>
                         </div>
+                        {inlineFieldError('doc_marriage')}
                       </div>
                     )}
 
-                    <div style={{ width: '100%' }}>
+                    <div
+                      id="case-field-doc_payment"
+                      className={`case-form-doc-block ${fieldErrors.doc_payment ? 'field-has-error' : ''}`}
+                      style={{ width: '100%' }}
+                    >
                       <label className="document-type-label" style={{ display: 'block', marginBottom: '5px' }}>
                         {t.labelProofOfPayment}
                       </label>
@@ -825,6 +997,7 @@ const CaseForm = () => {
                           {t.uploadFromDevice}
                         </button>
                       </div>
+                      {inlineFieldError('doc_payment')}
                     </div>
                   </div>
 
@@ -869,7 +1042,7 @@ const CaseForm = () => {
                           {t.removeSpouseSection}
                         </button>
                       </div>
-                      <div className="form-group">
+                      <div className={fgClass('spouse_passport')} id="case-field-spouse_passport">
                         <label>{t.labelSpousePassport}</label>
                         <p className="upload-field-hint">{t.hintSpousePassport}</p>
                         <div className="upload-buttons-row">
@@ -892,8 +1065,9 @@ const CaseForm = () => {
                         {spouseBlock.passportImage ? (
                           <p className="child-file-attached">✓ {t.childFileUploaded}</p>
                         ) : null}
+                        {inlineFieldError('spouse_passport')}
                       </div>
-                      <div className="form-group">
+                      <div className={fgClass('spouse_ssn')} id="case-field-spouse_ssn">
                         <label>{t.labelSpouseSSN}</label>
                         <p className="upload-field-hint">{t.hintSpouseSSN}</p>
                         <div className="upload-buttons-row">
@@ -916,8 +1090,9 @@ const CaseForm = () => {
                         {spouseBlock.ssnImage ? (
                           <p className="child-file-attached">✓ {t.childFileUploaded}</p>
                         ) : null}
+                        {inlineFieldError('spouse_ssn')}
                       </div>
-                      <div className="form-group">
+                      <div className={fgClass('spouse_health')} id="case-field-spouse_health">
                         <label htmlFor="spouse-health-status">{t.labelSpouseHealth}</label>
                         <p className="upload-field-hint">{t.hintSpouseHealth}</p>
                         <textarea
@@ -926,7 +1101,9 @@ const CaseForm = () => {
                           value={spouseBlock.healthStatus}
                           onChange={(e) => updateSpouseBlock({ healthStatus: e.target.value })}
                           placeholder={t.placeholderSpouseHealth}
+                          aria-invalid={Boolean(fieldErrors.spouse_health)}
                         />
+                        {inlineFieldError('spouse_health')}
                       </div>
                     </div>
                   )}
@@ -954,7 +1131,10 @@ const CaseForm = () => {
                           {t.removeChild}
                         </button>
                       </div>
-                      <div className="form-group">
+                      <div
+                        className={fgClass(`child_${child.id}_passport`)}
+                        id={`case-field-child_${child.id}_passport`}
+                      >
                         <label>{t.labelChildPassport}</label>
                         <p className="upload-field-hint">{t.hintChildPassport}</p>
                         <div className="upload-buttons-row">
@@ -975,8 +1155,12 @@ const CaseForm = () => {
                           </button>
                         </div>
                         {child.passportImage ? <p className="child-file-attached">✓ {t.childFileUploaded}</p> : null}
+                        {inlineFieldError(`child_${child.id}_passport`)}
                       </div>
-                      <div className="form-group">
+                      <div
+                        className={fgClass(`child_${child.id}_ssn`)}
+                        id={`case-field-child_${child.id}_ssn`}
+                      >
                         <label>{t.labelChildSSN}</label>
                         <p className="upload-field-hint">{t.hintChildSSN}</p>
                         <div className="upload-buttons-row">
@@ -997,8 +1181,12 @@ const CaseForm = () => {
                           </button>
                         </div>
                         {child.ssnImage ? <p className="child-file-attached">✓ {t.childFileUploaded}</p> : null}
+                        {inlineFieldError(`child_${child.id}_ssn`)}
                       </div>
-                      <div className="form-group">
+                      <div
+                        className={fgClass(`child_${child.id}_age`)}
+                        id={`case-field-child_${child.id}_age`}
+                      >
                         <label htmlFor={`child-age-${child.id}`}>{t.labelChildAge}</label>
                         <input
                           id={`child-age-${child.id}`}
@@ -1008,18 +1196,28 @@ const CaseForm = () => {
                           value={child.age}
                           onChange={(e) => updateFamilyChild(child.id, { age: e.target.value })}
                           placeholder={t.placeholderChildAge}
+                          aria-invalid={Boolean(fieldErrors[`child_${child.id}_age`])}
                         />
+                        {inlineFieldError(`child_${child.id}_age`)}
                       </div>
-                      <div className="form-group">
+                      <div
+                        className={fgClass(`child_${child.id}_dob`)}
+                        id={`case-field-child_${child.id}_dob`}
+                      >
                         <label htmlFor={`child-dob-${child.id}`}>{t.labelChildDob}</label>
                         <input
                           id={`child-dob-${child.id}`}
                           type="date"
                           value={child.dob}
                           onChange={(e) => updateFamilyChild(child.id, { dob: e.target.value })}
+                          aria-invalid={Boolean(fieldErrors[`child_${child.id}_dob`])}
                         />
+                        {inlineFieldError(`child_${child.id}_dob`)}
                       </div>
-                      <div className="form-group">
+                      <div
+                        className={fgClass(`child_${child.id}_class`)}
+                        id={`case-field-child_${child.id}_class`}
+                      >
                         <label htmlFor={`child-class-${child.id}`}>{t.labelChildSchoolClass}</label>
                         <input
                           id={`child-class-${child.id}`}
@@ -1027,7 +1225,9 @@ const CaseForm = () => {
                           value={child.schoolClass}
                           onChange={(e) => updateFamilyChild(child.id, { schoolClass: e.target.value })}
                           placeholder={t.placeholderChildSchoolClass}
+                          aria-invalid={Boolean(fieldErrors[`child_${child.id}_class`])}
                         />
+                        {inlineFieldError(`child_${child.id}_class`)}
                       </div>
                       <div className="form-group">
                         <label htmlFor={`child-med-${child.id}`}>{t.labelChildMedicalIssues}</label>
@@ -1039,7 +1239,10 @@ const CaseForm = () => {
                           placeholder={t.placeholderChildMedicalIssues}
                         />
                       </div>
-                      <div className="form-group">
+                      <div
+                        className={fgClass(`child_${child.id}_medicalForms`)}
+                        id={`case-field-child_${child.id}_medicalForms`}
+                      >
                         <label>{t.labelChildMedicalForms}</label>
                         <p className="upload-field-hint">{t.hintChildMedicalForms}</p>
                         <div className="upload-buttons-row">
@@ -1062,6 +1265,7 @@ const CaseForm = () => {
                         {child.medicalFormsImage ? (
                           <p className="child-file-attached">✓ {t.childFileUploaded}</p>
                         ) : null}
+                        {inlineFieldError(`child_${child.id}_medicalForms`)}
                       </div>
                     </div>
                   ))}
@@ -1070,21 +1274,37 @@ const CaseForm = () => {
 
               <div className="form-section declarations-section">
                 <h2>{t.sectionDeclarations}</h2>
-                <div className="checkbox-group">
+                <div
+                  id="case-field-dec1"
+                  className={`checkbox-group${fieldErrors.dec1 ? ' field-has-error' : ''}`}
+                >
                   <input type="checkbox" id="dec1" name="dec1" checked={formData.dec1} onChange={handleChange} required />
                   <label htmlFor="dec1">{t.dec1}</label>
+                  {inlineFieldError('dec1')}
                 </div>
-                <div className="checkbox-group">
+                <div
+                  id="case-field-dec2"
+                  className={`checkbox-group${fieldErrors.dec2 ? ' field-has-error' : ''}`}
+                >
                   <input type="checkbox" id="dec2" name="dec2" checked={formData.dec2} onChange={handleChange} required />
                   <label htmlFor="dec2">{t.dec2}</label>
+                  {inlineFieldError('dec2')}
                 </div>
-                <div className="checkbox-group">
+                <div
+                  id="case-field-dec3"
+                  className={`checkbox-group${fieldErrors.dec3 ? ' field-has-error' : ''}`}
+                >
                   <input type="checkbox" id="dec3" name="dec3" checked={formData.dec3} onChange={handleChange} required />
                   <label htmlFor="dec3">{t.dec3}</label>
+                  {inlineFieldError('dec3')}
                 </div>
-                <div className="checkbox-group">
+                <div
+                  id="case-field-dec4"
+                  className={`checkbox-group${fieldErrors.dec4 ? ' field-has-error' : ''}`}
+                >
                   <input type="checkbox" id="dec4" name="dec4" checked={formData.dec4} onChange={handleChange} required />
                   <label htmlFor="dec4">{t.dec4}</label>
+                  {inlineFieldError('dec4')}
                 </div>
               </div>
             </>
@@ -1094,7 +1314,10 @@ const CaseForm = () => {
             </p>
           )}
 
-          <div className="form-section renewal-section renewal-section-unified">
+          <div
+            id="case-field-renewalCalendar"
+            className={`form-section renewal-section renewal-section-unified${fieldErrors.renewalCalendar ? ' renewal-section-has-error' : ''}`}
+          >
             <h2>{t.sectionRenewal}</h2>
             <p className="renewal-hint">{t.reminderBannerText}</p>
             {renewalAddedToCalendar ? (
@@ -1107,6 +1330,7 @@ const CaseForm = () => {
                 </button>
               </>
             )}
+            {inlineFieldError('renewalCalendar')}
           </div>
 
           {useExpandedFoodStampsForm && (
@@ -1116,7 +1340,8 @@ const CaseForm = () => {
               <div className="signature-block">
                 <p className="signature-pad-hint">{t.signaturePadHint}</p>
                 <div
-                  className="signature-pad-wrap"
+                  id="case-field-signaturePad"
+                  className={`signature-pad-wrap${fieldErrors.signaturePad ? ' field-has-error' : ''}`}
                   onMouseDown={startDrawing}
                   onMouseMove={draw}
                   onMouseUp={stopDrawing}
@@ -1136,6 +1361,7 @@ const CaseForm = () => {
                 <button type="button" className="clear-signature-btn" onClick={clearSignature}>
                   {t.clearSignature}
                 </button>
+                {inlineFieldError('signaturePad')}
                 <div className="form-group signatory-name-optional" style={{ marginTop: '1rem' }}>
                   <label htmlFor="signatoryName">{t.labelSignatoryName.replace(' *', '')}</label>
                   <input
@@ -1165,7 +1391,10 @@ const CaseForm = () => {
           <div className="form-section signature-section">
             <h2>{t.sectionSignature}</h2>
             <p className="signature-section-intro">{t.sectionSignatureIntro}</p>
-            <div className="checkbox-group">
+            <div
+              id="case-field-finalSignature"
+              className={`checkbox-group${fieldErrors.finalSignature ? ' field-has-error' : ''}`}
+            >
               <input
                 type="checkbox"
                 id="signature"
@@ -1175,6 +1404,7 @@ const CaseForm = () => {
                 required
               />
               <label htmlFor="signature">{t.checkboxLabel}</label>
+              {inlineFieldError('finalSignature')}
             </div>
           </div>
 
