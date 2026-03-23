@@ -5,6 +5,8 @@
  * - אחרת: ADMIN_EMAIL (או ברירת millerbitoach) + lapidwoldenberg תמיד – כדי שפריסה עם רק ADMIN_EMAIL
  *   ב-Vercel לא תחסום מנהל משנה.
  * - מנהל יחיד בלבד: הגדר ADMIN_ALLOWED_EMAILS עם מייל אחד בלבד.
+ *
+ * ניהול הורדת מנהלים: רק getSuperAdminEmail() – SUPER_ADMIN_EMAIL או ADMIN_EMAIL או ברירת millerbitoach.
  */
 
 /** מנהלים נוספים שתמיד מסונכרנים עם המנהל הראשי כשלא משתמשים ב-ADMIN_ALLOWED_EMAILS */
@@ -29,4 +31,17 @@ export function isAllowedAdminEmail(email) {
   const e = (email || '').trim().toLowerCase();
   if (!e) return false;
   return new Set(getAllowedAdminEmails()).has(e);
+}
+
+/** מייל מנהל-על: הורדת/ניהול מנהלים אחרים – רק הוא (ברירת מחדל miller). SUPER_ADMIN_EMAIL או ADMIN_EMAIL */
+export function getSuperAdminEmail() {
+  return (process.env.SUPER_ADMIN_EMAIL || process.env.ADMIN_EMAIL || 'millerbitoach@gmail.com')
+    .trim()
+    .toLowerCase();
+}
+
+export function isSuperAdminEmail(email) {
+  const e = (email || '').trim().toLowerCase();
+  if (!e) return false;
+  return e === getSuperAdminEmail();
 }

@@ -1,7 +1,7 @@
 import { readUsers, findUserById, updateUserById, deleteUserById } from '../models/User.js';
 import { readCases, findCaseById, findCasesByUserId, updateCase, deleteCase, deleteCasesByIds } from '../models/Case.js';
 import { DEFAULT_UNKNOWN, ROLES, CASE_STATUS } from '../components/constants.js';
-import { isAllowedAdminEmail } from '../utils/adminEmails.js';
+import { isSuperAdminEmail, getSuperAdminEmail } from '../utils/adminEmails.js';
 
 /**
  * קבלת תיק בודד לפי מזהה (מנהל בלבד) – כולל כל פרטי הטופס
@@ -85,16 +85,16 @@ export const getAllUsers = async (req, res) => {
 };
 
 /**
- * מנהל מוריד משתמש אחר מגישת מנהל (משנה role ל-user)
- * אסור למנהל להוריד את עצמו.
+ * מנהל-על מוריד משתמש אחר מגישת מנהל (משנה role ל-user).
+ * רק מייל SUPER_ADMIN_EMAIL / ADMIN_EMAIL (ברירת millerbitoach). אסור להוריד את מנהל-העל לפי מייל.
  */
 export const demoteAdmin = async (req, res) => {
   try {
     const { id: targetUserId } = req.params;
     const currentUserId = req.user?.id;
     const currentEmail = (req.user?.email || '').trim().toLowerCase();
-    if (!isAllowedAdminEmail(currentEmail)) {
-      return res.status(403).json({ error: 'רק מנהל מורשה יכול להוריד מנהלים אחרים' });
+    if (!isSuperAdminEmail(currentEmail)) {
+      return res.status(403).json({ error: 'רק מנהל המערכת הראשי יכול להוריד מנהלים אחרים' });
     }
     if (currentUserId === targetUserId) {
       return res.status(400).json({ error: 'לא ניתן להוריד את עצמך מגישת מנהל' });
@@ -105,6 +105,10 @@ export const demoteAdmin = async (req, res) => {
     }
     if (user.role !== ROLES.ADMIN) {
       return res.status(400).json({ error: 'למשתמש זה אין גישת מנהל' });
+    }
+    const targetEmail = (user.email || '').trim().toLowerCase();
+    if (targetEmail === getSuperAdminEmail()) {
+      return res.status(403).json({ error: 'לא ניתן להוריד את מנהל המערכת הראשי' });
     }
     const updated = await updateUserById(targetUserId, { role: ROLES.USER });
     if (!updated) {

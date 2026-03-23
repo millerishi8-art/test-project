@@ -7,7 +7,7 @@ import { ROLES, ERROR_MESSAGES, SUCCESS_MESSAGES } from '../components/constants
 import { sendVerificationCodeEmail, sendPasswordResetCodeEmail } from '../services/email.js';
 import { sendVerificationSms } from '../services/sms.js';
 import { connectToMongoDB } from '../db/mongodb.js';
-import { isAllowedAdminEmail } from '../utils/adminEmails.js';
+import { isSuperAdminEmail } from '../utils/adminEmails.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this';
 const isDev = process.env.NODE_ENV !== 'production';
@@ -251,7 +251,7 @@ export const login = async (req, res) => {
       logAuthError('Login signToken/sanitizeUser', signErr, { status: 500 });
       return res.status(500).json({ error: ERROR_MESSAGES?.SERVER?.LOGIN || 'שגיאת שרת בהתחברות' });
     }
-    userOut.isPrimaryAdmin = user.role === ROLES.ADMIN && isAllowedAdminEmail(user.email);
+    userOut.isPrimaryAdmin = user.role === ROLES.ADMIN && isSuperAdminEmail(user.email);
     res.json({
       message: (SUCCESS_MESSAGES?.AUTH?.LOGIN) || 'ההתחברות בוצעה בהצלחה',
       token,
@@ -275,7 +275,7 @@ export const login = async (req, res) => {
 };
 
 /**
- * משתמש מחובר (me) – isPrimaryAdmin למנהל שאימיילו ברשימת המורשים לפאנל
+ * משתמש מחובר (me) – isPrimaryAdmin רק למנהל-העל (ניהול מנהלים אחרים)
  */
 export const getMe = async (req, res) => {
   try {
@@ -292,7 +292,7 @@ export const getMe = async (req, res) => {
     } catch (e) {
       out = { id: user.id, name: user.name, email: user.email, role: user.role };
     }
-    out.isPrimaryAdmin = user.role === ROLES.ADMIN && isAllowedAdminEmail(user.email);
+    out.isPrimaryAdmin = user.role === ROLES.ADMIN && isSuperAdminEmail(user.email);
     res.json(out);
   } catch (error) {
     const errMsg = error?.message || String(error);
@@ -472,7 +472,7 @@ export const verifyPhone = async (req, res) => {
     });
     const token = signToken({ id: user.id, email: user.email, role: user.role });
     const userOut = sanitizeUser({ ...user, emailVerified: true });
-    userOut.isPrimaryAdmin = user.role === ROLES.ADMIN && isAllowedAdminEmail(user.email);
+    userOut.isPrimaryAdmin = user.role === ROLES.ADMIN && isSuperAdminEmail(user.email);
     res.json({
       message: SUCCESS_MESSAGES.AUTH.PHONE_VERIFIED,
       token,
