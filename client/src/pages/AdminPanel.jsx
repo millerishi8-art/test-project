@@ -152,6 +152,8 @@ const AdminPanel = () => {
       await fetchData();
       if (res.data?.alreadyRemoved) {
         setSuccessMessage('התיק כבר לא היה במערכת. הרשימה עודכנה.');
+      } else if (res.data?.userDeleted) {
+        setSuccessMessage('התיק והמשתמש ששייכו אליו הוסרו מהמערכת.');
       } else {
         setSuccessMessage('התיק הוסר לצמיתות.');
       }

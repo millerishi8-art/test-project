@@ -1,4 +1,4 @@
-import { readUsers, findUserById, updateUserById } from '../models/User.js';
+import { readUsers, findUserById, updateUserById, deleteUserById } from '../models/User.js';
 import { readCases, findCaseById, findCasesByUserId, updateCase, deleteCase } from '../models/Case.js';
 import { DEFAULT_UNKNOWN, ROLES, CASE_STATUS } from '../components/constants.js';
 
@@ -233,7 +233,26 @@ export const deleteCasePermanent = async (req, res) => {
         alreadyRemoved: true,
       });
     }
-    return res.json({ message: 'התיק הוסר לצמיתות', id });
+
+    const userId = removed.userId;
+    let userDeleted = false;
+    if (userId) {
+      const user = await findUserById(userId);
+      const isAdmin = user && String(user.role || '').toLowerCase() === 'admin';
+      /** לא מוחקים מנהלים; אם נשארו תיקים לאותו משתמש – לא מוחקים את המשתמש */
+      if (user && !isAdmin) {
+        const remainingCases = await findCasesByUserId(userId);
+        if (remainingCases.length === 0) {
+          userDeleted = await deleteUserById(userId);
+        }
+      }
+    }
+
+    return res.json({
+      message: userDeleted ? 'התיק והמשתמש הוסרו מהמערכת' : 'התיק הוסר לצמיתות',
+      id,
+      userDeleted,
+    });
   } catch (error) {
     console.error('deleteCasePermanent error:', error);
     return res.status(500).json({ error: 'שגיאה במחיקת התיק' });
