@@ -3,3 +3,10 @@
   min-height: 100dvh;
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
+
+/* מקום לבאנר אזרחות אמריקאית + כפתור וואטסאפ צף במובייל */
+@media (max-width: 768px) {
+  .app {
+    padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
+  }
+}
