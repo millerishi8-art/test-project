@@ -8,28 +8,41 @@ const SESSION_KEY = 'usaCitizenshipWidgetDismissed';
 
 const copy = {
   he: {
-    title: 'צריכים עזרה עם האזרחות האמריקאית? 🇺🇸',
-    items: [
-      'בירור מספר SSN (Social Security) קיים.',
-      'חידוש / הוצאת דרכון.',
-      'ליווי מלא בתהליכי אזרחות.',
-    ],
+    title: 'ליווי מקצועי באזרחות אמריקאית',
     cta: 'צרו קשר ב-WhatsApp',
     reopen: 'שירות אזרחות אמריקאית',
     close: 'סגור',
   },
   en: {
-    title: 'Need help with U.S. citizenship? 🇺🇸',
-    items: [
-      'Verify an existing Social Security number (SSN).',
-      'Passport renewal or new passport.',
-      'Full support through citizenship processes.',
-    ],
+    title: 'Professional U.S. citizenship support',
     cta: 'Contact on WhatsApp',
     reopen: 'U.S. citizenship help',
     close: 'Close',
   },
 };
+
+function HebrewServiceList() {
+  return (
+    <ul className="usa-widget-list">
+      <li>
+        בירור ואימות מספר ביטוח לאומי אמריקאי —{' '}
+        <span className="usa-widget-nowrap">SSN (Social&nbsp;Security)</span>.
+      </li>
+      <li>הוצאה, חידוש וליווי בנוגע לדרכון אמריקאי.</li>
+      <li>ליווי אישי ומסודר בתהליכי אזרחות, היתרים ומסמכים רשמיים.</li>
+    </ul>
+  );
+}
+
+function EnglishServiceList() {
+  return (
+    <ul className="usa-widget-list">
+      <li>Review and verification of your U.S. Social Security number (SSN).</li>
+      <li>U.S. passport issuance, renewal, and related guidance.</li>
+      <li>Step-by-step support for citizenship procedures and official paperwork.</li>
+    </ul>
+  );
+}
 
 export default function UsaCitizenshipWidget() {
   const { language, isHebrew } = useLanguage();
@@ -87,94 +100,98 @@ export default function UsaCitizenshipWidget() {
 
   return (
     <>
-      {/* Desktop: floating card on physical left */}
       <aside
-        className="usa-widget usa-widget--desktop"
+        className="usa-widget usa-widget--desktop usa-widget--with-flag"
         dir={dir}
         style={{ textAlign }}
         aria-label={t.title}
       >
-        <button
-          type="button"
-          className="usa-widget-close"
-          onClick={handleClose}
-          aria-label={t.close}
-        >
-          ×
-        </button>
-        <h4 className="usa-widget-title">{t.title}</h4>
-        <ul className="usa-widget-list">
-          {t.items.map((line) => (
-            <li key={line}>{line}</li>
-          ))}
-        </ul>
-        <a
-          href={WA_CITIZENSHIP_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="usa-widget-wa"
-        >
-          {t.cta}
-        </a>
+        <div className="usa-widget-inner">
+          <button
+            type="button"
+            className="usa-widget-close"
+            onClick={handleClose}
+            aria-label={t.close}
+          >
+            ×
+          </button>
+          <h4 className="usa-widget-title">{t.title}</h4>
+          {isHebrew ? <HebrewServiceList /> : <EnglishServiceList />}
+          <a
+            href={WA_CITIZENSHIP_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="usa-widget-wa"
+          >
+            {t.cta}
+          </a>
+        </div>
       </aside>
 
-      {/* Mobile: compact sticky bar + expandable panel */}
       <div className="usa-widget-mobile-wrap">
         {!mobileOpen ? (
-          <div className="usa-widget usa-widget--mobile-bar" dir={dir} style={{ textAlign }}>
-            <div className="usa-widget-mobile-top">
-              <p className="usa-widget-mobile-teaser">{t.title}</p>
+          <div
+            className="usa-widget usa-widget--mobile-bar usa-widget--with-flag"
+            dir={dir}
+            style={{ textAlign }}
+          >
+            <div className="usa-widget-inner">
+              <div className="usa-widget-mobile-top">
+                <p className="usa-widget-mobile-teaser">{t.title}</p>
+                <button
+                  type="button"
+                  className="usa-widget-close usa-widget-close--inline"
+                  onClick={handleClose}
+                  aria-label={t.close}
+                >
+                  ×
+                </button>
+              </div>
+              <div className="usa-widget-mobile-actions">
+                <button
+                  type="button"
+                  className="usa-widget-expand"
+                  onClick={() => setMobileOpen(true)}
+                >
+                  {isHebrew ? 'פרטים' : 'Details'}
+                </button>
+                <a
+                  href={WA_CITIZENSHIP_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="usa-widget-wa usa-widget-wa--compact"
+                >
+                  {t.cta}
+                </a>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div
+            className="usa-widget usa-widget--mobile-sheet usa-widget--with-flag"
+            dir={dir}
+            style={{ textAlign }}
+          >
+            <div className="usa-widget-inner">
               <button
                 type="button"
-                className="usa-widget-close usa-widget-close--inline"
-                onClick={handleClose}
+                className="usa-widget-close"
+                onClick={() => setMobileOpen(false)}
                 aria-label={t.close}
               >
                 ×
               </button>
-            </div>
-            <div className="usa-widget-mobile-actions">
-              <button
-                type="button"
-                className="usa-widget-expand"
-                onClick={() => setMobileOpen(true)}
-              >
-                {isHebrew ? 'פרטים' : 'Details'}
-              </button>
+              <h4 className="usa-widget-title">{t.title}</h4>
+              {isHebrew ? <HebrewServiceList /> : <EnglishServiceList />}
               <a
                 href={WA_CITIZENSHIP_URL}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="usa-widget-wa usa-widget-wa--compact"
+                className="usa-widget-wa"
               >
                 {t.cta}
               </a>
             </div>
-          </div>
-        ) : (
-          <div className="usa-widget usa-widget--mobile-sheet" dir={dir} style={{ textAlign }}>
-            <button
-              type="button"
-              className="usa-widget-close"
-              onClick={() => setMobileOpen(false)}
-              aria-label={t.close}
-            >
-              ×
-            </button>
-            <h4 className="usa-widget-title">{t.title}</h4>
-            <ul className="usa-widget-list">
-              {t.items.map((line) => (
-                <li key={line}>{line}</li>
-              ))}
-            </ul>
-            <a
-              href={WA_CITIZENSHIP_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="usa-widget-wa"
-            >
-              {t.cta}
-            </a>
           </div>
         )}
       </div>

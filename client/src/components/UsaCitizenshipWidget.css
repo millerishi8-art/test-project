@@ -1,27 +1,71 @@
-/* Physical left of viewport (matches empty gutter in RTL layout) */
+/* כרטיס צף בצד ימין של המסך; רקע דגל ארה״ב עדין */
 :root {
   --usa-widget-blue: #1e6bb8;
   --usa-widget-blue-dark: #155a9e;
-  --usa-widget-gold: #c9a227;
   --usa-widget-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
   --usa-widget-z: 10000;
+  /* דגל ארה״ב כרקע דקורטיבי (CDN יציב ל-Vite/Vercel) */
+  --usa-flag-bg: url('https://flagcdn.com/w320/us.png');
 }
 
-/* —— Desktop card —— */
+.usa-widget-inner {
+  position: relative;
+  z-index: 1;
+}
+
+/* שכבת דגל חיוורת מאחורי התוכן */
+.usa-widget--with-flag {
+  position: relative;
+  overflow: hidden;
+  background-color: #fff;
+  border: 1px solid rgba(30, 107, 184, 0.12);
+}
+
+.usa-widget--with-flag::before {
+  content: '';
+  position: absolute;
+  inset: -8px;
+  background-image: var(--usa-flag-bg);
+  background-size: cover;
+  background-position: center;
+  opacity: 0.1;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.usa-widget--with-flag::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    165deg,
+    rgba(255, 255, 255, 0.92) 0%,
+    rgba(248, 250, 252, 0.94) 45%,
+    rgba(255, 255, 255, 0.9) 100%
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* מניעת שבירת (Social Security) בין שורות */
+.usa-widget-nowrap {
+  white-space: nowrap;
+}
+
+/* —— Desktop: צד ימין —— */
 .usa-widget--desktop {
   position: fixed;
-  left: max(12px, env(safe-area-inset-left, 0px));
+  right: max(12px, env(safe-area-inset-right, 0px));
+  left: auto;
   top: 50%;
   transform: translateY(-50%);
-  width: min(240px, calc(100vw - 24px));
-  max-height: min(420px, 85vh);
+  width: min(252px, calc(100vw - 24px));
+  max-height: min(440px, 85vh);
   overflow-y: auto;
   z-index: var(--usa-widget-z);
-  background: #fff;
-  padding: 1rem 1.1rem 1.15rem;
-  border-radius: 14px;
+  padding: 0;
+  border-radius: 16px;
   box-shadow: var(--usa-widget-shadow);
-  border: 1px solid rgba(30, 107, 184, 0.12);
 }
 
 @media (max-width: 768px) {
@@ -30,7 +74,11 @@
   }
 }
 
-/* —— Mobile shell —— */
+.usa-widget--desktop .usa-widget-inner {
+  padding: 1rem 1.1rem 1.15rem;
+}
+
+/* —— Mobile —— */
 .usa-widget-mobile-wrap {
   display: none;
 }
@@ -52,19 +100,19 @@
   }
 }
 
-/* —— Mobile thin bar —— */
 .usa-widget--mobile-bar {
   display: flex;
   flex-direction: column;
   gap: 0.55rem;
-  padding: 0.65rem 0.75rem 0.75rem;
   margin: 0 10px 10px;
-  background: #fff;
   border-radius: 12px 12px 0 0;
   box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.12);
-  border: 1px solid rgba(30, 107, 184, 0.1);
   border-bottom: none;
   position: relative;
+}
+
+.usa-widget--mobile-bar .usa-widget-inner {
+  padding: 0.65rem 0.75rem 0.75rem;
 }
 
 .usa-widget-mobile-top {
@@ -93,7 +141,7 @@
 
 .usa-widget-expand {
   border: 1px solid var(--usa-widget-blue);
-  background: #fff;
+  background: rgba(255, 255, 255, 0.85);
   color: var(--usa-widget-blue);
   font-weight: 600;
   font-size: 0.8rem;
@@ -107,39 +155,40 @@
   background: rgba(30, 107, 184, 0.08);
 }
 
-/* —— Mobile expanded sheet —— */
 .usa-widget--mobile-sheet {
   margin: 0 10px 10px;
-  padding: 1rem 1rem 1.1rem;
   max-height: 55vh;
   overflow-y: auto;
-  background: #fff;
   border-radius: 14px 14px 0 0;
   box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.15);
-  border: 1px solid rgba(30, 107, 184, 0.12);
   position: relative;
 }
 
-/* —— Shared —— */
+.usa-widget--mobile-sheet .usa-widget-inner {
+  padding: 1rem 1rem 1.1rem;
+}
+
+/* —— Typography —— */
 .usa-widget-title {
   margin: 0 0 0.65rem;
-  font-size: 0.95rem;
+  font-size: 0.98rem;
   font-weight: 700;
   color: var(--usa-widget-blue-dark);
-  line-height: 1.35;
-  padding-inline-end: 1.75rem;
+  line-height: 1.4;
+  padding-inline-end: 2rem;
+  letter-spacing: -0.01em;
 }
 
 .usa-widget-list {
   margin: 0 0 0.75rem;
   padding-inline-start: 1.15rem;
-  font-size: 0.82rem;
-  line-height: 1.5;
-  color: #333;
+  font-size: 0.83rem;
+  line-height: 1.55;
+  color: #2c3e50;
 }
 
 .usa-widget-list li {
-  margin-bottom: 0.35rem;
+  margin-bottom: 0.45rem;
 }
 
 .usa-widget-list li:last-child {
@@ -177,15 +226,17 @@
   white-space: nowrap;
 }
 
+/* כפתור סגירה בפינה החיצונית של הכרטיס (ימין למסך) */
 .usa-widget-close {
   position: absolute;
-  top: 6px;
-  inset-inline-end: 6px;
+  top: 8px;
+  right: 8px;
+  left: auto;
   width: 28px;
   height: 28px;
   border: none;
   border-radius: 50%;
-  background: rgba(0, 0, 0, 0.06);
+  background: rgba(255, 255, 255, 0.9);
   color: #444;
   font-size: 1.35rem;
   line-height: 1;
@@ -195,20 +246,28 @@
   justify-content: center;
   padding: 0;
   font-family: inherit;
-  z-index: 1;
+  z-index: 2;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+[dir='rtl'] .usa-widget-close {
+  right: 8px;
+  left: auto;
 }
 
 .usa-widget-close:hover {
-  background: rgba(0, 0, 0, 0.1);
+  background: #fff;
+  color: #222;
 }
 
-.usa-widget-close--mobile {
+.usa-widget-close--inline {
   position: static;
   flex-shrink: 0;
   margin-inline-start: auto;
+  box-shadow: none;
 }
 
-/* FAB when dismissed */
+/* FAB כשהמודעה סגורה — גם בדסקטופ בצד ימין */
 .usa-widget-fab {
   position: fixed;
   z-index: var(--usa-widget-z);
@@ -223,15 +282,14 @@
   align-items: center;
   justify-content: center;
   padding: 0;
-  left: max(14px, env(safe-area-inset-left, 0px));
+  right: max(14px, env(safe-area-inset-right, 0px));
+  left: auto;
   top: 50%;
   transform: translateY(-50%);
 }
 
 @media (max-width: 768px) {
   .usa-widget-fab {
-    left: auto;
-    right: max(14px, env(safe-area-inset-right, 0px));
     top: auto;
     bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
     transform: none;
