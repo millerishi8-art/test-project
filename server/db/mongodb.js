@@ -5,6 +5,28 @@ const DB_NAME = process.env.MONGODB_DB_NAME || 'insurance-agent';
 let client = null;
 let db = null;
 
+/**
+ * שם DB שמופיע אחרי ה-host ב-URI (אם יש). ב-Atlas לעיתים יש /שם-מסד לפני ?.
+ * הקוד תמיד משתמש ב-client.db(MONGODB_DB_NAME) — אם זה לא תואם ל-URI, הנתונים "נעלמים".
+ */
+function databaseNameFromUri(uri) {
+  if (!uri || typeof uri !== 'string') return '';
+  const withoutQuery = uri.replace(/\?.*$/, '');
+  const at = withoutQuery.lastIndexOf('@');
+  const hostAndPath =
+    at >= 0
+      ? withoutQuery.slice(at + 1)
+      : withoutQuery.replace(/^mongodb(\+srv)?:\/\//i, '');
+  const slash = hostAndPath.indexOf('/');
+  if (slash < 0 || slash === hostAndPath.length - 1) return '';
+  const raw = hostAndPath.slice(slash + 1).replace(/\/+$/, '');
+  try {
+    return decodeURIComponent(raw);
+  } catch {
+    return raw;
+  }
+}
+
 function getConnectionUri() {
   let uri = (process.env.MONGODB_URI || '').trim();
   if (!uri) {
@@ -33,20 +55,40 @@ export async function connectToMongoDB() {
   connectionPromise = (async () => {
     try {
       const uri = getConnectionUri();
-      client = new MongoClient(uri, { 
-        serverSelectionTimeoutMS: 5000, // הקטנתי ל-5 שניות לזיהוי מהיר יותר ב-Vercel
-        connectTimeoutMS: 10000
+      const uriDbHint = databaseNameFromUri(uri);
+      if (uriDbHint && uriDbHint !== DB_NAME) {
+        console.warn(
+          '[MongoDB] אזהרה: ב-URI מופיע שם מסד',
+          JSON.stringify(uriDbHint),
+          'אבל האפליקציה משתמשת ב-',
+          JSON.stringify(DB_NAME),
+          '(MONGODB_DB_NAME). אם הטבלאות נמצאות תחת השם ב-URI, הגדר MONGODB_DB_NAME בהתאם או הסר את נתיב ה-DB מה-URI.'
+        );
+      }
+      // Vercel cold start + Atlas: 5s לפעמים קצר מדי
+      client = new MongoClient(uri, {
+        serverSelectionTimeoutMS: 15000,
+        connectTimeoutMS: 15000,
+        maxPoolSize: 10,
       });
-      
+
       await client.connect();
       db = client.db(DB_NAME);
-      console.log('MongoDB: חיבור ל-DB הצליח');
+      console.log(
+        '[MongoDB] חיבור הצליח | מסד פעיל:',
+        DB_NAME,
+        '| NODE_ENV:',
+        process.env.NODE_ENV || '(לא מוגדר)',
+        '| VERCEL:',
+        process.env.VERCEL ? '1' : '0'
+      );
       isConnecting = false;
       return db;
     } catch (err) {
       isConnecting = false;
       connectionPromise = null;
-      console.error('MongoDB: שגיאה בחיבור', err.message);
+      console.error('[MongoDB] שגיאת חיבור:', err?.name, err?.code || '', err?.message || err);
+      if (err?.stack) console.error('[MongoDB] stack:', err.stack);
       throw err;
     }
   })();

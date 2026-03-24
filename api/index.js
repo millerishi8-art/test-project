@@ -5,7 +5,8 @@
  *
  * משתני סביבה חובה ב-Vercel Dashboard (Settings → Environment Variables):
  * - SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
- * - MONGODB_URI (או MONGODB_PASSWORD + connection string)
+ * - MONGODB_URI (מחרוזת מלאה; הקוד לא בונה URI מ-MONGODB_PASSWORD בלבד)
+ * - MONGODB_DB_NAME (אופציונלי; ברירת מחדל insurance-agent — חייב להתאים למסד שבו נמצאת collection users)
  * - JWT_SECRET
  * - ADMIN_EMAIL (ובהתאם ADMIN_PASSWORD)
  * - EMAIL_USER, EMAIL_PASS (או SMTP/שירות מייל אחר)
