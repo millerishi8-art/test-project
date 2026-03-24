@@ -1,10 +1,11 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { caseFormTranslations } from '../translations/caseForm';
 import { buildGoogleCalendarUrl, openGoogleCalendarInNewTab } from '../utils/googleCalendar';
+import { buildCountrySelectOptions } from '../utils/countryOptions';
 import './CaseForm.css';
 
 const SIGNATURE_PAD_WIDTH = 400;
@@ -64,6 +65,7 @@ function getFormDataForBenefitType() {
     maritalStatus: 'Single',
     dependentsCount: 0,
     additionalCitizenship: 'No',
+    additionalCitizenshipCountry: '',
     previousCase: false,
     activeCase: false,
     caseEmail: '',
@@ -87,6 +89,7 @@ const CaseForm = () => {
   const { language, toggleLanguage } = useLanguage();
   const t = caseFormTranslations[language];
   const canvasRef = useRef(null);
+  const countryOptions = useMemo(() => buildCountrySelectOptions(language), [language]);
 
   const [formData, setFormData] = useState(() => getFormDataForBenefitType());
   /** @type {{ id: string, data: string, category?: string }[]} */
@@ -215,10 +218,13 @@ const CaseForm = () => {
 
   const handleChange = (e) => {
     const { name, value, type: inputType, checked } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: inputType === 'checkbox' ? checked : value,
-    }));
+    setFormData((prev) => {
+      const next = { ...prev, [name]: inputType === 'checkbox' ? checked : value };
+      if (name === 'additionalCitizenship' && value === 'No') {
+        next.additionalCitizenshipCountry = '';
+      }
+      return next;
+    });
     if (name) clearFieldErrorKey(name);
     setError('');
   };
@@ -414,13 +420,17 @@ const CaseForm = () => {
       navigate('/confirmation', { state: { benefitType: type } });
     } catch (err) {
       const status = err.response?.status;
-      const msg = err.response?.data?.error;
+      const data = err.response?.data;
+      const msg = data?.error;
+      const errCode = data?.code;
       if (status === 401) {
         setError(t.errorSessionExpired);
       } else if (status === 403) {
         setError(msg || t.errorNoPermission);
       } else if (!err.response) {
         setError(t.errorServerDown);
+      } else if (errCode === 'CITIZENSHIP_COUNTRY_REQUIRED') {
+        setError(t.errorCitizenshipCountryRequired);
       } else if (status >= 500 || msg) {
         setError(msg || t.errorServerError);
       } else {
@@ -450,6 +460,7 @@ const CaseForm = () => {
       'maritalStatus',
       'dependentsCount',
       'additionalCitizenship',
+      'additionalCitizenshipCountry',
       'caseEmail',
       'casePassword',
       'doc_birth',
@@ -493,6 +504,9 @@ const CaseForm = () => {
       errs.dependentsCount = t.errorFieldRequired;
     }
     if (!formData.additionalCitizenship) errs.additionalCitizenship = t.errorFieldRequired;
+    if (formData.additionalCitizenship === 'Yes' && !(formData.additionalCitizenshipCountry || '').trim()) {
+      errs.additionalCitizenshipCountry = t.errorCitizenshipCountryRequired;
+    }
 
     if (formData.previousCase || formData.activeCase) {
       const em = (formData.caseEmail || '').trim();
@@ -780,6 +794,33 @@ const CaseForm = () => {
                     </label>
                   </div>
                   {inlineFieldError('additionalCitizenship')}
+                  {formData.additionalCitizenship === 'Yes' && (
+                    <div
+                      className={fgClass('additionalCitizenshipCountry')}
+                      id="case-field-additionalCitizenshipCountry"
+                      style={{ marginTop: '15px' }}
+                    >
+                      <label htmlFor="case-select-additionalCitizenshipCountry">
+                        {t.labelCitizenshipCountrySelect}
+                      </label>
+                      <select
+                        id="case-select-additionalCitizenshipCountry"
+                        name="additionalCitizenshipCountry"
+                        value={formData.additionalCitizenshipCountry}
+                        onChange={handleChange}
+                        required={formData.additionalCitizenship === 'Yes'}
+                        aria-invalid={Boolean(fieldErrors.additionalCitizenshipCountry)}
+                      >
+                        <option value="">{t.placeholderCitizenshipCountrySelect}</option>
+                        {countryOptions.map((opt) => (
+                          <option key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </option>
+                        ))}
+                      </select>
+                      {inlineFieldError('additionalCitizenshipCountry')}
+                    </div>
+                  )}
                 </div>
               </div>
 

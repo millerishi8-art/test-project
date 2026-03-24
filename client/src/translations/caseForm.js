@@ -22,7 +22,7 @@ export const caseFormTranslations = {
     labelParentalDetails: 'פרטי הורים',
     labelFatherName: 'שם האב מלא *',
     placeholderFatherName: 'הזן שם אב מלא (באנגלית בלבד)',
-    labelMotherName: 'שם האם מלא (כולל שם נעורים) *',
+    labelMotherName: 'שם האם מלא (כולל שם משפחה של האם לפני נישואים) *',
     placeholderMotherName: 'הזן שם אם מלא (באנגלית בלבד)',
 
     // Section 2: Family Status & Citizenship
@@ -37,6 +37,9 @@ export const caseFormTranslations = {
     citizenshipYes: 'כן',
     citizenshipNo: 'לא',
     citizenshipQuestion: 'האם יש לך אזרחות נוספת מלבד האזרחות האמריקאית?',
+    labelCitizenshipCountrySelect: 'מדינת האזרחות הנוספת *',
+    placeholderCitizenshipCountrySelect: 'בחר מדינה מהרשימה',
+    errorCitizenshipCountryRequired: 'נא לבחור מדינה מהרשימה',
 
     // Section 3: Food Stamps History
     sectionHistory: 'היסטוריה עם "פוד סטאמפס"',
@@ -207,8 +210,8 @@ export const caseFormTranslations = {
     labelParentalDetails: 'Parental Details',
     labelFatherName: 'Father\'s Full Name *',
     placeholderFatherName: 'Enter father\'s full name',
-    labelMotherName: 'Mother\'s Full Name (inc. maiden name) *',
-    placeholderMotherName: 'Enter mother\'s full name',
+    labelMotherName: 'Mother\'s Full Name (including mother\'s family name before marriage) *',
+    placeholderMotherName: 'Enter mother\'s full name (English letters only)',
 
     // Section 2: Family Status & Citizenship
     sectionFamily: 'Family Status & Citizenship',
@@ -221,7 +224,10 @@ export const caseFormTranslations = {
     labelAdditionalCitizenship: 'Additional Citizenship *',
     citizenshipYes: 'Yes',
     citizenshipNo: 'No',
-    citizenshipQuestion: 'Do you hold any citizenship other than US?',
+    citizenshipQuestion: 'Do you have any citizenship in addition to your US citizenship?',
+    labelCitizenshipCountrySelect: 'Country of your additional citizenship *',
+    placeholderCitizenshipCountrySelect: 'Select a country from the list',
+    errorCitizenshipCountryRequired: 'Please select a country from the list',
 
     // Section 3: Food Stamps History
     sectionHistory: 'Food Stamps History',

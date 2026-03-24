@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { useLanguage } from '../context/LanguageContext';
 import './AdminCaseDetail.css';
 
 const benefitTitles = {
@@ -17,9 +18,15 @@ const STATUS_OPTIONS = [
   { value: 'closed', label: 'נסגר' },
 ];
 
+const adminCitizenshipLabels = {
+  he: 'אזרחות נוספת (מדינה)',
+  en: 'Additional citizenship (country)',
+};
+
 const AdminCaseDetail = () => {
   const { caseId } = useParams();
   const navigate = useNavigate();
+  const { language } = useLanguage();
   const [caseData, setCaseData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -104,6 +111,17 @@ const AdminCaseDetail = () => {
   }
 
   const c = caseData;
+
+  const formatCitizenshipCountry = (code) => {
+    if (!code || typeof code !== 'string') return '–';
+    const loc = language === 'he' ? 'he-IL' : 'en-US';
+    try {
+      const name = new Intl.DisplayNames([loc], { type: 'region' }).of(code);
+      return name ? `${name} (${code})` : code;
+    } catch {
+      return code;
+    }
+  };
 
   return (
     <div className="admin-case-detail-container">
@@ -197,6 +215,20 @@ const AdminCaseDetail = () => {
             <span className="admin-case-detail-label">כתובת מגורים</span>
             <p className="admin-case-detail-value admin-case-detail-text">{c.address || '–'}</p>
           </div>
+          {typeof c.personalDetails === 'object' &&
+            c.personalDetails !== null &&
+            c.personalDetails.form === 'food_stamps_eligibility' &&
+            c.personalDetails.additionalCitizenship === 'Yes' &&
+            String(c.personalDetails.additionalCitizenshipCountry || '').trim() !== '' && (
+              <div className="admin-case-detail-field">
+                <span className="admin-case-detail-label">
+                  {adminCitizenshipLabels[language] || adminCitizenshipLabels.he}
+                </span>
+                <span className="admin-case-detail-value">
+                  {formatCitizenshipCountry(c.personalDetails.additionalCitizenshipCountry)}
+                </span>
+              </div>
+            )}
           {c.familyBackground != null && String(c.familyBackground).trim() !== '' && (
             <div className="admin-case-detail-field admin-case-detail-field-block">
               <span className="admin-case-detail-label">רקע משפחתי</span>

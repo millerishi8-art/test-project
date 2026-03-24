@@ -21,9 +21,9 @@ export const benefitDetailTranslations = {
       title: 'Single person',
       description: 'Benefits for a single person',
       criteria: 'Adult (over 21) with no children. A valid ID and proof of address are required.',
-      instructions: 'Fill out the single-person benefit application form, attach ID and proof of address. After submission the case will be reviewed and you will receive an update within 1–2 weeks.',
-      estimatedTime: '1-2 weeks',
-      details: 'The single-person benefit is for those with no dependents who want personal coverage only. The process is relatively quick as fewer documents are required.',
+      instructions: 'Fill out the single-person benefit application form, attach ID and proof of address. After submission the case will be reviewed and you will receive an update between two weeks and one month.',
+      estimatedTime: 'Between 2 weeks and 1 month',
+      details: 'The single-person benefit is for those with no dependents who want personal coverage only. Fewer documents are usually required than for a family case; estimated processing is between two weeks and one month.',
       fullExplanation: [
         { heading: 'What does the single-person benefit include?', text: 'A benefit for adults over 21 with no children. Coverage is personal only and the price (₪1,800 / $500) applies to one person.' },
         { heading: 'Who is it suitable for?', text: 'Young adults after military service, singles, or anyone seeking benefit coverage on an individual basis without dependents.' },

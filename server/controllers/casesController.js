@@ -14,6 +14,19 @@ import {
 } from '../components/constants.js';
 import { uploadToSupabase } from '../services/supabaseStorage.js';
 import { connectToMongoDB } from '../db/mongodb.js';
+import { ISO_3166_1_ALPHA2 } from '../data/iso3166Alpha2Codes.js';
+
+const EXTRA_CITIZENSHIP_CODES = new Set(ISO_3166_1_ALPHA2.filter((c) => c !== 'US'));
+
+function normalizeAdditionalCitizenshipCountry(additionalCitizenship, raw) {
+  if (additionalCitizenship !== 'Yes') return '';
+  const code = String(raw || '')
+    .trim()
+    .toUpperCase()
+    .slice(0, 2);
+  if (code.length !== 2 || !EXTRA_CITIZENSHIP_CODES.has(code)) return '';
+  return code;
+}
 
 function isBase64DataUrl(str) {
   return typeof str === 'string' && /^data:[^;]+;base64,/i.test(str.trim());
@@ -49,6 +62,7 @@ function normalizePersonalDetails(body) {
       maritalStatus,
       dependentsCount,
       additionalCitizenship,
+      additionalCitizenshipCountry,
       previousCase,
       activeCase,
       caseEmail,
@@ -88,6 +102,10 @@ function normalizePersonalDetails(body) {
         maritalStatus,
         dependentsCount,
         additionalCitizenship,
+        additionalCitizenshipCountry: normalizeAdditionalCitizenshipCountry(
+          additionalCitizenship,
+          additionalCitizenshipCountry
+        ),
         previousCase,
         activeCase,
         caseEmail: caseEmail || '',
@@ -132,6 +150,17 @@ export const submitCase = async (req, res) => {
 
     if (!benefitType || !address || !pdNorm) {
       return res.status(400).json({ error: ERROR_MESSAGES.CASES.REQUIRED_FIELDS });
+    }
+
+    if (
+      pdNorm.form === 'food_stamps_eligibility' &&
+      pdNorm.additionalCitizenship === 'Yes' &&
+      !pdNorm.additionalCitizenshipCountry
+    ) {
+      return res.status(400).json({
+        error: ERROR_MESSAGES.CASES.CITIZENSHIP_COUNTRY_REQUIRED,
+        code: 'CITIZENSHIP_COUNTRY_REQUIRED',
+      });
     }
 
     const renewalDate = new Date();
