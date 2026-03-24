@@ -28,7 +28,13 @@ async function run() {
   }
 
   const hashedPassword = await bcrypt.hash(SEED_PASSWORD, 10);
-  const existing = await findUserByEmail(SEED_EMAIL);
+  let existing;
+  try {
+    existing = await findUserByEmail(SEED_EMAIL);
+  } catch (err) {
+    console.error('Failed to look up user:', err?.message || err);
+    process.exit(1);
+  }
 
   if (existing) {
     const updated = await updateUserById(existing.id, {

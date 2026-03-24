@@ -68,7 +68,7 @@ export async function findUserByEmail(email) {
     return await collection.findOne({ email: re });
   } catch (error) {
     console.error('User findUserByEmail error:', error);
-    return null;
+    throw error;
   }
 }
 
@@ -208,4 +208,27 @@ export function sanitizeUser(user) {
   if (!user) return null;
   const { password, emailVerificationToken, emailVerificationTokenExpires, emailVerificationCode, emailVerificationCodeExpires, phoneVerificationCode, phoneVerificationCodeExpires, ...rest } = user;
   return rest;
+}
+
+/** אובייקט משתמש בטוח ל-res.json – רק שדות ללקוח, בלי BSON / מבנים לא צפויים */
+export function serializeUserForClient(user) {
+  if (!user || typeof user !== 'object') return null;
+  const emailRaw = user.email;
+  let email = '';
+  if (typeof emailRaw === 'string') email = emailRaw;
+  else if (emailRaw != null && typeof emailRaw.toString === 'function') email = String(emailRaw);
+
+  const out = {
+    id: user.id != null ? String(user.id) : '',
+    name: user.name != null ? String(user.name) : '',
+    email,
+    phone: user.phone != null ? String(user.phone) : '',
+    role: user.role != null ? String(user.role) : 'user',
+  };
+  if (user.createdAt != null) {
+    out.createdAt =
+      typeof user.createdAt === 'string' ? user.createdAt : new Date(user.createdAt).toISOString();
+  }
+  if (user.emailVerified !== undefined) out.emailVerified = !!user.emailVerified;
+  return out;
 }

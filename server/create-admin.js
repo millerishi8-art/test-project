@@ -22,7 +22,13 @@ async function run() {
   const adminEmail = adminEmailRaw.trim().toLowerCase();
   const cliPassword = process.argv[3];
 
-  const existingByEmail = await findUserByEmail(adminEmail);
+  let existingByEmail;
+  try {
+    existingByEmail = await findUserByEmail(adminEmail);
+  } catch (err) {
+    console.error('שגיאה בחיפוש משתמש:', err?.message || err);
+    process.exit(1);
+  }
   if (existingByEmail) {
     if (existingByEmail.role === ROLES.ADMIN) {
       console.log('משתמש מנהל כבר קיים עם אימייל זה:', existingByEmail.email);

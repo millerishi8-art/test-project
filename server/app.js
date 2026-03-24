@@ -17,9 +17,32 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const app = express();
 
-// CORS – תצורה גמישה יותר (כולל Vercel) עם תמיכה ב-Credentials ו-Preflight
+function buildAllowedOrigins() {
+  const set = new Set([
+    'https://test-project-tan-chi.vercel.app',
+    'https://original-project-tan-chi.vercel.app',
+    'http://localhost:3000',
+    'http://localhost:5000',
+  ]);
+  (process.env.ALLOWED_ORIGINS || '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .forEach((o) => set.add(o));
+  const vu = (process.env.VERCEL_URL || '').trim();
+  if (vu) set.add(`https://${vu}`);
+  return [...set];
+}
+
+// CORS – כולל דומיין הפרודקשן בפועל + VERCEL_URL + ALLOWED_ORIGINS (מופרד בפסיקים)
+const allowedOrigins = buildAllowedOrigins();
 const corsOptions = {
-  origin: ['https://test-project-tan-chi.vercel.app', 'http://localhost:3000', 'http://localhost:5000'], // אפשר להחליף לרשימה ספציפית אבל ב-Vercel חשוב לאפשר את הדומיין
+  origin(origin, callback) {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+    console.warn('[CORS] חסום:', origin);
+    return callback(null, false);
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
