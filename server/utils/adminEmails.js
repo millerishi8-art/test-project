@@ -28,20 +28,24 @@ export function getAllowedAdminEmails() {
 }
 
 export function isAllowedAdminEmail(email) {
-  const e = (email || '').trim().toLowerCase();
+  const e = String(email == null ? '' : email)
+    .trim()
+    .toLowerCase();
   if (!e) return false;
   return new Set(getAllowedAdminEmails()).has(e);
 }
 
 /** מייל מנהל-על: הורדת/ניהול מנהלים אחרים – רק הוא (ברירת מחדל miller). SUPER_ADMIN_EMAIL או ADMIN_EMAIL */
 export function getSuperAdminEmail() {
-  return (process.env.SUPER_ADMIN_EMAIL || process.env.ADMIN_EMAIL || 'millerbitoach@gmail.com')
-    .trim()
-    .toLowerCase();
+  const raw = process.env.SUPER_ADMIN_EMAIL || process.env.ADMIN_EMAIL || 'millerbitoach@gmail.com';
+  const s = typeof raw === 'string' ? raw : String(raw || '');
+  return s.trim().toLowerCase();
 }
 
 export function isSuperAdminEmail(email) {
-  const e = (email || '').trim().toLowerCase();
+  const e = String(email == null ? '' : email)
+    .trim()
+    .toLowerCase();
   if (!e) return false;
   return e === getSuperAdminEmail();
 }

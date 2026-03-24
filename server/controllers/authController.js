@@ -32,6 +32,7 @@ function isInfrastructureError(error) {
   if (error?.name === 'MongoServerSelectionError' || error?.name === 'MongoNetworkError') return true;
   if (
     errMsg.includes('mongodb') ||
+    errMsg.includes('mongo') ||
     errMsg.includes('mongoserver') ||
     errMsg.includes('mongodb_uri') ||
     errMsg.includes('לא מחובר') ||
@@ -39,7 +40,12 @@ function isInfrastructureError(error) {
     errMsg.includes('duplicate key') ||
     errMsg.includes('getaddrinfo') ||
     errMsg.includes('timeout') ||
-    errMsg.includes('server selection timed out')
+    errMsg.includes('server selection timed out') ||
+    errMsg.includes('atlas') ||
+    errMsg.includes('ssl') ||
+    errMsg.includes('tls') ||
+    errMsg.includes('ephemeral') ||
+    errMsg.includes('econnreset')
   ) {
     return true;
   }
@@ -239,7 +245,9 @@ export const login = async (req, res) => {
     }
     if (!user) {
       console.log('[Backend] Login: user not found, returning 401. email:', maskEmail(rawEmail));
-      return res.status(401).json({ error: ERROR_MESSAGES.AUTH.INVALID_CREDENTIALS });
+      return res.status(401).json({
+        error: ERROR_MESSAGES?.AUTH?.INVALID_CREDENTIALS || 'פרטי התחברות לא תקינים',
+      });
     }
 
     const plainPassword = typeof password === 'string' ? password : String(password ?? '');
@@ -262,7 +270,9 @@ export const login = async (req, res) => {
     }
     if (!isValidPassword) {
       console.log('[Backend] Login: invalid password, returning 401. email:', maskEmail(rawEmail));
-      return res.status(401).json({ error: ERROR_MESSAGES.AUTH.INVALID_CREDENTIALS });
+      return res.status(401).json({
+        error: ERROR_MESSAGES?.AUTH?.INVALID_CREDENTIALS || 'פרטי התחברות לא תקינים',
+      });
     }
 
     // Legacy users (no emailVerified field) are allowed. Only block when explicitly false.
@@ -270,7 +280,7 @@ export const login = async (req, res) => {
     if (!isVerified) {
       console.log('[Backend] Login: email not verified, returning 403. email:', maskEmail(rawEmail));
       return res.status(403).json({
-        error: ERROR_MESSAGES.AUTH.EMAIL_NOT_VERIFIED,
+        error: ERROR_MESSAGES?.AUTH?.EMAIL_NOT_VERIFIED || 'נא לאמת את כתובת האימייל לפני ההתחברות.',
         code: 'EMAIL_NOT_VERIFIED',
       });
     }
@@ -279,7 +289,13 @@ export const login = async (req, res) => {
     let token;
     let userOut;
     try {
-      token = signToken({ id: user.id, email: user.email, role: user.role });
+      const emailForJwt =
+        typeof user.email === 'string' ? user.email : String(user.email ?? '');
+      token = signToken({
+        id: user.id != null ? String(user.id) : '',
+        email: emailForJwt,
+        role: user.role != null ? String(user.role) : 'user',
+      });
       userOut = serializeUserForClient(user);
     } catch (signErr) {
       logAuthError('Login signToken/sanitizeUser', signErr, { status: 500 });

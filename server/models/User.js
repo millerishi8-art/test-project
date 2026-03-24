@@ -210,6 +210,18 @@ export function sanitizeUser(user) {
   return rest;
 }
 
+function safeCreatedAtIso(user) {
+  if (user?.createdAt == null) return undefined;
+  const v = user.createdAt;
+  if (typeof v === 'string') return v;
+  try {
+    const d = new Date(v);
+    return Number.isNaN(d.getTime()) ? undefined : d.toISOString();
+  } catch {
+    return undefined;
+  }
+}
+
 /** אובייקט משתמש בטוח ל-res.json – רק שדות ללקוח, בלי BSON / מבנים לא צפויים */
 export function serializeUserForClient(user) {
   if (!user || typeof user !== 'object') return null;
@@ -225,10 +237,8 @@ export function serializeUserForClient(user) {
     phone: user.phone != null ? String(user.phone) : '',
     role: user.role != null ? String(user.role) : 'user',
   };
-  if (user.createdAt != null) {
-    out.createdAt =
-      typeof user.createdAt === 'string' ? user.createdAt : new Date(user.createdAt).toISOString();
-  }
+  const createdIso = safeCreatedAtIso(user);
+  if (createdIso !== undefined) out.createdAt = createdIso;
   if (user.emailVerified !== undefined) out.emailVerified = !!user.emailVerified;
   return out;
 }

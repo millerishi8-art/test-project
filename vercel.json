@@ -1,5 +1,6 @@
 {
   "version": 2,
+  "installCommand": "npm install && npm install --prefix server && npm install --prefix client",
   "rewrites": [
     {
       "source": "/api/(.*)",
