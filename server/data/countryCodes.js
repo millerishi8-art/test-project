@@ -17,3 +17,5 @@ export const ISO_3166_1_ALPHA2 = [
   'TO', 'TT', 'TN', 'TR', 'TM', 'TC', 'TV', 'UG', 'UA', 'AE', 'GB', 'UM', 'UY', 'UZ', 'VU', 'VE',
   'VN', 'VG', 'VI', 'WF', 'EH', 'YE', 'ZM', 'ZW',
 ];
+
+export default ISO_3166_1_ALPHA2;
