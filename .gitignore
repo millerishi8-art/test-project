@@ -6,7 +6,7 @@ node_modules/
 .env.local
 server/.env
 *.log
-# Local JSON dumps under server/data (optional). Tracked: codes.js (ISO country list for casesController on Linux/Vercel).
+# Local JSON dumps under server/data (optional). Do not ignore server/data/*.js (e.g. iso3166.js for casesController).
 server/data/*.json
 
 # Build output
