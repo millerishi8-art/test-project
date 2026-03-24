@@ -11,6 +11,21 @@ function logAuthError(location, err) {
   if (import.meta.env.DEV && err?.stack) console.error('[Frontend]', location, 'stack:', err.stack);
 }
 
+/** תגובת API עלולה להחזיר error כאובייקט – חובה לפני .includes / תצוגה */
+function apiErrorToString(val, fallback = '') {
+  if (val == null || val === '') return fallback;
+  if (typeof val === 'string') return val;
+  if (typeof val === 'object' && val !== null) {
+    if (typeof val.message === 'string') return val.message;
+    if (typeof val.error === 'string') return val.error;
+  }
+  try {
+    return String(val);
+  } catch {
+    return fallback;
+  }
+}
+
 const Login = () => {
   const [formData, setFormData] = useState({
     email: '',
@@ -43,7 +58,9 @@ const Login = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const showVerificationOptions = requireEmailVerification || (error && error.includes('לאמת')) || loginErrorCode === 'EMAIL_NOT_VERIFIED';
+  const errorStr = apiErrorToString(error);
+  const showVerificationOptions =
+    requireEmailVerification || errorStr.includes('לאמת') || loginErrorCode === 'EMAIL_NOT_VERIFIED';
   const showEmailVerifyBlock = showVerificationOptions;
 
   useEffect(() => {
@@ -81,7 +98,7 @@ const Login = () => {
       setLoading(false);
       return;
     }
-    setError(result.error || 'ההתחברות נכשלה.');
+    setError(apiErrorToString(result.error, 'ההתחברות נכשלה.'));
     setLoginErrorCode(result.code || null);
     setLoading(false);
   };
@@ -101,7 +118,7 @@ const Login = () => {
       setResendMessage(res.data?.message || 'נשלח שוב אימייל אימות.');
     } catch (err) {
       logAuthError('Login resend verification', err);
-      setError(err.response?.data?.error || 'שליחה חוזרת נכשלה.');
+      setError(apiErrorToString(err.response?.data?.error, 'שליחה חוזרת נכשלה.'));
     } finally {
       setResendLoading(false);
     }
@@ -124,7 +141,7 @@ const Login = () => {
       setPhoneCode('');
     } catch (err) {
       logAuthError('Login request phone verification', err);
-      setError(err.response?.data?.error || 'שליחת קוד נכשלה.');
+      setError(apiErrorToString(err.response?.data?.error, 'שליחת קוד נכשלה.'));
     } finally {
       setPhoneSendLoading(false);
     }
@@ -147,7 +164,7 @@ const Login = () => {
       navigate('/');
     } catch (err) {
       logAuthError('Login verify phone code', err);
-      setError(err.response?.data?.error || 'קוד לא תקף או שפג תוקפו.');
+      setError(apiErrorToString(err.response?.data?.error, 'קוד לא תקף או שפג תוקפו.'));
     } finally {
       setPhoneVerifyLoading(false);
     }
@@ -175,7 +192,7 @@ const Login = () => {
       setLoginErrorCode(null);
     } catch (err) {
       logAuthError('Login verify email code', err);
-      setError(err.response?.data?.error || 'הקוד לא תקף או שפג תוקפו.');
+      setError(apiErrorToString(err.response?.data?.error, 'הקוד לא תקף או שפג תוקפו.'));
     } finally {
       setEmailVerifyLoading(false);
     }
@@ -207,7 +224,7 @@ const Login = () => {
       setResetStep('code');
     } catch (err) {
       logAuthError('Request password reset', err);
-      setResetError(err.response?.data?.error || 'שליחת הקוד נכשלה.');
+      setResetError(apiErrorToString(err.response?.data?.error, 'שליחת הקוד נכשלה.'));
     } finally {
       setResetSendLoading(false);
     }
@@ -242,7 +259,7 @@ const Login = () => {
       setFormData((prev) => ({ ...prev, email }));
     } catch (err) {
       logAuthError('Reset password', err);
-      setResetError(err.response?.data?.error || 'איפוס הסיסמה נכשל.');
+      setResetError(apiErrorToString(err.response?.data?.error, 'איפוס הסיסמה נכשל.'));
     } finally {
       setResetSubmitLoading(false);
     }
@@ -387,10 +404,12 @@ const Login = () => {
           )}
           {phoneMessage && <div className="success-message">{phoneMessage}</div>}
           {emailVerifySuccess && <div className="success-message">{emailVerifySuccess}</div>}
-          {error && (
+          {errorStr && (
             <div className={loginErrorCode === 'EMAIL_NOT_VERIFIED' ? 'error-message error-message-verify' : 'error-message'}>
-              {error}
-              {(error === 'פרטי התחברות לא תקינים' || error === 'Invalid credentials' || error?.includes('Login failed')) && (
+              {errorStr}
+              {(errorStr === 'פרטי התחברות לא תקינים' ||
+                errorStr === 'Invalid credentials' ||
+                errorStr.includes('Login failed')) && (
                 <p className="error-hint">בדוק שהאימייל והסיסמה נכונים. אם הרגע נרשמת – אמת קודם את האימייל (קוד שנשלח אליך).</p>
               )}
             </div>

@@ -12,9 +12,22 @@ import { isSuperAdminEmail } from '../utils/adminEmails.js';
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this';
 const isDev = process.env.NODE_ENV !== 'production';
 
+/** הודעת שגיאה כמחרוזת – למניעת .includes על ערך לא-מחרוזתי */
+function errorMessageString(err) {
+  if (err == null) return '';
+  const m = err.message;
+  if (typeof m === 'string') return m;
+  if (m != null) return String(m);
+  try {
+    return String(err);
+  } catch {
+    return '';
+  }
+}
+
 /** Log auth error with location, root cause, optional status, and stack in dev */
 function logAuthError(location, error, opts = {}) {
-  const msg = error?.message || String(error);
+  const msg = errorMessageString(error);
   const code = error?.code;
   console.error(`[Backend] ${location}:`, msg, code != null ? `(code: ${code})` : '');
   if (opts.status != null) console.error(`[Backend] ${location} HTTP status:`, opts.status);
@@ -114,7 +127,7 @@ export const register = async (req, res) => {
     try {
       await createUser(newUser);
     } catch (err) {
-      const msg = err?.message || '';
+      const msg = errorMessageString(err);
       const code = err?.code;
       const isDuplicate = msg.includes('E11000') || msg.includes('duplicate key');
       logAuthError('Registration createUser', err, { status: isDuplicate ? 400 : 503, payload: isDuplicate ? { reason: 'duplicate_key' } : {} });
@@ -154,7 +167,7 @@ export const register = async (req, res) => {
       user: userSafe,
     });
   } catch (error) {
-    const errMsg = error?.message || String(error);
+    const errMsg = errorMessageString(error);
     const errCode = error?.code;
     const isDbError = errMsg.includes('MongoDB') || errMsg.includes('לא מחובר') || errCode === 'ECONNREFUSED' || errMsg.includes('E11000') || errMsg.includes('duplicate key') || errMsg.includes('getaddrinfo') || errMsg.includes('timeout');
     const status = isDbError ? 503 : 500;
@@ -258,7 +271,7 @@ export const login = async (req, res) => {
       user: userOut,
     });
   } catch (error) {
-    const errMsg = error?.message || String(error);
+    const errMsg = errorMessageString(error);
     const isDbError = errMsg.includes('MongoDB') || errMsg.includes('לא מחובר') || error?.code === 'ECONNREFUSED';
     const status = isDbError ? 503 : 500;
     console.error('[Backend] Login (outer catch) – root cause of 500:', errMsg);
@@ -295,7 +308,7 @@ export const getMe = async (req, res) => {
     out.isPrimaryAdmin = user.role === ROLES.ADMIN && isSuperAdminEmail(user.email);
     res.json(out);
   } catch (error) {
-    const errMsg = error?.message || String(error);
+    const errMsg = errorMessageString(error);
     const isDbError = errMsg.includes('MongoDB') || errMsg.includes('לא מחובר') || error?.code === 'ECONNREFUSED';
     const status = isDbError ? 503 : 500;
     console.error('[Backend] getMe – root cause:', errMsg);
@@ -352,7 +365,8 @@ export const verifyCode = async (req, res) => {
     console.log('[Backend] Verify code success for', maskEmail(email));
     return res.json({ message: SUCCESS_MESSAGES.AUTH.EMAIL_VERIFIED });
   } catch (error) {
-    const isDbError = error?.message && (error.message.includes('MongoDB') || error.message.includes('לא מחובר'));
+    const emsg = errorMessageString(error);
+    const isDbError = emsg.includes('MongoDB') || emsg.includes('לא מחובר');
     const status = isDbError ? 503 : 500;
     logAuthError('Verify code controller', error, { status });
     const message = isDbError ? ERROR_MESSAGES.SERVER.DB_UNAVAILABLE : ERROR_MESSAGES.AUTH.VERIFICATION_CODE_INVALID;
@@ -394,10 +408,11 @@ export const resendVerificationEmail = async (req, res) => {
       message: sent ? SUCCESS_MESSAGES.AUTH.VERIFICATION_EMAIL_SENT : resendFailMessage,
     });
   } catch (error) {
+    const emsg = errorMessageString(error);
     logAuthError('Resend verification controller', error, {
-      status: error?.message && (error.message.includes('MongoDB') || error.message.includes('לא מחובר')) ? 503 : 500,
+      status: emsg.includes('MongoDB') || emsg.includes('לא מחובר') ? 503 : 500,
     });
-    const isDbError = error?.message && (error.message.includes('MongoDB') || error.message.includes('לא מחובר'));
+    const isDbError = emsg.includes('MongoDB') || emsg.includes('לא מחובר');
     const status = isDbError ? 503 : 500;
     const message = isDbError ? ERROR_MESSAGES.SERVER.DB_UNAVAILABLE : ERROR_MESSAGES.SERVER.REGISTRATION;
     res.status(status).json({ error: message });
@@ -436,10 +451,11 @@ export const requestPhoneVerification = async (req, res) => {
       message: sent ? SUCCESS_MESSAGES.AUTH.PHONE_CODE_SENT : 'קוד האימות: ' + code + ' (SMS לא מוגדר – ראה לוג בשרת).',
     });
   } catch (error) {
+    const emsg = errorMessageString(error);
     logAuthError('Request phone verification controller', error, {
-      status: error?.message && (error.message.includes('MongoDB') || error.message.includes('לא מחובר')) ? 503 : 500,
+      status: emsg.includes('MongoDB') || emsg.includes('לא מחובר') ? 503 : 500,
     });
-    const isDbError = error?.message && (error.message.includes('MongoDB') || error.message.includes('לא מחובר'));
+    const isDbError = emsg.includes('MongoDB') || emsg.includes('לא מחובר');
     const status = isDbError ? 503 : 500;
     const message = isDbError ? ERROR_MESSAGES.SERVER.DB_UNAVAILABLE : ERROR_MESSAGES.SERVER.REGISTRATION;
     res.status(status).json({ error: message });
@@ -479,10 +495,11 @@ export const verifyPhone = async (req, res) => {
       user: userOut,
     });
   } catch (error) {
+    const emsg = errorMessageString(error);
     logAuthError('Verify phone controller', error, {
-      status: error?.message && (error.message.includes('MongoDB') || error.message.includes('לא מחובר')) ? 503 : 500,
+      status: emsg.includes('MongoDB') || emsg.includes('לא מחובר') ? 503 : 500,
     });
-    const isDbError = error?.message && (error.message.includes('MongoDB') || error.message.includes('לא מחובר'));
+    const isDbError = emsg.includes('MongoDB') || emsg.includes('לא מחובר');
     const status = isDbError ? 503 : 500;
     const message = isDbError ? ERROR_MESSAGES.SERVER.DB_UNAVAILABLE : ERROR_MESSAGES.AUTH.PHONE_CODE_INVALID;
     res.status(status).json({ error: message });

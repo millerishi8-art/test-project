@@ -35,6 +35,21 @@ function logAuthError(location, error, opts = {}) {
   if (isDev && error?.stack) console.error(`[Frontend] ${location} stack:`, error.stack);
 }
 
+/** מונע מצב שבו data.error הוא אובייקט ואז UI קורא .includes על לא-מחרוזת */
+function normalizeApiErrorField(errField, fallback) {
+  if (errField == null || errField === '') return fallback;
+  if (typeof errField === 'string') return errField;
+  if (typeof errField === 'object') {
+    if (typeof errField.message === 'string') return errField.message;
+    if (typeof errField.error === 'string') return errField.error;
+  }
+  try {
+    return String(errField);
+  } catch {
+    return fallback;
+  }
+}
+
 // נוודא שאין slash בסוף כדי לא לקבל טעויות של 404 על נתיבים
 axios.defaults.baseURL = API_URL;
 
@@ -84,8 +99,10 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       logAuthError('Login request failed', error);
       const data = error.response?.data;
-      const message = data?.error || 'Login failed';
-      const debugMsg = data?.debug;
+      const message = normalizeApiErrorField(data?.error, 'Login failed');
+      const debugRaw = data?.debug;
+      const debugMsg =
+        typeof debugRaw === 'string' ? debugRaw : debugRaw != null ? String(debugRaw) : '';
       const code = data?.code;
       return {
         success: false,
@@ -112,14 +129,19 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       logAuthError('Register request failed', error);
       const data = error.response?.data;
-      const serverError = (data && typeof data === 'object' && data.error) || 'Registration failed';
-      const debugMsg = data && typeof data === 'object' ? data.debug : undefined;
+      const serverError = normalizeApiErrorField(
+        data && typeof data === 'object' ? data.error : null,
+        'Registration failed'
+      );
+      const debugRaw = data && typeof data === 'object' ? data.debug : undefined;
+      const debugMsg =
+        typeof debugRaw === 'string' ? debugRaw : debugRaw != null ? String(debugRaw) : '';
       if (data && typeof data === 'object') {
         console.error('[Frontend] Register server response:', data);
       }
       return {
         success: false,
-        error: debugMsg ? `${serverError}: ${debugMsg}` : serverError
+        error: debugMsg ? `${serverError}: ${debugMsg}` : serverError,
       };
     }
   };
