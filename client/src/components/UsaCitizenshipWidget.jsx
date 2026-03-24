@@ -44,6 +44,24 @@ function EnglishServiceList() {
   );
 }
 
+function TitleWithFlag({ children }) {
+  return (
+    <h4 className="usa-widget-title">
+      <span className="usa-widget-title-row">
+        <img
+          src="/us-flag.svg"
+          alt=""
+          className="usa-widget-title-flag"
+          width="34"
+          height="18"
+          decoding="async"
+        />
+        <span className="usa-widget-title-text">{children}</span>
+      </span>
+    </h4>
+  );
+}
+
 export default function UsaCitizenshipWidget() {
   const { language, isHebrew } = useLanguage();
   const t = copy[language] || copy.he;
@@ -91,9 +109,14 @@ export default function UsaCitizenshipWidget() {
         aria-label={t.reopen}
         title={t.reopen}
       >
-        <span className="usa-widget-fab-icon" aria-hidden>
-          🇺🇸
-        </span>
+        <img
+          src="/us-flag.svg"
+          alt=""
+          className="usa-widget-fab-flag"
+          width="26"
+          height="14"
+          decoding="async"
+        />
       </button>
     );
   }
@@ -115,7 +138,7 @@ export default function UsaCitizenshipWidget() {
           >
             ×
           </button>
-          <h4 className="usa-widget-title">{t.title}</h4>
+          <TitleWithFlag>{t.title}</TitleWithFlag>
           {isHebrew ? <HebrewServiceList /> : <EnglishServiceList />}
           <a
             href={WA_CITIZENSHIP_URL}
@@ -137,7 +160,17 @@ export default function UsaCitizenshipWidget() {
           >
             <div className="usa-widget-inner">
               <div className="usa-widget-mobile-top">
-                <p className="usa-widget-mobile-teaser">{t.title}</p>
+                <p className="usa-widget-mobile-teaser">
+                  <img
+                    src="/us-flag.svg"
+                    alt=""
+                    className="usa-widget-teaser-flag"
+                    width="22"
+                    height="12"
+                    decoding="async"
+                  />
+                  {t.title}
+                </p>
                 <button
                   type="button"
                   className="usa-widget-close usa-widget-close--inline"
@@ -181,7 +214,7 @@ export default function UsaCitizenshipWidget() {
               >
                 ×
               </button>
-              <h4 className="usa-widget-title">{t.title}</h4>
+              <TitleWithFlag>{t.title}</TitleWithFlag>
               {isHebrew ? <HebrewServiceList /> : <EnglishServiceList />}
               <a
                 href={WA_CITIZENSHIP_URL}
