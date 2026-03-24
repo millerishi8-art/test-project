@@ -42,11 +42,20 @@ export const updateCase = async (caseId, updates) => {
     { $set: updates },
     { returnDocument: 'after' }
   );
-  return result.value;
+  // MongoDB Node driver v6+ מחזיר את המסמך ישירות (לא { value })
+  return result ?? null;
 };
 
 export const deleteCase = async (caseId) => {
   const db = getDb();
   const result = await db.collection('cases').findOneAndDelete({ id: caseId });
-  return result.value;
+  return result ?? null;
+};
+
+/** מחיקה מרובה לפי מזהי תיק (למשל ניקוי יתומים אחרי מחיקת משתמש) */
+export const deleteCasesByIds = async (ids) => {
+  if (!Array.isArray(ids) || ids.length === 0) return 0;
+  const db = getDb();
+  const result = await db.collection('cases').deleteMany({ id: { $in: ids } });
+  return result.deletedCount || 0;
 };

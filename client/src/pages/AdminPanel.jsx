@@ -29,6 +29,7 @@ const AdminPanel = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user: currentUser } = useAuth();
+  const canManageAdmins = !!currentUser?.isPrimaryAdmin;
   const stateTab = location.state?.tab;
   const stateFilter = location.state?.filter;
 
@@ -346,7 +347,9 @@ const AdminPanel = () => {
                       </span>
                     </td>
                     <td>
-                      {(user.role === 'admin' || user.role === 'Admin') && user.id !== currentUser?.id ? (
+                      {(user.role === 'admin' || user.role === 'Admin') &&
+                      user.id !== currentUser?.id &&
+                      canManageAdmins ? (
                         <button
                           type="button"
                           className="admin-demote-btn"
