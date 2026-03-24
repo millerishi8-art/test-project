@@ -1,0 +1,316 @@
+/* כרטיס צף בצד ימין של המסך; רקע דגל ארה״ב עדין */
+:root {
+  --usa-widget-blue: #1e6bb8;
+  --usa-widget-blue-dark: #155a9e;
+  --usa-widget-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+  --usa-widget-z: 10000;
+  /* דגל ארה״ב כרקע דקורטיבי (CDN יציב ל-Vite/Vercel) */
+  --usa-flag-bg: url('https://flagcdn.com/w320/us.png');
+}
+
+.usa-widget-inner {
+  position: relative;
+  z-index: 1;
+}
+
+/* שכבת דגל חיוורת מאחורי התוכן */
+.usa-widget--with-flag {
+  position: relative;
+  overflow: hidden;
+  background-color: #fff;
+  border: 1px solid rgba(30, 107, 184, 0.12);
+}
+
+.usa-widget--with-flag::before {
+  content: '';
+  position: absolute;
+  inset: -8px;
+  background-image: var(--usa-flag-bg);
+  background-size: cover;
+  background-position: center;
+  opacity: 0.1;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.usa-widget--with-flag::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    165deg,
+    rgba(255, 255, 255, 0.92) 0%,
+    rgba(248, 250, 252, 0.94) 45%,
+    rgba(255, 255, 255, 0.9) 100%
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* מניעת שבירת (Social Security) בין שורות */
+.usa-widget-nowrap {
+  white-space: nowrap;
+}
+
+/* —— Desktop: צד ימין —— */
+.usa-widget--desktop {
+  position: fixed;
+  right: max(12px, env(safe-area-inset-right, 0px));
+  left: auto;
+  top: 50%;
+  transform: translateY(-50%);
+  width: min(252px, calc(100vw - 24px));
+  max-height: min(440px, 85vh);
+  overflow-y: auto;
+  z-index: var(--usa-widget-z);
+  padding: 0;
+  border-radius: 16px;
+  box-shadow: var(--usa-widget-shadow);
+}
+
+@media (max-width: 768px) {
+  .usa-widget--desktop {
+    display: none;
+  }
+}
+
+.usa-widget--desktop .usa-widget-inner {
+  padding: 1rem 1.1rem 1.15rem;
+}
+
+/* —— Mobile —— */
+.usa-widget-mobile-wrap {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .usa-widget-mobile-wrap {
+    display: block;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: var(--usa-widget-z);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    pointer-events: none;
+  }
+
+  .usa-widget-mobile-wrap .usa-widget {
+    pointer-events: auto;
+  }
+}
+
+.usa-widget--mobile-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  margin: 0 10px 10px;
+  border-radius: 12px 12px 0 0;
+  box-shadow: 0 -4px 24px rgba(0, 0, 0, 0.12);
+  border-bottom: none;
+  position: relative;
+}
+
+.usa-widget--mobile-bar .usa-widget-inner {
+  padding: 0.65rem 0.75rem 0.75rem;
+}
+
+.usa-widget-mobile-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.usa-widget-mobile-teaser {
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #1a2d47;
+  line-height: 1.35;
+}
+
+.usa-widget-mobile-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  align-items: center;
+}
+
+.usa-widget-expand {
+  border: 1px solid var(--usa-widget-blue);
+  background: rgba(255, 255, 255, 0.85);
+  color: var(--usa-widget-blue);
+  font-weight: 600;
+  font-size: 0.8rem;
+  padding: 0.4rem 0.65rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.usa-widget-expand:active {
+  background: rgba(30, 107, 184, 0.08);
+}
+
+.usa-widget--mobile-sheet {
+  margin: 0 10px 10px;
+  max-height: 55vh;
+  overflow-y: auto;
+  border-radius: 14px 14px 0 0;
+  box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.15);
+  position: relative;
+}
+
+.usa-widget--mobile-sheet .usa-widget-inner {
+  padding: 1rem 1rem 1.1rem;
+}
+
+/* —— Typography —— */
+.usa-widget-title {
+  margin: 0 0 0.65rem;
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: var(--usa-widget-blue-dark);
+  line-height: 1.4;
+  padding-inline-end: 2rem;
+  letter-spacing: -0.01em;
+}
+
+.usa-widget-list {
+  margin: 0 0 0.75rem;
+  padding-inline-start: 1.15rem;
+  font-size: 0.83rem;
+  line-height: 1.55;
+  color: #2c3e50;
+}
+
+.usa-widget-list li {
+  margin-bottom: 0.45rem;
+}
+
+.usa-widget-list li:last-child {
+  margin-bottom: 0;
+}
+
+.usa-widget-wa {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  background: linear-gradient(180deg, #2de26a 0%, #25d366 100%);
+  color: #fff !important;
+  text-align: center;
+  padding: 0.65rem 0.75rem;
+  border-radius: 10px;
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 0.85rem;
+  box-shadow: 0 3px 12px rgba(37, 211, 102, 0.35);
+  border: none;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.usa-widget-wa:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 5px 16px rgba(37, 211, 102, 0.45);
+  color: #fff !important;
+}
+
+.usa-widget-wa--compact {
+  width: auto;
+  flex: 0 0 auto;
+  padding: 0.45rem 0.7rem;
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+/* כפתור סגירה בפינה החיצונית של הכרטיס (ימין למסך) */
+.usa-widget-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  left: auto;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+  color: #444;
+  font-size: 1.35rem;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font-family: inherit;
+  z-index: 2;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+[dir='rtl'] .usa-widget-close {
+  right: 8px;
+  left: auto;
+}
+
+.usa-widget-close:hover {
+  background: #fff;
+  color: #222;
+}
+
+.usa-widget-close--inline {
+  position: static;
+  flex-shrink: 0;
+  margin-inline-start: auto;
+  box-shadow: none;
+}
+
+/* FAB כשהמודעה סגורה — גם בדסקטופ בצד ימין */
+.usa-widget-fab {
+  position: fixed;
+  z-index: var(--usa-widget-z);
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 2px solid rgba(30, 107, 184, 0.35);
+  background: #fff;
+  box-shadow: var(--usa-widget-shadow);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  right: max(14px, env(safe-area-inset-right, 0px));
+  left: auto;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+@media (max-width: 768px) {
+  .usa-widget-fab {
+    top: auto;
+    bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
+    transform: none;
+  }
+}
+
+.usa-widget-fab-icon {
+  font-size: 1.35rem;
+  line-height: 1;
+}
+
+@media (min-width: 769px) {
+  .usa-widget-fab:hover {
+    border-color: var(--usa-widget-blue);
+    transform: translateY(-50%) scale(1.05);
+  }
+}
+
+@media (max-width: 768px) {
+  .usa-widget-fab:hover {
+    border-color: var(--usa-widget-blue);
+    transform: scale(1.05);
+  }
+}
