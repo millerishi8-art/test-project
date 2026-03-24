@@ -25,7 +25,7 @@ export const benefitDetailTranslations = {
       estimatedTime: '1-2 weeks',
       details: 'The single-person benefit is for those with no dependents who want personal coverage only. The process is relatively quick as fewer documents are required.',
       fullExplanation: [
-        { heading: 'What does the single-person benefit include?', text: 'A benefit for adults over 21 with no children. Coverage is personal only and the price (₪1,100 / $300) applies to one person.' },
+        { heading: 'What does the single-person benefit include?', text: 'A benefit for adults over 21 with no children. Coverage is personal only and the price (₪1,800 / $500) applies to one person.' },
         { heading: 'Who is it suitable for?', text: 'Young adults after military service, singles, or anyone seeking benefit coverage on an individual basis without dependents.' },
         { heading: 'How do I get started?', text: 'Click "Continue to fill details", fill in your personal details and attach ID and proof of address. Processing is usually faster than for family benefits.' },
       ],
