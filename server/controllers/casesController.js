@@ -14,9 +14,9 @@ import {
 } from '../components/constants.js';
 import { uploadToSupabase } from '../services/supabaseStorage.js';
 import { connectToMongoDB } from '../db/mongodb.js';
-import { ISO_3166_1_ALPHA2 } from '../data/iso3166.js';
+import iso3166Alpha2Codes from '../data/countryCodes.js';
 
-const EXTRA_CITIZENSHIP_CODES = new Set(ISO_3166_1_ALPHA2.filter((c) => c !== 'US'));
+const EXTRA_CITIZENSHIP_CODES = new Set(iso3166Alpha2Codes.filter((c) => c !== 'US'));
 
 function normalizeAdditionalCitizenshipCountry(additionalCitizenship, raw) {
   if (additionalCitizenship !== 'Yes') return '';
