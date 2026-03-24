@@ -14,7 +14,7 @@ import {
 } from '../components/constants.js';
 import { uploadToSupabase } from '../services/supabaseStorage.js';
 import { connectToMongoDB } from '../db/mongodb.js';
-import { ISO_3166_1_ALPHA2 } from '../data/iso3166Alpha2Codes.js';
+import { ISO_3166_1_ALPHA2 } from '../data/codes.js';
 
 const EXTRA_CITIZENSHIP_CODES = new Set(ISO_3166_1_ALPHA2.filter((c) => c !== 'US'));
 
