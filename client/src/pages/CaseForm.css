@@ -853,6 +853,61 @@
   line-height: 1.4;
 }
 
+.case-form-defer-stage1-banner {
+  background: linear-gradient(135deg, #e8fff0 0%, #f0fff4 100%);
+  border: 1px solid #2e7d32;
+  border-radius: 14px;
+  padding: 1rem 1.15rem;
+  margin-bottom: 1rem;
+}
+
+.case-form-defer-max-ymd {
+  margin: 0.5rem 0 0.85rem;
+  font-size: 0.95rem;
+  color: #1b5e20;
+}
+
+.case-form-defer-deadline-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.case-form-defer-deadline-label {
+  display: block;
+  width: 100%;
+  font-weight: 600;
+  color: #1a3a52;
+  margin-bottom: 0.25rem;
+}
+
+.case-form-defer-date-input {
+  padding: 0.55rem 0.75rem;
+  font-size: 1rem;
+  border: 1px solid #1e6bb8;
+  border-radius: 10px;
+  min-height: 44px;
+}
+
+.case-form-defer-submit-deadline-btn {
+  padding: 0.6rem 1.1rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(180deg, #2e7d32 0%, #1b5e20 100%);
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  box-shadow: 0 2px 10px rgba(46, 125, 50, 0.3);
+}
+
+.case-form-defer-submit-deadline-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
 /* —— מובייל —— */
 @media (max-width: 768px) {
   .case-form-container {

@@ -371,6 +371,56 @@
   cursor: not-allowed;
 }
 
+.admin-tabs-superadmin {
+  width: 100%;
+  margin-bottom: 1rem;
+}
+
+.admin-tabs-superadmin button {
+  width: 100%;
+  max-width: 520px;
+  margin: 0 auto;
+  display: block;
+  padding: 0.85rem 1.5rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+  border-radius: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.95);
+  background: linear-gradient(135deg, #e65100 0%, #bf360c 100%);
+  color: white;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(191, 54, 12, 0.35);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.admin-tabs-superadmin button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(191, 54, 12, 0.45);
+}
+
+.admin-tabs-superadmin button.active {
+  box-shadow: 0 0 0 3px #fff, 0 8px 28px rgba(191, 54, 12, 0.5);
+}
+
+.admin-superadmin-section {
+  margin-bottom: 2rem;
+}
+
+.admin-superadmin-intro {
+  margin: 0 0 1.25rem;
+  padding: 1rem 1.15rem;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 12px;
+  line-height: 1.5;
+  color: #4a3728;
+}
+
+.admin-superadmin-subtitle {
+  margin: 1.75rem 0 0.75rem;
+  font-size: 1.15rem;
+  color: #5d4037;
+}
+
 .admin-cases-filters {
   display: flex;
   gap: 0.75rem;

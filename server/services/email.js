@@ -227,7 +227,7 @@ export async function sendDeferredPaymentRequestToAdmin(adminEmail, { clientName
         <li><strong>אימייל:</strong> ${email}</li>
         <li><strong>מזהה משתמש:</strong> ${id}</li>
       </ul>
-      <p>יש לאשר בפאנל הניהול (משתמשים) אם הסכמת מראש – לאחר האישור הלקוח יוכל לשלוח את הטופס בלי קובץ תשלום ויקבל התחייבות לתאריך יעד.</p>
+      <p>יש לאשר בפאנל הניהול תחת <strong>מנהל ראשי (אישורים מיוחדים)</strong> אם הסכמת מראש.</p>
       <hr style="border: none; border-top: 1px solid #eee;" />
       <p style="color: #888; font-size: 12px;">סוכן ביטוח – הודעה אוטומטית</p>
     </div>
@@ -266,8 +266,8 @@ export async function sendDeferredPaymentApprovedToClient(to, name, deadlineIso)
   const html = `
     <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 520px;">
       <h2>שלום ${displayName},</h2>
-      <p>בקשתך ל<strong>תשלום מאוחר</strong> אושרה על ידי המנהל.</p>
-      <p>כעת תוכל/י להגיש את טופס פתיחת התיק בלי להעלות אישור תשלום מיידי.</p>
+      <p>המנהל אישר את <strong>מועד התשלום</strong> שבחרת.</p>
+      <p>כעת תוכל/י להגיש את טופס פתיחת התיק בלי להעלות אישור תשלום מיידי, לפי ההתחייבות לתאריך שלהלן.</p>
       <p><strong>מועד יעד להשלמת התשלום לסוכן:</strong> ${deadlineStr}</p>
       <p style="color: #444;">יש להשלים את התשלום עד לתאריך זה (או לפי הסכם שעודכן עם המנהל).</p>
       <hr style="border: none; border-top: 1px solid #eee;" />
@@ -281,6 +281,90 @@ export async function sendDeferredPaymentApprovedToClient(to, name, deadlineIso)
     return true;
   } catch (err) {
     console.error('[Email] Deferred payment approved email failed:', err?.message || err);
+    return false;
+  }
+}
+
+/**
+ * לקוח קיבל אישור ראשון – צריך להזין תאריך יעד לתשלום (לא יאוחר מחודש).
+ */
+export async function sendDeferredPaymentRequestApprovedAwaitingDate(to, name, maxYmd) {
+  const config = getConfig();
+  if (!config.isConfigured) {
+    console.warn('[Email] Not configured. Cannot send awaiting-date email.');
+    return false;
+  }
+  const transport = getTransporter();
+  if (!transport) return false;
+
+  const fromAddress = config.EMAIL_FROM || config.EMAIL_USER || config.SMTP_USER;
+  if (!fromAddress || !(to || '').trim()) return false;
+
+  const displayName = (name || '').trim() || 'משתמש';
+  const maxStr = maxYmd ? String(maxYmd) : '';
+
+  const subject = 'אושרה בקשתך – נא להזין מועד אחרון לתשלום';
+  const html = `
+    <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 520px;">
+      <h2>שלום ${displayName},</h2>
+      <p>בקשתך ל<strong>תשלום מאוחר</strong> בפתיחת התיק אושרה בשלב הראשון.</p>
+      <p>היכנס/י לטופס פתיחת התיק באתר, ובחלק <strong>אישור תשלום</strong> הזינ/י את <strong>מועד היעד האחרון</strong> שאת/ה מתחייב/ת לשלם לסוכן (לא יאוחר מחודש ממועד האישור).</p>
+      ${maxStr ? `<p><strong>תאריך אחרון מותר בבחירה:</strong> עד ${maxStr}</p>` : ''}
+      <p>לאחר שתשלח/י את התאריך, המנהל הראשי יאשר אותו – ואז יוכלו להשלים את שליחת התיק בלי קובץ תשלום מיידי.</p>
+      <hr style="border: none; border-top: 1px solid #eee;" />
+      <p style="color: #888; font-size: 12px;">סוכן ביטוח</p>
+    </div>
+  `;
+  const text = `שלום ${displayName},\nבקשת תשלום מאוחר אושרה בשלב ראשון. היכנסו לאתר לטופס פתיחת התיק והזינו מועד אחרון לתשלום (עד ${maxStr}).\nלאחר אישור המנהל לתאריך תוכלו להגיש את התיק.`;
+
+  try {
+    await transport.sendMail({ from: fromAddress, to: (to || '').trim(), subject, text, html });
+    return true;
+  } catch (err) {
+    console.error('[Email] Awaiting date email failed:', err?.message || err);
+    return false;
+  }
+}
+
+/** לקוח שלח תאריך לתשלום – המנהל צריך לאשר */
+export async function sendDeferredPaymentProposalSubmittedToAdmin(adminEmail, { clientName, clientEmail, clientId, proposedYmd }) {
+  const config = getConfig();
+  if (!config.isConfigured) {
+    console.warn('[Email] Not configured. Cannot notify admin of proposal.');
+    return false;
+  }
+  const transport = getTransporter();
+  if (!transport) return false;
+
+  const fromAddress = config.EMAIL_FROM || config.EMAIL_USER || config.SMTP_USER;
+  if (!fromAddress || !(adminEmail || '').trim()) return false;
+
+  const to = (adminEmail || '').trim();
+  const name = (clientName || '').trim() || 'לקוח';
+  const email = (clientEmail || '').trim() || '—';
+  const id = (clientId || '').trim() || '—';
+  const dateStr = (proposedYmd || '').trim() || '—';
+
+  const subject = 'תאריך תשלום הוצע על ידי לקוח – לאישור מנהל ראשי';
+  const html = `
+    <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 560px;">
+      <h2>לקוח בחר מועד תשלום</h2>
+      <p>יש לאשר או לדחות את התאריך ב<strong>פאנל מנהל ראשי → אישורים מיוחדים</strong>.</p>
+      <ul style="padding-right: 20px;">
+        <li><strong>שם:</strong> ${name}</li>
+        <li><strong>אימייל:</strong> ${email}</li>
+        <li><strong>מזהה:</strong> ${id}</li>
+        <li><strong>תאריך שהוצע:</strong> ${dateStr}</li>
+      </ul>
+    </div>
+  `;
+  const text = `לקוח הציע תאריך תשלום: ${dateStr}\nשם: ${name}\nאימייל: ${email}\nמזהה: ${id}`;
+
+  try {
+    await transport.sendMail({ from: fromAddress, to, subject, text, html });
+    return true;
+  } catch (err) {
+    console.error('[Email] Proposal to admin failed:', err?.message || err);
     return false;
   }
 }

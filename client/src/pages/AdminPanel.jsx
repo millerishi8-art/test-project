@@ -70,6 +70,12 @@ const AdminPanel = () => {
 
   const adminUsers = users.filter((u) => (u.role || '').toLowerCase() === 'admin');
   const clientUsers = users.filter((u) => (u.role || '').toLowerCase() !== 'admin');
+  const deferNewRequests = clientUsers.filter((u) => u.deferredPaymentRequestPending);
+  const deferAwaitingDateFromClient = clientUsers.filter(
+    (u) => u.deferredPaymentAwaitingClientDate && !u.deferredPaymentProposalPending
+  );
+  const deferPendingDateApproval = clientUsers.filter((u) => u.deferredPaymentProposalPending);
+  const superAdminDeferCount = deferNewRequests.length + deferPendingDateApproval.length;
 
   const fetchData = async () => {
     try {
@@ -126,10 +132,10 @@ const AdminPanel = () => {
     }
   };
 
-  const handleApproveDeferPayment = async (userId) => {
+  const handleSuperApproveRequest = async (userId) => {
     if (
       !window.confirm(
-        'לאשר תשלום מאוחר ללקוח? ייקבע מועד יעד (ברירת מחדל: חודש מהיום) ויישלח מייל ללקוח.'
+        'לאשר את הבקשה? יישלח מייל ללקוח להזנת מועד תשלום (לא יאוחר מחודש ממועד זה).'
       )
     ) {
       return;
@@ -137,30 +143,64 @@ const AdminPanel = () => {
     setDeferUpdatingId(userId);
     setSuccessMessage('');
     try {
-      await axios.patch(`/admin/users/${userId}/deferred-payment`, { approved: true });
+      await axios.patch(`/admin/users/${userId}/deferred-payment`, { approveRequest: true });
       await fetchData();
-      setSuccessMessage('אושר תשלום מאוחר; נשלח מייל ללקוח.');
+      setSuccessMessage('בקשה אושרה; נשלח מייל ללקוח להזנת תאריך.');
       setTimeout(() => setSuccessMessage(''), 4000);
     } catch (err) {
-      console.error('approve defer payment failed', err);
-      alert(err.response?.data?.error || 'שגיאה באישור תשלום מאוחר');
+      console.error('approve defer request failed', err);
+      alert(err.response?.data?.error || 'שגיאה באישור הבקשה');
     } finally {
       setDeferUpdatingId(null);
     }
   };
 
-  const handleRejectDeferPayment = async (userId) => {
-    if (!window.confirm('לדחות את בקשת תשלום המאוחר?')) return;
+  const handleSuperApproveDeadline = async (userId) => {
+    if (!window.confirm('לאשר את תאריך התשלום מהלקוח ולהפעיל אישור תשלום מיוחד?')) return;
+    setDeferUpdatingId(userId);
+    setSuccessMessage('');
+    try {
+      await axios.patch(`/admin/users/${userId}/deferred-payment`, { approveDeadline: true });
+      await fetchData();
+      setSuccessMessage('תאריך התשלום אושר; נשלח מייל ללקוח.');
+      setTimeout(() => setSuccessMessage(''), 4000);
+    } catch (err) {
+      console.error('approve deadline failed', err);
+      alert(err.response?.data?.error || 'שגיאה באישור התאריך');
+    } finally {
+      setDeferUpdatingId(null);
+    }
+  };
+
+  const handleSuperRejectAll = async (userId) => {
+    if (!window.confirm('לבטל לחלוטין את תהליך התשלום המאוחר למשתמש זה?')) return;
     setDeferUpdatingId(userId);
     setSuccessMessage('');
     try {
       await axios.patch(`/admin/users/${userId}/deferred-payment`, { reject: true });
       await fetchData();
-      setSuccessMessage('הבקשה נדחתה.');
+      setSuccessMessage('התהליך בוטל.');
       setTimeout(() => setSuccessMessage(''), 4000);
     } catch (err) {
-      console.error('reject defer payment failed', err);
-      alert(err.response?.data?.error || 'שגיאה בדחיית הבקשה');
+      console.error('reject defer failed', err);
+      alert(err.response?.data?.error || 'שגיאה בביטול');
+    } finally {
+      setDeferUpdatingId(null);
+    }
+  };
+
+  const handleSuperRejectProposal = async (userId) => {
+    if (!window.confirm('לדחות את התאריך שהלקוח בחר ולהחזיר אותו להזנה מחדש?')) return;
+    setDeferUpdatingId(userId);
+    setSuccessMessage('');
+    try {
+      await axios.patch(`/admin/users/${userId}/deferred-payment`, { rejectProposal: true });
+      await fetchData();
+      setSuccessMessage('התאריך נדחה; הלקוח יוכל לבחור מחדש.');
+      setTimeout(() => setSuccessMessage(''), 4000);
+    } catch (err) {
+      console.error('reject proposal failed', err);
+      alert(err.response?.data?.error || 'שגיאה בדחיית התאריך');
     } finally {
       setDeferUpdatingId(null);
     }
@@ -287,6 +327,17 @@ const AdminPanel = () => {
       </div>
 
       <div className="admin-tabs">
+        {canManageAdmins && (
+          <div className="admin-tabs-superadmin">
+            <button
+              type="button"
+              className={mainSection === 'superadmin' ? 'active' : ''}
+              onClick={() => setMainSection('superadmin')}
+            >
+              מנהל ראשי — אישורים מיוחדים ({superAdminDeferCount})
+            </button>
+          </div>
+        )}
         <div className="admin-tabs-main">
           <button
             className={mainSection === 'cases' ? 'active' : ''}
@@ -346,6 +397,168 @@ const AdminPanel = () => {
         )}
       </div>
 
+      {mainSection === 'superadmin' && canManageAdmins && (
+        <div className="admin-table-container admin-superadmin-section">
+          {successMessage && (
+            <div className="admin-success-message" role="alert">
+              {successMessage}
+            </div>
+          )}
+          <p className="admin-superadmin-intro">
+            בקשות תשלום מאוחר: אישור ראשון → הלקוח בוחר תאריך (עד חודש) → אישור סופי לתאריך. רק לך מוצג אזור זה.
+          </p>
+
+          <h2 className="admin-superadmin-subtitle">בקשות חדשות (ממתינות לאישור ראשון)</h2>
+          <table className="admin-table">
+            <thead>
+              <tr>
+                <th>שם</th>
+                <th>אימייל</th>
+                <th>טלפון</th>
+                <th>תאריך בקשה</th>
+                <th>פעולות</th>
+              </tr>
+            </thead>
+            <tbody>
+              {deferNewRequests.length === 0 ? (
+                <tr>
+                  <td colSpan="5" className="empty-state">
+                    אין בקשות חדשות.
+                  </td>
+                </tr>
+              ) : (
+                deferNewRequests.map((user) => (
+                  <tr key={user.id}>
+                    <td>{user.name}</td>
+                    <td>{user.email}</td>
+                    <td>{user.phone}</td>
+                    <td>{formatDate(user.deferredPaymentRequestedAt)}</td>
+                    <td>
+                      <div className="admin-actions-cell admin-defer-actions">
+                        <button
+                          type="button"
+                          className="admin-defer-approve-btn"
+                          onClick={() => handleSuperApproveRequest(user.id)}
+                          disabled={deferUpdatingId !== null}
+                        >
+                          {deferUpdatingId === user.id ? 'מעדכן...' : 'אשר בקשה'}
+                        </button>
+                        <button
+                          type="button"
+                          className="admin-defer-reject-btn"
+                          onClick={() => handleSuperRejectAll(user.id)}
+                          disabled={deferUpdatingId !== null}
+                        >
+                          דחה
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+
+          <h2 className="admin-superadmin-subtitle">ממתינות לתאריך מהלקוח</h2>
+          <table className="admin-table">
+            <thead>
+              <tr>
+                <th>שם</th>
+                <th>אימייל</th>
+                <th>אושר בשלב ראשון</th>
+                <th>פעולות</th>
+              </tr>
+            </thead>
+            <tbody>
+              {deferAwaitingDateFromClient.length === 0 ? (
+                <tr>
+                  <td colSpan="4" className="empty-state">
+                    אין לקוחות בשלב הזנה של תאריך.
+                  </td>
+                </tr>
+              ) : (
+                deferAwaitingDateFromClient.map((user) => (
+                  <tr key={user.id}>
+                    <td>{user.name}</td>
+                    <td>{user.email}</td>
+                    <td>{formatDate(user.deferredPaymentRequestApprovedAt)}</td>
+                    <td>
+                      <button
+                        type="button"
+                        className="admin-defer-reject-btn"
+                        onClick={() => handleSuperRejectAll(user.id)}
+                        disabled={deferUpdatingId !== null}
+                      >
+                        בטל תהליך
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+
+          <h2 className="admin-superadmin-subtitle">ממתינות לאישור תאריך תשלום</h2>
+          <table className="admin-table">
+            <thead>
+              <tr>
+                <th>שם</th>
+                <th>אימייל</th>
+                <th>תאריך שהוצע</th>
+                <th>פעולות</th>
+              </tr>
+            </thead>
+            <tbody>
+              {deferPendingDateApproval.length === 0 ? (
+                <tr>
+                  <td colSpan="4" className="empty-state">
+                    אין תאריכים ממתינים לאישור.
+                  </td>
+                </tr>
+              ) : (
+                deferPendingDateApproval.map((user) => (
+                  <tr key={user.id}>
+                    <td>{user.name}</td>
+                    <td>{user.email}</td>
+                    <td>
+                      <strong>{user.deferredPaymentProposedDeadline || '—'}</strong>
+                    </td>
+                    <td>
+                      <div className="admin-actions-cell admin-defer-actions">
+                        <button
+                          type="button"
+                          className="admin-defer-approve-btn"
+                          onClick={() => handleSuperApproveDeadline(user.id)}
+                          disabled={deferUpdatingId !== null}
+                        >
+                          {deferUpdatingId === user.id ? 'מעדכן...' : 'אשר תאריך'}
+                        </button>
+                        <button
+                          type="button"
+                          className="admin-defer-reject-btn"
+                          onClick={() => handleSuperRejectProposal(user.id)}
+                          disabled={deferUpdatingId !== null}
+                        >
+                          דחה תאריך
+                        </button>
+                        <button
+                          type="button"
+                          className="admin-remove-btn"
+                          onClick={() => handleSuperRejectAll(user.id)}
+                          disabled={deferUpdatingId !== null}
+                        >
+                          בטל הכל
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
+
       {mainSection === 'users' && (
         <div className="admin-table-container">
           {successMessage && (
@@ -386,12 +599,16 @@ const AdminPanel = () => {
                     <td>
                       {user.role === 'admin' || user.role === 'Admin' ? (
                         <span className="admin-actions-empty">—</span>
-                      ) : user.deferredPaymentRequestPending ? (
-                        <span className="status-badge renewal-pending_confirmation">ממתין לאישור</span>
                       ) : user.deferredPaymentApproved ? (
                         <span className="status-badge renewal-ok" title={user.deferredPaymentDeadline || ''}>
-                          עד {formatDate(user.deferredPaymentDeadline)}
+                          אושר עד {formatDate(user.deferredPaymentDeadline)}
                         </span>
+                      ) : user.deferredPaymentProposalPending ? (
+                        <span className="status-badge renewal-pending_confirmation">ממתין לאישור תאריך</span>
+                      ) : user.deferredPaymentAwaitingClientDate ? (
+                        <span className="status-badge renewal-renewal_in_6_months">ממתין לתאריך מלקוח</span>
+                      ) : user.deferredPaymentRequestPending ? (
+                        <span className="status-badge renewal-pending_confirmation">ממתין למנהל ראשי</span>
                       ) : (
                         <span className="admin-actions-empty">—</span>
                       )}
@@ -413,27 +630,6 @@ const AdminPanel = () => {
                         >
                           {demotingId === user.id ? 'מוריד...' : 'הורד ממנהל'}
                         </button>
-                      ) : userSubTab === 'clients' &&
-                        user.deferredPaymentRequestPending &&
-                        canManageAdmins ? (
-                        <div className="admin-actions-cell admin-defer-actions">
-                          <button
-                            type="button"
-                            className="admin-defer-approve-btn"
-                            onClick={() => handleApproveDeferPayment(user.id)}
-                            disabled={deferUpdatingId !== null}
-                          >
-                            {deferUpdatingId === user.id ? 'מעדכן...' : 'אשר תשלום מאוחר'}
-                          </button>
-                          <button
-                            type="button"
-                            className="admin-defer-reject-btn"
-                            onClick={() => handleRejectDeferPayment(user.id)}
-                            disabled={deferUpdatingId !== null}
-                          >
-                            דחה
-                          </button>
-                        </div>
                       ) : (
                         <span className="admin-actions-empty">—</span>
                       )}

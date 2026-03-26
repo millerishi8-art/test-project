@@ -74,7 +74,22 @@ export const caseFormTranslations = {
     deferPaymentCommitmentFallback:
       'התחייבות להשלים את התשלום לסוכן במועד שסוכם עם המנהל – לפרטים מדויקים בדקו את המייל מאת האתר או צרו קשר עם המנהל.',
     deferPaymentPendingNote:
-      'בקשתך נשלחה למנהל. לאחר האישור תוצג כאן התחייבות התשלום ותוכלו לשלוח את התיק בלי אישור תשלום מיידי.',
+      'בקשתך נשלחה למנהל הראשי. לאחר אישור הבקשה תתבקשו להזין מועד תשלום, ורק אחרי אישור המועד תוכלו לשלוח את התיק בלי אישור תשלום מיידי.',
+    deferPaymentStage1Title: 'הבקשה אושרה – שלב הבא: מועד תשלום',
+    deferPaymentStage1Body:
+      'נא לבחור את המועד האחרון שבו אתם מתחייבים לשלם לסוכן על פתיחת התיק. המועד לא יאוחר מחודש ממועד אישור הבקשה.',
+    deferClientMaxLabel: 'תאריך אחרון מותר',
+    deferClientDeadlineLabel: 'תאריך יעד לתשלום (התחייבות) *',
+    deferClientDeadlineHint:
+      'יש לבחור תאריך מהיום ועד התאריך האחרון המותר. לאחר השליחה המנהל הראשי יאשר את התאריך, ואז יופעל אישור תשלום מיוחד לשליחת הטופס.',
+    deferClientDeadlineSubmit: 'שליחת התאריך לאישור המנהל',
+    deferClientDeadlineSending: 'שולח…',
+    deferClientDeadlineRequired: 'נא לבחור תאריך יעד.',
+    deferClientDeadlineSent: 'התאריך נשלח. ממתינים לאישור המנהל.',
+    deferPaymentProposalPendingNote:
+      'שלחתם תאריך תשלום; ממתינים לאישור המנהל הראשי. לאחר האישור תוצג כאן ההתחייבות ותוכלו להשלים את הטופס בלי הוכחת תשלום מיידי.',
+    errorDeferredDeadlineInvalid:
+      'התאריך חייב להיות מהיום ועד חודש ממועד אישור הבקשה. בחרו תאריך חוקי.',
     deferPaymentButton: 'בקשה לתשלום בהמשך (פנייה למנהל)',
     deferPaymentSending: 'שולח…',
     deferPaymentRequestSent: 'הבקשה נשלחה למנהל. עדכון יופיע כאן לאחר האישור.',
@@ -277,7 +292,22 @@ export const caseFormTranslations = {
     deferPaymentCommitmentFallback:
       'Complete payment to the agent by the deadline agreed with the manager—check your email or contact support for the exact date.',
     deferPaymentPendingNote:
-      'Your request was sent to the manager. After approval, your payment commitment will appear here and you can submit the case without immediate payment proof.',
+      'Your request was sent to the primary admin. After the request is approved you will enter a payment date; only after that date is approved can you submit the case without immediate payment proof.',
+    deferPaymentStage1Title: 'Request approved – next: payment date',
+    deferPaymentStage1Body:
+      'Choose the latest date by which you commit to pay the agent for opening the case. It must be no later than one month from when your request was approved.',
+    deferClientMaxLabel: 'Latest allowed date',
+    deferClientDeadlineLabel: 'Payment due date (your commitment) *',
+    deferClientDeadlineHint:
+      'Pick a date from today through the latest allowed date. The primary admin must then approve it before you can submit the form without immediate payment proof.',
+    deferClientDeadlineSubmit: 'Submit date for approval',
+    deferClientDeadlineSending: 'Sending…',
+    deferClientDeadlineRequired: 'Please select a date.',
+    deferClientDeadlineSent: 'Date submitted. Waiting for admin approval.',
+    deferPaymentProposalPendingNote:
+      'You submitted a payment date; waiting for the primary admin to approve it. After approval, your commitment will show here and you can complete the form without immediate payment proof.',
+    errorDeferredDeadlineInvalid:
+      'The date must be between today and one month from request approval. Choose a valid date.',
     deferPaymentButton: 'Request deferred payment (contact manager)',
     deferPaymentSending: 'Sending…',
     deferPaymentRequestSent: 'Your request was sent. This page will update after approval.',

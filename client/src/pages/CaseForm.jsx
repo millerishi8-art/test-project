@@ -89,12 +89,40 @@ const CaseForm = () => {
   const { language, toggleLanguage } = useLanguage();
   const t = caseFormTranslations[language];
   const deferredPaymentOk = !!user?.deferredPaymentApproved;
-  const deferredPaymentPending = !!user?.deferredPaymentRequestPending && !deferredPaymentOk;
+  const deferredPaymentPending =
+    !!user?.deferredPaymentRequestPending && !deferredPaymentOk;
+  const deferredAwaitingClientDate =
+    !!user?.deferredPaymentAwaitingClientDate && !deferredPaymentOk;
+  const deferredProposalPending =
+    !!user?.deferredPaymentProposalPending && !deferredPaymentOk;
+
+  const deferClientMinYmd = useMemo(() => {
+    const t = new Date();
+    const y = t.getFullYear();
+    const m = String(t.getMonth() + 1).padStart(2, '0');
+    const da = String(t.getDate()).padStart(2, '0');
+    return `${y}-${m}-${da}`;
+  }, []);
+
+  const deferClientMaxYmd = useMemo(() => {
+    const raw = user?.deferredPaymentRequestApprovedAt;
+    if (!raw) return '';
+    const d = new Date(raw);
+    if (Number.isNaN(d.getTime())) return '';
+    const e = new Date(d);
+    e.setUTCMonth(e.getUTCMonth() + 1);
+    const y = e.getUTCFullYear();
+    const m = String(e.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(e.getUTCDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }, [user?.deferredPaymentRequestApprovedAt]);
+
   const deferredDeadlineFormatted = useMemo(() => {
     const iso = user?.deferredPaymentDeadline;
     if (!iso || !user?.deferredPaymentApproved) return '';
-    const d = new Date(iso);
-    if (Number.isNaN(d.getTime())) return String(iso);
+    const str = String(iso);
+    const d = /^\d{4}-\d{2}-\d{2}$/.test(str) ? new Date(`${str}T12:00:00`) : new Date(iso);
+    if (Number.isNaN(d.getTime())) return str;
     return d.toLocaleDateString(language === 'he' ? 'he-IL' : 'en-US', {
       year: 'numeric',
       month: 'long',
@@ -120,6 +148,8 @@ const CaseForm = () => {
   const [spouseBlock, setSpouseBlock] = useState(null);
   const [deferPaymentLoading, setDeferPaymentLoading] = useState(false);
   const [deferPaymentNotice, setDeferPaymentNotice] = useState('');
+  const [deferProposedYmd, setDeferProposedYmd] = useState('');
+  const [deferDeadlineSubmitting, setDeferDeadlineSubmitting] = useState(false);
 
   useEffect(() => {
     const onVis = () => {
@@ -138,6 +168,7 @@ const CaseForm = () => {
     setError('');
     setFieldErrors({});
     setDeferPaymentNotice('');
+    setDeferProposedYmd('');
   }, [type]);
 
   const clearFieldErrorKey = (key) => {
@@ -175,6 +206,39 @@ const CaseForm = () => {
       setDeferPaymentNotice(typeof msg === 'string' ? msg : t.deferPaymentRequestError);
     } finally {
       setDeferPaymentLoading(false);
+    }
+  };
+
+  const submitDeferredProposedDeadline = async () => {
+    if (!token) {
+      setError(t.errorLoginRequired);
+      return;
+    }
+    if (!deferProposedYmd?.trim()) {
+      setDeferPaymentNotice(t.deferClientDeadlineRequired);
+      return;
+    }
+    setDeferDeadlineSubmitting(true);
+    setDeferPaymentNotice('');
+    setError('');
+    try {
+      await axios.post(
+        '/cases/defer-payment-proposed-deadline',
+        { deadline: deferProposedYmd.trim() },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      await refreshUser?.();
+      setDeferPaymentNotice('');
+    } catch (err) {
+      const msg = err.response?.data?.error;
+      const code = err.response?.data?.code;
+      if (code === 'DEFERRED_DEADLINE_INVALID') {
+        setDeferPaymentNotice(t.errorDeferredDeadlineInvalid);
+      } else {
+        setDeferPaymentNotice(typeof msg === 'string' ? msg : t.deferPaymentRequestError);
+      }
+    } finally {
+      setDeferDeadlineSubmitting(false);
     }
   };
 
@@ -1085,6 +1149,45 @@ const CaseForm = () => {
                       {deferredPaymentPending && (
                         <p className="case-form-defer-pending-note">{t.deferPaymentPendingNote}</p>
                       )}
+                      {deferredAwaitingClientDate && (
+                        <div className="case-form-defer-stage1-banner" role="status">
+                          <p className="case-form-defer-commitment-title">{t.deferPaymentStage1Title}</p>
+                          <p className="case-form-defer-commitment-text">{t.deferPaymentStage1Body}</p>
+                          {deferClientMaxYmd ? (
+                            <p className="case-form-defer-max-ymd">
+                              {t.deferClientMaxLabel}: <strong>{deferClientMaxYmd}</strong>
+                            </p>
+                          ) : null}
+                          <div className="case-form-defer-deadline-row">
+                            <label className="case-form-defer-deadline-label" htmlFor="defer-payment-deadline">
+                              {t.deferClientDeadlineLabel}
+                            </label>
+                            <input
+                              id="defer-payment-deadline"
+                              type="date"
+                              className="case-form-defer-date-input"
+                              min={deferClientMinYmd}
+                              max={deferClientMaxYmd || undefined}
+                              value={deferProposedYmd}
+                              onChange={(e) => setDeferProposedYmd(e.target.value)}
+                            />
+                            <button
+                              type="button"
+                              className="case-form-defer-submit-deadline-btn"
+                              onClick={submitDeferredProposedDeadline}
+                              disabled={deferDeadlineSubmitting}
+                            >
+                              {deferDeadlineSubmitting
+                                ? t.deferClientDeadlineSending
+                                : t.deferClientDeadlineSubmit}
+                            </button>
+                          </div>
+                          <p className="upload-field-hint">{t.deferClientDeadlineHint}</p>
+                        </div>
+                      )}
+                      {deferredProposalPending && (
+                        <p className="case-form-defer-pending-note">{t.deferPaymentProposalPendingNote}</p>
+                      )}
                       <label className="document-type-label" style={{ display: 'block', marginBottom: '5px' }}>
                         {deferredPaymentOk ? t.labelProofOfPaymentOptional : t.labelProofOfPayment}
                       </label>
@@ -1110,7 +1213,10 @@ const CaseForm = () => {
                         </button>
                       </div>
                       {inlineFieldError('doc_payment')}
-                      {!deferredPaymentOk && !deferredPaymentPending && (
+                      {!deferredPaymentOk &&
+                        !deferredPaymentPending &&
+                        !deferredAwaitingClientDate &&
+                        !deferredProposalPending && (
                         <button
                           type="button"
                           className="case-form-defer-payment-btn"

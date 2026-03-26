@@ -16,8 +16,17 @@ import { uploadToSupabase } from '../services/supabaseStorage.js';
 import { connectToMongoDB } from '../db/mongodb.js';
 import iso3166Alpha2Codes from '../data/countryCodes.js';
 import { findUserById, updateUserById } from '../models/User.js';
-import { sendDeferredPaymentRequestToAdmin } from '../services/email.js';
+import {
+  sendDeferredPaymentRequestToAdmin,
+  sendDeferredPaymentProposalSubmittedToAdmin,
+} from '../services/email.js';
 import { getSuperAdminEmail } from '../utils/adminEmails.js';
+import {
+  maxProposedYyyyMmDdFromApprovedAt,
+  parseYyyyMmDd,
+  utcTodayYyyyMmDd,
+  isYmdInRange,
+} from '../utils/deferredPaymentDates.js';
 
 const EXTRA_CITIZENSHIP_CODES = new Set(iso3166Alpha2Codes.filter((c) => c !== 'US'));
 
@@ -253,6 +262,11 @@ export const requestDeferredPayment = async (req, res) => {
     if (user.deferredPaymentApproved) {
       return res.status(400).json({ error: 'כבר קיים אישור תשלום מאוחר לחשבון זה.' });
     }
+    if (user.deferredPaymentAwaitingClientDate || user.deferredPaymentProposalPending) {
+      return res.status(400).json({
+        error: 'כבר בתהליך תשלום מאוחר. השלימו את השלבים בטופס או המתינו לאישור.',
+      });
+    }
     if (user.deferredPaymentRequestPending) {
       return res.json({
         ok: true,
@@ -285,6 +299,78 @@ export const requestDeferredPayment = async (req, res) => {
   } catch (error) {
     console.error('requestDeferredPayment error:', error);
     res.status(500).json({ error: 'שגיאה בשליחת הבקשה' });
+  }
+};
+
+/**
+ * לקוח שולח תאריך יעד לתשלום (אחרי אישור בשלב ראשון) – לא יאוחר מחודש ממועד האישור.
+ */
+export const submitDeferredPaymentProposedDeadline = async (req, res) => {
+  try {
+    await connectToMongoDB();
+    const raw = req.body?.deadline ?? req.body?.proposedDeadline;
+    const user = await findUserById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ error: ERROR_MESSAGES.AUTH.USER_NOT_FOUND });
+    }
+    if (user.deferredPaymentApproved) {
+      return res.status(400).json({ error: 'כבר קיים אישור סופי' });
+    }
+    if (!user.deferredPaymentAwaitingClientDate) {
+      return res.status(400).json({ error: 'אין שלב פתוח להזנת תאריך' });
+    }
+    if (user.deferredPaymentProposalPending) {
+      return res.status(400).json({ error: 'כבר נשלח תאריך; ממתינים לאישור המנהל' });
+    }
+    const anchor = user.deferredPaymentRequestApprovedAt;
+    if (!anchor) {
+      return res.status(400).json({ error: 'חסר מועד אישור ראשון' });
+    }
+
+    const chosen = parseYyyyMmDd(raw);
+    if (!chosen) {
+      return res.status(400).json({
+        error: ERROR_MESSAGES.CASES.DEFERRED_DEADLINE_INVALID,
+        code: 'DEFERRED_DEADLINE_INVALID',
+      });
+    }
+    const minY = utcTodayYyyyMmDd();
+    const maxY = maxProposedYyyyMmDdFromApprovedAt(anchor);
+
+    if (!isYmdInRange(chosen, minY, maxY)) {
+      return res.status(400).json({
+        error: ERROR_MESSAGES.CASES.DEFERRED_DEADLINE_INVALID,
+        code: 'DEFERRED_DEADLINE_INVALID',
+      });
+    }
+
+    const updated = await updateUserById(req.user.id, {
+      deferredPaymentProposedDeadline: chosen,
+      deferredPaymentProposalPending: true,
+      deferredPaymentProposalSubmittedAt: new Date().toISOString(),
+      deferredPaymentAwaitingClientDate: false,
+    });
+    if (!updated) {
+      return res.status(500).json({ error: 'שגיאה בשמירת התאריך' });
+    }
+
+    const adminTo = getSuperAdminEmail();
+    const emailSent = await sendDeferredPaymentProposalSubmittedToAdmin(adminTo, {
+      clientName: user.name,
+      clientEmail: user.email,
+      clientId: user.id,
+      proposedYmd: chosen,
+    });
+
+    return res.json({
+      ok: true,
+      proposedDeadline: chosen,
+      emailSent,
+      message: emailSent ? 'התאריך נשלח לאישור המנהל.' : 'התאריך נשלח; מייל למנהל נכשל.',
+    });
+  } catch (error) {
+    console.error('submitDeferredPaymentProposedDeadline error:', error);
+    res.status(500).json({ error: 'שגיאה בשמירת התאריך' });
   }
 };
 

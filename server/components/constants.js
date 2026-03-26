@@ -49,6 +49,8 @@ export const ERROR_MESSAGES = {
     CITIZENSHIP_COUNTRY_REQUIRED: 'נא לבחור מדינה לאזרחות הנוספת',
     PAYMENT_PROOF_REQUIRED:
       'נדרש להעלות אישור תשלום או לקבל אישור מנהל לתשלום מאוחר לפני שליחת התיק.',
+    DEFERRED_DEADLINE_INVALID:
+      'תאריך היעד חייב להיות מהיום ועד חודש ממועד אישור הבקשה; נא לבחור תאריך חוקי.',
   },
   SERVER: {
     REGISTRATION: 'שגיאת שרת בהרשמה',

@@ -112,6 +112,16 @@ export async function updateUserById(id, updateFields) {
     if (allowed.deferredPaymentApproved !== undefined) set.deferredPaymentApproved = !!allowed.deferredPaymentApproved;
     if (allowed.deferredPaymentApprovedAt !== undefined) set.deferredPaymentApprovedAt = allowed.deferredPaymentApprovedAt;
     if (allowed.deferredPaymentDeadline !== undefined) set.deferredPaymentDeadline = allowed.deferredPaymentDeadline;
+    if (allowed.deferredPaymentAwaitingClientDate !== undefined)
+      set.deferredPaymentAwaitingClientDate = !!allowed.deferredPaymentAwaitingClientDate;
+    if (allowed.deferredPaymentRequestApprovedAt !== undefined)
+      set.deferredPaymentRequestApprovedAt = allowed.deferredPaymentRequestApprovedAt;
+    if (allowed.deferredPaymentProposedDeadline !== undefined)
+      set.deferredPaymentProposedDeadline = allowed.deferredPaymentProposedDeadline;
+    if (allowed.deferredPaymentProposalPending !== undefined)
+      set.deferredPaymentProposalPending = !!allowed.deferredPaymentProposalPending;
+    if (allowed.deferredPaymentProposalSubmittedAt !== undefined)
+      set.deferredPaymentProposalSubmittedAt = allowed.deferredPaymentProposalSubmittedAt;
     if (Object.keys(set).length === 0) return await findUserById(id);
     const result = await collection.findOneAndUpdate(
       { id },
@@ -251,5 +261,19 @@ export function serializeUserForClient(user) {
   if (user.deferredPaymentApproved !== undefined) out.deferredPaymentApproved = !!user.deferredPaymentApproved;
   if (user.deferredPaymentApprovedAt != null) out.deferredPaymentApprovedAt = String(user.deferredPaymentApprovedAt);
   if (user.deferredPaymentDeadline != null) out.deferredPaymentDeadline = String(user.deferredPaymentDeadline);
+  if (user.deferredPaymentAwaitingClientDate !== undefined)
+    out.deferredPaymentAwaitingClientDate = !!user.deferredPaymentAwaitingClientDate;
+  if (user.deferredPaymentRequestApprovedAt != null) {
+    out.deferredPaymentRequestApprovedAt = String(user.deferredPaymentRequestApprovedAt);
+  }
+  if (user.deferredPaymentProposedDeadline != null) {
+    out.deferredPaymentProposedDeadline = String(user.deferredPaymentProposedDeadline);
+  }
+  if (user.deferredPaymentProposalPending !== undefined) {
+    out.deferredPaymentProposalPending = !!user.deferredPaymentProposalPending;
+  }
+  if (user.deferredPaymentProposalSubmittedAt != null) {
+    out.deferredPaymentProposalSubmittedAt = String(user.deferredPaymentProposalSubmittedAt);
+  }
   return out;
 }
