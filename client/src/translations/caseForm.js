@@ -54,15 +54,18 @@ export const caseFormTranslations = {
     // Section 4: Required Documents
     sectionImages: 'מסמכים ואישורים נדרשים (להעלאה)',
     sectionImagesHint: 'העלה את המסמכים הנדרשים. בחר קבצים מהמכשיר.',
-    labelBirthCertificates: 'תעודות לידה (חובה עבור כל בני המשפחה והילדים)',
-    hintBirthCertificates: 'חובה עבור כל בני המשפחה והילדים.',
+    labelBirthCertificates: 'תעודות לידה (רשות — מומלץ לצרף)',
+    hintBirthCertificates:
+      'ניתן לשלוח את התיק גם בלי תעודות לידה; מומלץ לצרף — קייסים שכוללים תעודת לידה מתבדקים ומאושרים לרוב מהר יותר.',
+    birthCertSubmitRecommendation:
+      'לא צירפת תעודות לידה.\n\nהמלצה: קייסים שכוללים תעודת לידה מאושרים בדרך כלל מהר יותר.\n\nהאם להמשיך בשליחת הטופס בכל זאת?',
     labelSSN: 'סושיאל סקיוריטי נאמבר (SSN) *',
     hintSSN: 'צילום כרטיס Social Security או מסמך המעיד על מספר ה-SSN שלך.',
     labelPassport: 'דרכון *',
     hintPassport: 'צילום דרכון בתוקף (עמוד פרטים עם תמונה).',
     labelAmericanMarriageCertificate: 'תעודת נשואים אמריקאית *',
     hintAmericanMarriageCertificate:
-      'בקייס משפחה בלבד: יש להעלות תעודת נשואים אמריקאית בלבד (לא תעודה מישראל או ממדינה אחרת).',
+      'בקייס משפחה בלבד: יש להעלות תעודת נשואים אמריקאית (במידה ואין אמריקאית — אפשרי תעודה ישראלית).',
     labelProofOfPayment: 'אישור תשלום *',
     hintProofOfPayment: 'צילום מסך או הוכחה ששילמת לסוכן על פתיחת התיק.',
     labelProofOfPaymentOptional: 'אישור תשלום (לא חובה – אושר תשלום מאוחר)',
@@ -90,7 +93,12 @@ export const caseFormTranslations = {
       'שלחתם תאריך תשלום; ממתינים לאישור המנהל הראשי. לאחר האישור תוצג כאן ההתחייבות ותוכלו להשלים את הטופס בלי הוכחת תשלום מיידי.',
     errorDeferredDeadlineInvalid:
       'התאריך חייב להיות מהיום ועד חודש ממועד אישור הבקשה. בחרו תאריך חוקי.',
-    deferPaymentButton: 'בקשה לתשלום בהמשך (פנייה למנהל)',
+    deferPaymentButton: 'קשה לי לשלם כרגע',
+    deferPaymentPreSubmitConfirm:
+      'בקשה לתשלום בהמשך – פנייה למנהל\n\n' +
+      'לאחר שליחת הבקשה לא תוכלו להשלים את שליחת הטופס עם אישור תשלום מיידי, עד שהמנהל הראשי יאשר את הבקשה.\n' +
+      'התהליך עם המנהל הראשי: אישור הבקשה ← הזנת תאריך יעד לתשלום (עד חודש) ← אישור המנהל לתאריך ← ואז ניתן יהיה לשלוח את התיק בלי הוכחת תשלום מיידית.\n\n' +
+      'האם לשלוח כעת את הבקשה למנהל הראשי?',
     deferPaymentSending: 'שולח…',
     deferPaymentRequestSent: 'הבקשה נשלחה למנהל. עדכון יופיע כאן לאחר האישור.',
     deferPaymentEmailFailed:
@@ -191,11 +199,11 @@ export const caseFormTranslations = {
     errorServerError: 'שגיאת שרת. נסה שוב או בדוק את הטרמינל של השרת.',
     errorSubmit: 'שגיאה בשליחת הטופס.',
     errorEnglishOnly: 'אנא השתמש באותיות באנגלית בלבד בשדה זה.',
-    errorMissingBirthCerts: 'חובה להעלות לפחות קובץ אחד של תעודות לידה.',
+    errorMissingBirthCerts: 'תעודות לידה אינן חובה; ניתן להחמיץ ולקבל המלצה בשליחה.',
     errorMissingSSN: 'חובה להעלות צילום כרטיס סושיאל סקיוריטי (SSN) או מסמך מקביל.',
     errorMissingPassport: 'חובה להעלות צילום דרכון.',
     errorMissingAmericanMarriageCertificate:
-      'בקייס משפחה חובה להעלות תעודת נשואים אמריקאית בלבד.',
+      'בקייס משפחה חובה להעלות תעודת נשואים אמריקאית או תעודה ישראלית (אם אין תעודה אמריקאית).',
     errorMissingPayment: 'חובה להעלות אישור תשלום לסוכן (צילום מסך או הוכחת תשלום).',
     errorPaymentProofRequired:
       'נדרש להעלות אישור תשלום או לקבל אישור מנהל לתשלום מאוחר לפני שליחת התיק.',
@@ -275,12 +283,18 @@ export const caseFormTranslations = {
     // Section 4: Required Documents
     sectionImages: 'Required Documents (File Uploads)',
     sectionImagesHint: 'Upload the required documents. Choose files from your device.',
-    labelBirthCertificates: 'Birth Certificates *',
-    hintBirthCertificates: 'Required for all family members and children.',
+    labelBirthCertificates: 'Birth certificates (optional — recommended)',
+    hintBirthCertificates:
+      'You may submit the case without birth certificates; attaching them is recommended—cases that include a birth certificate are usually reviewed and approved faster.',
+    birthCertSubmitRecommendation:
+      'You did not attach birth certificates.\n\nRecommendation: cases with birth certificates are typically approved faster.\n\nContinue and submit anyway?',
     labelSSN: 'Social Security Number (SSN) *',
     hintSSN: 'Photo of your Social Security card or document showing your SSN.',
     labelPassport: 'Passport *',
     hintPassport: 'Photo of a valid passport (photo ID page).',
+    labelAmericanMarriageCertificate: 'U.S. marriage certificate *',
+    hintAmericanMarriageCertificate:
+      'Family cases only: upload a U.S. marriage certificate (if unavailable, an Israeli marriage certificate is acceptable).',
     labelProofOfPayment: 'Proof of payment *',
     hintProofOfPayment: 'Screenshot or proof that you paid the agent to open the case.',
     labelProofOfPaymentOptional: 'Proof of payment (optional – deferred payment approved)',
@@ -308,7 +322,12 @@ export const caseFormTranslations = {
       'You submitted a payment date; waiting for the primary admin to approve it. After approval, your commitment will show here and you can complete the form without immediate payment proof.',
     errorDeferredDeadlineInvalid:
       'The date must be between today and one month from request approval. Choose a valid date.',
-    deferPaymentButton: 'Request deferred payment (contact manager)',
+    deferPaymentButton: 'Cannot pay right now',
+    deferPaymentPreSubmitConfirm:
+      'Deferred payment – request to the primary admin\n\n' +
+      'After you send this request, you will not be able to submit the form with immediate payment proof until the primary admin approves it.\n' +
+      'The process: request approval → you enter a payment due date (within one month) → admin approves the date → you can then submit without immediate payment proof.\n\n' +
+      'Send the request to the primary admin now?',
     deferPaymentSending: 'Sending…',
     deferPaymentRequestSent: 'Your request was sent. This page will update after approval.',
     deferPaymentEmailFailed:
@@ -409,11 +428,11 @@ export const caseFormTranslations = {
     errorServerError: 'Server error. Try again or check the server terminal.',
     errorSubmit: 'Error submitting the form.',
     errorEnglishOnly: 'Please use English characters only in this field.',
-    errorMissingBirthCerts: 'Please upload at least one birth certificate file.',
+    errorMissingBirthCerts: 'Birth certificates are optional; you can skip and get a reminder on submit.',
     errorMissingSSN: 'Please upload a photo of your Social Security card (SSN) or equivalent document.',
     errorMissingPassport: 'Please upload a passport photo.',
     errorMissingAmericanMarriageCertificate:
-      'Family cases require a U.S. marriage certificate (American certificate only).',
+      'Family cases require a U.S. marriage certificate, or an Israeli one if a U.S. certificate is not available.',
     errorMissingPayment: 'Please upload proof of payment to the agent.',
     errorPaymentProofRequired:
       'Payment proof is required unless the manager has approved deferred payment.',

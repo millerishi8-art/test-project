@@ -186,6 +186,9 @@ const CaseForm = () => {
       setError(t.errorLoginRequired);
       return;
     }
+    if (!window.confirm(t.deferPaymentPreSubmitConfirm)) {
+      return;
+    }
     setDeferPaymentLoading(true);
     setDeferPaymentNotice('');
     setError('');
@@ -634,7 +637,6 @@ const CaseForm = () => {
       if (!pw) errs.casePassword = t.errorCasePasswordRequired;
     }
 
-    if (!attachments.some((a) => a.category === 'birth')) errs.doc_birth = t.errorMissingBirthCerts;
     if (!attachments.some((a) => a.category === 'ssn')) errs.doc_ssn = t.errorMissingSSN;
     if (!attachments.some((a) => a.category === 'passport')) errs.doc_passport = t.errorMissingPassport;
     if (isFamilyCase && !attachments.some((a) => a.category === 'marriage_certificate_us')) {
@@ -712,6 +714,12 @@ const CaseForm = () => {
       setError(t.errorLoginRequired);
       return;
     }
+
+    const hasBirthCertUpload = attachments.some((a) => a.category === 'birth');
+    if (!hasBirthCertUpload && !window.confirm(t.birthCertSubmitRecommendation)) {
+      return;
+    }
+
     await doActualSubmit();
   };
 
