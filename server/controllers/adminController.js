@@ -2,6 +2,7 @@ import { readUsers, findUserById, updateUserById, deleteUserById } from '../mode
 import { readCases, findCaseById, findCasesByUserId, updateCase, deleteCase, deleteCasesByIds } from '../models/Case.js';
 import { DEFAULT_UNKNOWN, ROLES, CASE_STATUS } from '../components/constants.js';
 import { isSuperAdminEmail, getSuperAdminEmail } from '../utils/adminEmails.js';
+import { sendDeferredPaymentApprovedToClient } from '../services/email.js';
 
 /**
  * קבלת תיק בודד לפי מזהה (מנהל בלבד) – כולל כל פרטי הטופס
@@ -75,6 +76,10 @@ export const getAllUsers = async (req, res) => {
         createdAt: user.createdAt,
         casesCount: userCases.length,
         cases: userCases,
+        deferredPaymentRequestPending: !!user.deferredPaymentRequestPending,
+        deferredPaymentApproved: !!user.deferredPaymentApproved,
+        deferredPaymentDeadline: user.deferredPaymentDeadline || null,
+        deferredPaymentRequestedAt: user.deferredPaymentRequestedAt || null,
       };
     }));
 
@@ -118,6 +123,76 @@ export const demoteAdmin = async (req, res) => {
   } catch (error) {
     console.error('demoteAdmin error:', error);
     return res.status(500).json({ error: 'שגיאה בהורדת המנהל' });
+  }
+};
+
+/**
+ * מנהל-על מאשר או דוחה בקשת תשלום מאוחר ללקוח.
+ * Body: { approved: true } | { reject: true } | { approved: true, deadline?: ISO string }
+ */
+export const patchUserDeferredPayment = async (req, res) => {
+  try {
+    const actorEmail = (req.user?.email || '').trim().toLowerCase();
+    if (!isSuperAdminEmail(actorEmail)) {
+      return res.status(403).json({ error: 'רק מנהל המערכת הראשי יכול לאשר או לדחות בקשת תשלום מאוחר' });
+    }
+    const { id } = req.params;
+    const body = req.body || {};
+    const user = await findUserById(id);
+    if (!user) {
+      return res.status(404).json({ error: 'משתמש לא נמצא' });
+    }
+
+    if (body.reject === true) {
+      const updated = await updateUserById(id, { deferredPaymentRequestPending: false });
+      return res.json({
+        ok: true,
+        user: {
+          id: updated?.id || id,
+          deferredPaymentRequestPending: false,
+          deferredPaymentApproved: !!(updated?.deferredPaymentApproved ?? user.deferredPaymentApproved),
+        },
+      });
+    }
+
+    if (body.approved === true) {
+      let deadlineIso = null;
+      const rawDeadline = body.deadline;
+      if (rawDeadline != null && String(rawDeadline).trim() !== '') {
+        const d = new Date(rawDeadline);
+        if (!Number.isNaN(d.getTime())) deadlineIso = d.toISOString();
+      }
+      if (!deadlineIso) {
+        const d = new Date();
+        d.setMonth(d.getMonth() + 1);
+        deadlineIso = d.toISOString();
+      }
+      const now = new Date().toISOString();
+      const updated = await updateUserById(id, {
+        deferredPaymentApproved: true,
+        deferredPaymentApprovedAt: now,
+        deferredPaymentDeadline: deadlineIso,
+        deferredPaymentRequestPending: false,
+      });
+      if (!updated) {
+        return res.status(500).json({ error: 'שגיאה בעדכון המשתמש' });
+      }
+      await sendDeferredPaymentApprovedToClient(user.email, user.name, deadlineIso);
+      return res.json({
+        ok: true,
+        user: {
+          id: updated.id,
+          deferredPaymentApproved: true,
+          deferredPaymentDeadline: deadlineIso,
+          deferredPaymentRequestPending: false,
+        },
+      });
+    }
+
+    return res.status(400).json({ error: 'נא לשלוח { approved: true } או { reject: true }' });
+  } catch (error) {
+    console.error('patchUserDeferredPayment error:', error);
+    return res.status(500).json({ error: 'שגיאה בעדכון בקשת התשלום' });
   }
 };
 

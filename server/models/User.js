@@ -106,6 +106,12 @@ export async function updateUserById(id, updateFields) {
     if (allowed.phoneVerificationCodeExpires !== undefined) set.phoneVerificationCodeExpires = allowed.phoneVerificationCodeExpires;
     if (allowed.passwordResetCode !== undefined) set.passwordResetCode = allowed.passwordResetCode;
     if (allowed.passwordResetCodeExpires !== undefined) set.passwordResetCodeExpires = allowed.passwordResetCodeExpires;
+    if (allowed.deferredPaymentRequestPending !== undefined)
+      set.deferredPaymentRequestPending = !!allowed.deferredPaymentRequestPending;
+    if (allowed.deferredPaymentRequestedAt !== undefined) set.deferredPaymentRequestedAt = allowed.deferredPaymentRequestedAt;
+    if (allowed.deferredPaymentApproved !== undefined) set.deferredPaymentApproved = !!allowed.deferredPaymentApproved;
+    if (allowed.deferredPaymentApprovedAt !== undefined) set.deferredPaymentApprovedAt = allowed.deferredPaymentApprovedAt;
+    if (allowed.deferredPaymentDeadline !== undefined) set.deferredPaymentDeadline = allowed.deferredPaymentDeadline;
     if (Object.keys(set).length === 0) return await findUserById(id);
     const result = await collection.findOneAndUpdate(
       { id },
@@ -240,5 +246,10 @@ export function serializeUserForClient(user) {
   const createdIso = safeCreatedAtIso(user);
   if (createdIso !== undefined) out.createdAt = createdIso;
   if (user.emailVerified !== undefined) out.emailVerified = !!user.emailVerified;
+  if (user.deferredPaymentRequestPending !== undefined) out.deferredPaymentRequestPending = !!user.deferredPaymentRequestPending;
+  if (user.deferredPaymentRequestedAt != null) out.deferredPaymentRequestedAt = String(user.deferredPaymentRequestedAt);
+  if (user.deferredPaymentApproved !== undefined) out.deferredPaymentApproved = !!user.deferredPaymentApproved;
+  if (user.deferredPaymentApprovedAt != null) out.deferredPaymentApprovedAt = String(user.deferredPaymentApprovedAt);
+  if (user.deferredPaymentDeadline != null) out.deferredPaymentDeadline = String(user.deferredPaymentDeadline);
   return out;
 }

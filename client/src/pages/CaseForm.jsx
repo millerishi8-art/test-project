@@ -85,9 +85,22 @@ const CaseForm = () => {
   const useExpandedFoodStampsForm = EXPANDED_CASE_FORM_TYPES.includes(type);
   const isFamilyCase = type === 'family';
   const navigate = useNavigate();
-  const { token } = useAuth();
+  const { token, user, refreshUser } = useAuth();
   const { language, toggleLanguage } = useLanguage();
   const t = caseFormTranslations[language];
+  const deferredPaymentOk = !!user?.deferredPaymentApproved;
+  const deferredPaymentPending = !!user?.deferredPaymentRequestPending && !deferredPaymentOk;
+  const deferredDeadlineFormatted = useMemo(() => {
+    const iso = user?.deferredPaymentDeadline;
+    if (!iso || !user?.deferredPaymentApproved) return '';
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return String(iso);
+    return d.toLocaleDateString(language === 'he' ? 'he-IL' : 'en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+  }, [user?.deferredPaymentDeadline, user?.deferredPaymentApproved, language]);
   const canvasRef = useRef(null);
   const countryOptions = useMemo(() => buildCountrySelectOptions(language), [language]);
 
@@ -105,6 +118,16 @@ const CaseForm = () => {
   const [familyChildren, setFamilyChildren] = useState([]);
   /** @type {{ passportImage: string, ssnImage: string, healthStatus: string } | null} */
   const [spouseBlock, setSpouseBlock] = useState(null);
+  const [deferPaymentLoading, setDeferPaymentLoading] = useState(false);
+  const [deferPaymentNotice, setDeferPaymentNotice] = useState('');
+
+  useEffect(() => {
+    const onVis = () => {
+      if (document.visibilityState === 'visible') refreshUser?.();
+    };
+    document.addEventListener('visibilitychange', onVis);
+    return () => document.removeEventListener('visibilitychange', onVis);
+  }, [refreshUser]);
 
   useEffect(() => {
     setFormData(getFormDataForBenefitType());
@@ -114,6 +137,7 @@ const CaseForm = () => {
     setRenewalAddedToCalendar(false);
     setError('');
     setFieldErrors({});
+    setDeferPaymentNotice('');
   }, [type]);
 
   const clearFieldErrorKey = (key) => {
@@ -124,6 +148,34 @@ const CaseForm = () => {
       delete next[key];
       return next;
     });
+  };
+
+  const requestDeferredPayment = async () => {
+    if (!token) {
+      setError(t.errorLoginRequired);
+      return;
+    }
+    setDeferPaymentLoading(true);
+    setDeferPaymentNotice('');
+    setError('');
+    try {
+      const res = await axios.post(
+        '/cases/defer-payment-request',
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      await refreshUser?.();
+      if (res.data?.emailSent === false) {
+        setDeferPaymentNotice(t.deferPaymentEmailFailed);
+      } else {
+        setDeferPaymentNotice(t.deferPaymentRequestSent);
+      }
+    } catch (err) {
+      const msg = err.response?.data?.error;
+      setDeferPaymentNotice(typeof msg === 'string' ? msg : t.deferPaymentRequestError);
+    } finally {
+      setDeferPaymentLoading(false);
+    }
   };
 
   useEffect(() => {
@@ -431,6 +483,8 @@ const CaseForm = () => {
         setError(t.errorServerDown);
       } else if (errCode === 'CITIZENSHIP_COUNTRY_REQUIRED') {
         setError(t.errorCitizenshipCountryRequired);
+      } else if (errCode === 'PAYMENT_PROOF_REQUIRED') {
+        setError(typeof msg === 'string' ? msg : t.errorPaymentProofRequired);
       } else if (status >= 500 || msg) {
         setError(msg || t.errorServerError);
       } else {
@@ -467,7 +521,7 @@ const CaseForm = () => {
       'doc_ssn',
       'doc_passport',
       ...(isFamilyCase ? ['doc_marriage'] : []),
-      'doc_payment',
+      ...(deferredPaymentOk ? [] : ['doc_payment']),
       ...(isFamilyCase && spouseBlock ? ['spouse_passport', 'spouse_ssn', 'spouse_health'] : []),
       ...childOrder,
       'signaturePad',
@@ -522,7 +576,9 @@ const CaseForm = () => {
     if (isFamilyCase && !attachments.some((a) => a.category === 'marriage_certificate_us')) {
       errs.doc_marriage = t.errorMissingAmericanMarriageCertificate;
     }
-    if (!attachments.some((a) => a.category === 'payment')) errs.doc_payment = t.errorMissingPayment;
+    if (!deferredPaymentOk && !attachments.some((a) => a.category === 'payment')) {
+      errs.doc_payment = t.errorMissingPayment;
+    }
 
     if (isFamilyCase && spouseBlock) {
       if (!spouseBlock.passportImage?.trim()) errs.spouse_passport = t.errorUploadRequired;
@@ -1016,10 +1072,25 @@ const CaseForm = () => {
                       className={`case-form-doc-block ${fieldErrors.doc_payment ? 'field-has-error' : ''}`}
                       style={{ width: '100%' }}
                     >
+                      {deferredPaymentOk && (
+                        <div className="case-form-defer-commitment-banner" role="status">
+                          <p className="case-form-defer-commitment-title">{t.deferPaymentCommitmentTitle}</p>
+                          <p className="case-form-defer-commitment-text">
+                            {deferredDeadlineFormatted
+                              ? t.deferPaymentCommitment.replace('{{date}}', deferredDeadlineFormatted)
+                              : t.deferPaymentCommitmentFallback}
+                          </p>
+                        </div>
+                      )}
+                      {deferredPaymentPending && (
+                        <p className="case-form-defer-pending-note">{t.deferPaymentPendingNote}</p>
+                      )}
                       <label className="document-type-label" style={{ display: 'block', marginBottom: '5px' }}>
-                        {t.labelProofOfPayment}
+                        {deferredPaymentOk ? t.labelProofOfPaymentOptional : t.labelProofOfPayment}
                       </label>
-                      <p className="upload-field-hint">{t.hintProofOfPayment}</p>
+                      <p className="upload-field-hint">
+                        {deferredPaymentOk ? t.hintProofOfPaymentDeferred : t.hintProofOfPayment}
+                      </p>
                       <div className="upload-buttons-row">
                         <input
                           type="file"
@@ -1039,6 +1110,19 @@ const CaseForm = () => {
                         </button>
                       </div>
                       {inlineFieldError('doc_payment')}
+                      {!deferredPaymentOk && !deferredPaymentPending && (
+                        <button
+                          type="button"
+                          className="case-form-defer-payment-btn"
+                          onClick={requestDeferredPayment}
+                          disabled={deferPaymentLoading}
+                        >
+                          {deferPaymentLoading ? t.deferPaymentSending : t.deferPaymentButton}
+                        </button>
+                      )}
+                      {deferPaymentNotice ? (
+                        <p className="case-form-defer-notice">{deferPaymentNotice}</p>
+                      ) : null}
                     </div>
                   </div>
 

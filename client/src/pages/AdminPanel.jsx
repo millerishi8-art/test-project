@@ -46,6 +46,7 @@ const AdminPanel = () => {
   );
   const [loading, setLoading] = useState(true);
   const [demotingId, setDemotingId] = useState(null);
+  const [deferUpdatingId, setDeferUpdatingId] = useState(null);
   const [deletingCaseId, setDeletingCaseId] = useState(null);
   const [statusUpdatingId, setStatusUpdatingId] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
@@ -122,6 +123,46 @@ const AdminPanel = () => {
       await fetchData();
     } catch (err) {
       console.error('Failed to confirm case:', err);
+    }
+  };
+
+  const handleApproveDeferPayment = async (userId) => {
+    if (
+      !window.confirm(
+        'לאשר תשלום מאוחר ללקוח? ייקבע מועד יעד (ברירת מחדל: חודש מהיום) ויישלח מייל ללקוח.'
+      )
+    ) {
+      return;
+    }
+    setDeferUpdatingId(userId);
+    setSuccessMessage('');
+    try {
+      await axios.patch(`/admin/users/${userId}/deferred-payment`, { approved: true });
+      await fetchData();
+      setSuccessMessage('אושר תשלום מאוחר; נשלח מייל ללקוח.');
+      setTimeout(() => setSuccessMessage(''), 4000);
+    } catch (err) {
+      console.error('approve defer payment failed', err);
+      alert(err.response?.data?.error || 'שגיאה באישור תשלום מאוחר');
+    } finally {
+      setDeferUpdatingId(null);
+    }
+  };
+
+  const handleRejectDeferPayment = async (userId) => {
+    if (!window.confirm('לדחות את בקשת תשלום המאוחר?')) return;
+    setDeferUpdatingId(userId);
+    setSuccessMessage('');
+    try {
+      await axios.patch(`/admin/users/${userId}/deferred-payment`, { reject: true });
+      await fetchData();
+      setSuccessMessage('הבקשה נדחתה.');
+      setTimeout(() => setSuccessMessage(''), 4000);
+    } catch (err) {
+      console.error('reject defer payment failed', err);
+      alert(err.response?.data?.error || 'שגיאה בדחיית הבקשה');
+    } finally {
+      setDeferUpdatingId(null);
     }
   };
 
@@ -320,6 +361,7 @@ const AdminPanel = () => {
                 <th>טלפון</th>
                 <th>תאריך הרשמה</th>
                 <th>מספר קייסים</th>
+                <th>תשלום מאוחר</th>
                 <th>סטטוס</th>
                 <th>פעולות</th>
               </tr>
@@ -327,7 +369,7 @@ const AdminPanel = () => {
             <tbody>
               {(userSubTab === 'admins' ? adminUsers : clientUsers).length === 0 ? (
                 <tr>
-                  <td colSpan="7" className="empty-state">
+                  <td colSpan="8" className="empty-state">
                     {userSubTab === 'admins'
                       ? 'אין מנהלים במערכת.'
                       : 'אין משתמשים במערכת.'}
@@ -341,6 +383,19 @@ const AdminPanel = () => {
                     <td>{user.phone}</td>
                     <td>{formatDate(user.createdAt)}</td>
                     <td>{user.casesCount}</td>
+                    <td>
+                      {user.role === 'admin' || user.role === 'Admin' ? (
+                        <span className="admin-actions-empty">—</span>
+                      ) : user.deferredPaymentRequestPending ? (
+                        <span className="status-badge renewal-pending_confirmation">ממתין לאישור</span>
+                      ) : user.deferredPaymentApproved ? (
+                        <span className="status-badge renewal-ok" title={user.deferredPaymentDeadline || ''}>
+                          עד {formatDate(user.deferredPaymentDeadline)}
+                        </span>
+                      ) : (
+                        <span className="admin-actions-empty">—</span>
+                      )}
+                    </td>
                     <td>
                       <span className={`status-badge ${user.role}`}>
                         {user.role === 'admin' ? 'מנהל' : 'משתמש'}
@@ -358,6 +413,27 @@ const AdminPanel = () => {
                         >
                           {demotingId === user.id ? 'מוריד...' : 'הורד ממנהל'}
                         </button>
+                      ) : userSubTab === 'clients' &&
+                        user.deferredPaymentRequestPending &&
+                        canManageAdmins ? (
+                        <div className="admin-actions-cell admin-defer-actions">
+                          <button
+                            type="button"
+                            className="admin-defer-approve-btn"
+                            onClick={() => handleApproveDeferPayment(user.id)}
+                            disabled={deferUpdatingId !== null}
+                          >
+                            {deferUpdatingId === user.id ? 'מעדכן...' : 'אשר תשלום מאוחר'}
+                          </button>
+                          <button
+                            type="button"
+                            className="admin-defer-reject-btn"
+                            onClick={() => handleRejectDeferPayment(user.id)}
+                            disabled={deferUpdatingId !== null}
+                          >
+                            דחה
+                          </button>
+                        </div>
                       ) : (
                         <span className="admin-actions-empty">—</span>
                       )}

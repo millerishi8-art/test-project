@@ -65,6 +65,22 @@ export const caseFormTranslations = {
       'בקייס משפחה בלבד: יש להעלות תעודת נשואים אמריקאית בלבד (לא תעודה מישראל או ממדינה אחרת).',
     labelProofOfPayment: 'אישור תשלום *',
     hintProofOfPayment: 'צילום מסך או הוכחה ששילמת לסוכן על פתיחת התיק.',
+    labelProofOfPaymentOptional: 'אישור תשלום (לא חובה – אושר תשלום מאוחר)',
+    hintProofOfPaymentDeferred:
+      'לאחר אישור המנהל אין חובה לצרף קובץ; ניתן עדיין להעלות הוכחת תשלום אם תרצו.',
+    deferPaymentCommitmentTitle: 'אושר תשלום מאוחר – התחייבות',
+    deferPaymentCommitment:
+      'התחייבות להשלים את התשלום לסוכן עד ליום {{date}}, לפי אישור המנהל (בדרך כלל עד חודש ממועד האישור או מועד אחר שסוכם עם המנהל).',
+    deferPaymentCommitmentFallback:
+      'התחייבות להשלים את התשלום לסוכן במועד שסוכם עם המנהל – לפרטים מדויקים בדקו את המייל מאת האתר או צרו קשר עם המנהל.',
+    deferPaymentPendingNote:
+      'בקשתך נשלחה למנהל. לאחר האישור תוצג כאן התחייבות התשלום ותוכלו לשלוח את התיק בלי אישור תשלום מיידי.',
+    deferPaymentButton: 'בקשה לתשלום בהמשך (פנייה למנהל)',
+    deferPaymentSending: 'שולח…',
+    deferPaymentRequestSent: 'הבקשה נשלחה למנהל. עדכון יופיע כאן לאחר האישור.',
+    deferPaymentEmailFailed:
+      'הבקשה נרשמה במערכת, אך שליחת המייל למנהל נכשלה – מומלץ ליצור קשר עם המנהל.',
+    deferPaymentRequestError: 'שגיאה בשליחת הבקשה. נסו שוב מאוחר יותר.',
     labelDigitalSignatureBlock: 'חתימה דיגיטלית *',
     hintDigitalSignature:
       'חובה לחתום בתיבה למטה בעכבר או במגע. השתמש ב"נקה חתימה" אם תרצה להתחיל מחדש.',
@@ -166,6 +182,8 @@ export const caseFormTranslations = {
     errorMissingAmericanMarriageCertificate:
       'בקייס משפחה חובה להעלות תעודת נשואים אמריקאית בלבד.',
     errorMissingPayment: 'חובה להעלות אישור תשלום לסוכן (צילום מסך או הוכחת תשלום).',
+    errorPaymentProofRequired:
+      'נדרש להעלות אישור תשלום או לקבל אישור מנהל לתשלום מאוחר לפני שליחת התיק.',
     errorCaseEmailInvalid: 'נא להזין כתובת מייל תקינה לחשבון הקייס.',
     errorCasePasswordRequired: 'נא להזין סיסמה לחשבון הקייס (כשסימנת קייס בעבר או קייס פעיל).',
     benefitTitles: {
@@ -250,6 +268,22 @@ export const caseFormTranslations = {
     hintPassport: 'Photo of a valid passport (photo ID page).',
     labelProofOfPayment: 'Proof of payment *',
     hintProofOfPayment: 'Screenshot or proof that you paid the agent to open the case.',
+    labelProofOfPaymentOptional: 'Proof of payment (optional – deferred payment approved)',
+    hintProofOfPaymentDeferred:
+      'After manager approval, uploading payment proof is optional; you may still attach a file if you wish.',
+    deferPaymentCommitmentTitle: 'Deferred payment approved – your commitment',
+    deferPaymentCommitment:
+      'You commit to complete payment to the agent by {{date}}, per the manager’s approval (typically within one month of approval or another agreed date).',
+    deferPaymentCommitmentFallback:
+      'Complete payment to the agent by the deadline agreed with the manager—check your email or contact support for the exact date.',
+    deferPaymentPendingNote:
+      'Your request was sent to the manager. After approval, your payment commitment will appear here and you can submit the case without immediate payment proof.',
+    deferPaymentButton: 'Request deferred payment (contact manager)',
+    deferPaymentSending: 'Sending…',
+    deferPaymentRequestSent: 'Your request was sent. This page will update after approval.',
+    deferPaymentEmailFailed:
+      'Your request was saved, but the email to the manager could not be sent—please contact the manager directly.',
+    deferPaymentRequestError: 'Could not send the request. Please try again later.',
     labelDigitalSignatureBlock: 'Digital signature *',
     hintDigitalSignature:
       'You must sign in the box below using your mouse or touch. Use "Clear signature" if you need to start over.',
@@ -351,6 +385,8 @@ export const caseFormTranslations = {
     errorMissingAmericanMarriageCertificate:
       'Family cases require a U.S. marriage certificate (American certificate only).',
     errorMissingPayment: 'Please upload proof of payment to the agent.',
+    errorPaymentProofRequired:
+      'Payment proof is required unless the manager has approved deferred payment.',
     errorCaseEmailInvalid: 'Please enter a valid email for the case account.',
     errorCasePasswordRequired: 'Please enter the case account password (when past or active case is selected).',
     benefitTitles: {

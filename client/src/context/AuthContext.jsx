@@ -153,6 +153,26 @@ export const AuthProvider = ({ children }) => {
     delete axios.defaults.headers.common['Authorization'];
   };
 
+  /** רענון פרופיל מהשרת (למשל אחרי אישור תשלום מאוחר) */
+  const refreshUser = async () => {
+    if (!token) return null;
+    try {
+      const response = await axios.get('/me');
+      setUser(response.data);
+      setRequireEmailVerification(false);
+      return response.data;
+    } catch (error) {
+      logAuthError('refreshUser /me', error);
+      const code = error.response?.data?.code;
+      if (code === 'EMAIL_NOT_VERIFIED') {
+        setRequireEmailVerification(true);
+      } else {
+        logout();
+      }
+      return null;
+    }
+  };
+
   const applySession = (newToken, userData) => {
     setRequireEmailVerification(false);
     setToken(newToken);
@@ -168,6 +188,7 @@ export const AuthProvider = ({ children }) => {
     login,
     register,
     logout,
+    refreshUser,
     applySession,
     isAuthenticated: !!user,
     isAdmin: user?.role === 'admin',

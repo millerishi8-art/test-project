@@ -465,6 +465,50 @@
   }
 }
 
+.admin-defer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  justify-content: flex-start;
+}
+
+.admin-defer-approve-btn {
+  padding: 0.4rem 0.65rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(180deg, #ff9f43 0%, #e67e22 100%);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.admin-defer-approve-btn:hover:not(:disabled) {
+  filter: brightness(1.05);
+}
+
+.admin-defer-reject-btn {
+  padding: 0.4rem 0.65rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #5d4037;
+  background: #fafafa;
+  border: 1px solid #bdbdbd;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.admin-defer-reject-btn:hover:not(:disabled) {
+  background: #eeeeee;
+}
+
+.admin-defer-approve-btn:disabled,
+.admin-defer-reject-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 @media (max-width: 768px) {
   .admin-table {
     font-size: 0.85rem;

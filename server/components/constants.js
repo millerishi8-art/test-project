@@ -47,6 +47,8 @@ export const ERROR_MESSAGES = {
     REQUIRED_FIELDS: 'חסרים שדות חובה',
     CASE_NOT_FOUND: 'תיק לא נמצא',
     CITIZENSHIP_COUNTRY_REQUIRED: 'נא לבחור מדינה לאזרחות הנוספת',
+    PAYMENT_PROOF_REQUIRED:
+      'נדרש להעלות אישור תשלום או לקבל אישור מנהל לתשלום מאוחר לפני שליחת התיק.',
   },
   SERVER: {
     REGISTRATION: 'שגיאת שרת בהרשמה',

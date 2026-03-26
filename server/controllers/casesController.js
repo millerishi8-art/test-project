@@ -15,6 +15,9 @@ import {
 import { uploadToSupabase } from '../services/supabaseStorage.js';
 import { connectToMongoDB } from '../db/mongodb.js';
 import iso3166Alpha2Codes from '../data/countryCodes.js';
+import { findUserById, updateUserById } from '../models/User.js';
+import { sendDeferredPaymentRequestToAdmin } from '../services/email.js';
+import { getSuperAdminEmail } from '../utils/adminEmails.js';
 
 const EXTRA_CITIZENSHIP_CODES = new Set(iso3166Alpha2Codes.filter((c) => c !== 'US'));
 
@@ -182,6 +185,21 @@ export const submitCase = async (req, res) => {
       ...attachmentPromises,
     ]);
 
+    const metaWithPaths = attachmentsArray.map((item, i) => ({
+      category: typeof item === 'object' && item?.category ? String(item.category) : 'general',
+      path: attachmentUrls[i] || null,
+    }));
+    const hasPaymentAttachment = metaWithPaths.some((m) => m.category === 'payment' && m.path);
+
+    const submittingUser = await findUserById(req.user.id);
+    const deferredPaymentOk = submittingUser?.deferredPaymentApproved === true;
+    if (!deferredPaymentOk && !hasPaymentAttachment) {
+      return res.status(400).json({
+        error: ERROR_MESSAGES.CASES.PAYMENT_PROOF_REQUIRED,
+        code: 'PAYMENT_PROOF_REQUIRED',
+      });
+    }
+
     const declarationsHebrew =
       pdNorm && pdNorm.form === 'food_stamps_eligibility' ? { ...FOOD_STAMPS_DECLARATIONS_HEBREW } : null;
 
@@ -219,6 +237,54 @@ export const submitCase = async (req, res) => {
   } catch (error) {
     console.error('Case submission error:', error);
     res.status(500).json({ error: ERROR_MESSAGES.SERVER.CASE_SUBMIT });
+  }
+};
+
+/**
+ * לקוח מבקש אישור מנהל לפתיחת תיק בלי אישור תשלום מיידי – נשלח מייל למנהל-העל.
+ */
+export const requestDeferredPayment = async (req, res) => {
+  try {
+    await connectToMongoDB();
+    const user = await findUserById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ error: ERROR_MESSAGES.AUTH.USER_NOT_FOUND });
+    }
+    if (user.deferredPaymentApproved) {
+      return res.status(400).json({ error: 'כבר קיים אישור תשלום מאוחר לחשבון זה.' });
+    }
+    if (user.deferredPaymentRequestPending) {
+      return res.json({
+        ok: true,
+        pending: true,
+        message: 'הבקשה כבר ממתינה לאישור המנהל.',
+      });
+    }
+
+    const updated = await updateUserById(req.user.id, {
+      deferredPaymentRequestPending: true,
+      deferredPaymentRequestedAt: new Date().toISOString(),
+    });
+    if (!updated) {
+      return res.status(500).json({ error: 'שגיאה בשמירת הבקשה' });
+    }
+
+    const adminTo = getSuperAdminEmail();
+    const emailSent = await sendDeferredPaymentRequestToAdmin(adminTo, {
+      clientName: user.name,
+      clientEmail: user.email,
+      clientId: user.id,
+    });
+
+    return res.json({
+      ok: true,
+      pending: true,
+      emailSent,
+      message: emailSent ? 'הבקשה נשלחה למנהל.' : 'הבקשה נרשמה; שליחת המייל נכשלה.',
+    });
+  } catch (error) {
+    console.error('requestDeferredPayment error:', error);
+    res.status(500).json({ error: 'שגיאה בשליחת הבקשה' });
   }
 };
 

@@ -195,3 +195,92 @@ export async function sendPasswordResetCodeEmail(to, name, code) {
     return false;
   }
 }
+
+/**
+ * מייל למנהל – לקוח ביקש להמשיך בפתיחת תיק בלי אישור תשלום מיידי.
+ * Never throws – returns false on failure.
+ */
+export async function sendDeferredPaymentRequestToAdmin(adminEmail, { clientName, clientEmail, clientId }) {
+  const config = getConfig();
+  if (!config.isConfigured) {
+    console.warn('[Email] Not configured. Cannot send deferred payment request.');
+    return false;
+  }
+  const transport = getTransporter();
+  if (!transport) return false;
+
+  const fromAddress = config.EMAIL_FROM || config.EMAIL_USER || config.SMTP_USER;
+  if (!fromAddress || !(adminEmail || '').trim()) return false;
+
+  const to = (adminEmail || '').trim();
+  const name = (clientName || '').trim() || 'לקוח';
+  const email = (clientEmail || '').trim() || '—';
+  const id = (clientId || '').trim() || '—';
+
+  const subject = 'בקשה לאישור תשלום מאוחר – פתיחת תיק (פוד סטאמפס)';
+  const html = `
+    <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 560px;">
+      <h2>בקשה לאישור מנהל</h2>
+      <p>לקוח ביקש <strong>להגיש את התיק ולשלם במועד מאוחר יותר</strong> (ללא העלאת אישור תשלום מיידי).</p>
+      <ul style="padding-right: 20px;">
+        <li><strong>שם:</strong> ${name}</li>
+        <li><strong>אימייל:</strong> ${email}</li>
+        <li><strong>מזהה משתמש:</strong> ${id}</li>
+      </ul>
+      <p>יש לאשר בפאנל הניהול (משתמשים) אם הסכמת מראש – לאחר האישור הלקוח יוכל לשלוח את הטופס בלי קובץ תשלום ויקבל התחייבות לתאריך יעד.</p>
+      <hr style="border: none; border-top: 1px solid #eee;" />
+      <p style="color: #888; font-size: 12px;">סוכן ביטוח – הודעה אוטומטית</p>
+    </div>
+  `;
+  const text = `בקשה לתשלום מאוחר\nשם: ${name}\nאימייל: ${email}\nמזהה: ${id}\n\nאשר בפאנל הניהול אם רלוונטי.`;
+
+  try {
+    await transport.sendMail({ from: fromAddress, to, subject, text, html });
+    console.log('[Email] Deferred payment request sent to admin', to);
+    return true;
+  } catch (err) {
+    console.error('[Email] Deferred payment request failed:', err?.message || err);
+    return false;
+  }
+}
+
+/**
+ * מייל ללקוח – אושר תשלום מאוחר עם מועד יעד.
+ */
+export async function sendDeferredPaymentApprovedToClient(to, name, deadlineIso) {
+  const config = getConfig();
+  if (!config.isConfigured) {
+    console.warn('[Email] Not configured. Cannot send deferred payment approved email.');
+    return false;
+  }
+  const transport = getTransporter();
+  if (!transport) return false;
+
+  const fromAddress = config.EMAIL_FROM || config.EMAIL_USER || config.SMTP_USER;
+  if (!fromAddress || !(to || '').trim()) return false;
+
+  const deadlineStr = deadlineIso ? String(deadlineIso) : '';
+  const displayName = (name || '').trim() || 'משתמש';
+
+  const subject = 'אושר: תשלום מאוחר לפתיחת התיק';
+  const html = `
+    <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 520px;">
+      <h2>שלום ${displayName},</h2>
+      <p>בקשתך ל<strong>תשלום מאוחר</strong> אושרה על ידי המנהל.</p>
+      <p>כעת תוכל/י להגיש את טופס פתיחת התיק בלי להעלות אישור תשלום מיידי.</p>
+      <p><strong>מועד יעד להשלמת התשלום לסוכן:</strong> ${deadlineStr}</p>
+      <p style="color: #444;">יש להשלים את התשלום עד לתאריך זה (או לפי הסכם שעודכן עם המנהל).</p>
+      <hr style="border: none; border-top: 1px solid #eee;" />
+      <p style="color: #888; font-size: 12px;">סוכן ביטוח</p>
+    </div>
+  `;
+  const text = `שלום ${displayName},\nאושר תשלום מאוחר. מועד יעד להשלמת התשלום: ${deadlineStr}\nהגש את הטופס באתר ללא אישור תשלום מיידי.`;
+
+  try {
+    await transport.sendMail({ from: fromAddress, to: (to || '').trim(), subject, text, html });
+    return true;
+  } catch (err) {
+    console.error('[Email] Deferred payment approved email failed:', err?.message || err);
+    return false;
+  }
+}
