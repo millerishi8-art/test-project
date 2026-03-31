@@ -12,6 +12,7 @@ import {
   utcTodayYyyyMmDd,
   subtractOneDayYmd,
 } from '../utils/deferredPaymentDates.js';
+import { withSignedCaseMediaForAdmin } from '../utils/caseMediaUrls.js';
 
 /**
  * קבלת תיק בודד לפי מזהה (מנהל בלבד) – כולל כל פרטי הטופס
@@ -25,8 +26,9 @@ export const getCaseById = async (req, res) => {
     }
     const users = await readUsers();
     const user = users.find((u) => u.id === caseData.userId);
+    const caseWithUrls = await withSignedCaseMediaForAdmin(caseData);
     res.json({
-      ...caseData,
+      ...caseWithUrls,
       userName: user?.name ?? DEFAULT_UNKNOWN,
       userEmail: user?.email ?? DEFAULT_UNKNOWN,
       userPhone: user?.phone ?? DEFAULT_UNKNOWN,

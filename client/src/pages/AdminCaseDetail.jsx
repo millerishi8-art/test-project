@@ -23,6 +23,19 @@ const adminCitizenshipLabels = {
   en: 'Additional citizenship (country)',
 };
 
+/** URL להצגה – תומך במחרוזת או באובייקט מהמסד (path/url) */
+function mediaFieldToUrl(val) {
+  if (!val) return '';
+  if (typeof val === 'string') return val.trim();
+  if (typeof val === 'object') return String(val.path || val.url || val.data || '').trim();
+  return '';
+}
+
+function urlLooksLikePdf(url) {
+  if (!url || typeof url !== 'string') return false;
+  return /\.pdf(\?|#|$)/i.test(url);
+}
+
 const AdminCaseDetail = () => {
   const { caseId } = useParams();
   const navigate = useNavigate();
@@ -331,34 +344,94 @@ const AdminCaseDetail = () => {
               </div>
             )}
 
-          {(c.idCardPhoto || c.idCardAnnex || (Array.isArray(c.attachments) && c.attachments.length > 0)) && (
+          {(mediaFieldToUrl(c.idCardPhoto) ||
+            mediaFieldToUrl(c.idCardAnnex) ||
+            (Array.isArray(c.attachments) && c.attachments.length > 0)) && (
             <>
               <h3 className="admin-case-detail-images-heading">תמונות ומסמכים שהלקוח העלה</h3>
-              {c.idCardPhoto && (
+              {mediaFieldToUrl(c.idCardPhoto) && (
                 <div className="admin-case-detail-field admin-case-detail-field-block">
                   <span className="admin-case-detail-label">תמונת תעודת זהות / מסמך</span>
-                  <div className="admin-case-detail-img-wrap admin-case-detail-img-clickable" onClick={() => setEnlargedImage(c.idCardPhoto)}>
-                    <img src={c.idCardPhoto} alt="תעודת זהות / מסמך" className="admin-case-detail-uploaded-img" />
-                  </div>
+                  {urlLooksLikePdf(mediaFieldToUrl(c.idCardPhoto)) ? (
+                    <a
+                      className="admin-case-detail-pdf-open-link"
+                      href={mediaFieldToUrl(c.idCardPhoto)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      פתיחת PDF – תעודת זהות / מסמך
+                    </a>
+                  ) : (
+                    <div
+                      className="admin-case-detail-img-wrap admin-case-detail-img-clickable"
+                      onClick={() => setEnlargedImage(mediaFieldToUrl(c.idCardPhoto))}
+                    >
+                      <img
+                        src={mediaFieldToUrl(c.idCardPhoto)}
+                        alt="תעודת זהות / מסמך"
+                        className="admin-case-detail-uploaded-img"
+                      />
+                    </div>
+                  )}
                 </div>
               )}
-              {c.idCardAnnex && (
+              {mediaFieldToUrl(c.idCardAnnex) && (
                 <div className="admin-case-detail-field admin-case-detail-field-block">
                   <span className="admin-case-detail-label">נספח למסמך</span>
-                  <div className="admin-case-detail-img-wrap admin-case-detail-img-clickable" onClick={() => setEnlargedImage(c.idCardAnnex)}>
-                    <img src={c.idCardAnnex} alt="נספח למסמך" className="admin-case-detail-uploaded-img" />
-                  </div>
+                  {urlLooksLikePdf(mediaFieldToUrl(c.idCardAnnex)) ? (
+                    <a
+                      className="admin-case-detail-pdf-open-link"
+                      href={mediaFieldToUrl(c.idCardAnnex)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      פתיחת PDF – נספח
+                    </a>
+                  ) : (
+                    <div
+                      className="admin-case-detail-img-wrap admin-case-detail-img-clickable"
+                      onClick={() => setEnlargedImage(mediaFieldToUrl(c.idCardAnnex))}
+                    >
+                      <img
+                        src={mediaFieldToUrl(c.idCardAnnex)}
+                        alt="נספח למסמך"
+                        className="admin-case-detail-uploaded-img"
+                      />
+                    </div>
+                  )}
                 </div>
               )}
               {Array.isArray(c.attachments) && c.attachments.length > 0 && (
                 <div className="admin-case-detail-field admin-case-detail-field-block">
                   <span className="admin-case-detail-label">מסמכים מצורפים נוספים</span>
                   <div className="admin-case-detail-attachments">
-                    {c.attachments.map((url, i) => (
-                      <div key={i} className="admin-case-detail-img-wrap admin-case-detail-img-clickable" onClick={() => setEnlargedImage(url)}>
-                        <img src={url} alt={`מסמך מצורף ${i + 1}`} className="admin-case-detail-uploaded-img" />
-                      </div>
-                    ))}
+                    {c.attachments.map((item, i) => {
+                      const url = mediaFieldToUrl(item);
+                      if (!url) return null;
+                      if (urlLooksLikePdf(url)) {
+                        return (
+                          <div key={i} className="admin-case-detail-attachment-card admin-case-detail-attachment-pdf">
+                            <a
+                              className="admin-case-detail-pdf-open-link"
+                              href={url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              מסמך PDF {i + 1} – פתיחה
+                            </a>
+                          </div>
+                        );
+                      }
+                      return (
+                        <div
+                          key={i}
+                          className="admin-case-detail-img-wrap admin-case-detail-img-clickable"
+                          onClick={() => setEnlargedImage(url)}
+                        >
+                          <img src={url} alt={`מסמך מצורף ${i + 1}`} className="admin-case-detail-uploaded-img" />
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -366,7 +439,7 @@ const AdminCaseDetail = () => {
           )}
         </section>
 
-        {(c.signatoryName || c.signatureImage) && (
+        {(c.signatoryName || mediaFieldToUrl(c.signatureImage)) && (
           <section className="admin-case-detail-section">
             <h2>אישור וחתימה</h2>
             {c.signatoryName && (
@@ -381,11 +454,18 @@ const AdminCaseDetail = () => {
                 <span className="admin-case-detail-value">{formatDate(c.signedAt)}</span>
               </div>
             )}
-            {c.signatureImage && (
+            {mediaFieldToUrl(c.signatureImage) && (
               <div className="admin-case-detail-field admin-case-detail-field-block">
                 <span className="admin-case-detail-label">חתימה (תמונה שהלקוח העלה)</span>
-                <div className="admin-case-detail-signature-img-wrap admin-case-detail-img-clickable" onClick={() => setEnlargedImage(c.signatureImage)}>
-                  <img src={c.signatureImage} alt="חתימה" className="admin-case-detail-signature-img" />
+                <div
+                  className="admin-case-detail-signature-img-wrap admin-case-detail-img-clickable"
+                  onClick={() => setEnlargedImage(mediaFieldToUrl(c.signatureImage))}
+                >
+                  <img
+                    src={mediaFieldToUrl(c.signatureImage)}
+                    alt="חתימה"
+                    className="admin-case-detail-signature-img"
+                  />
                 </div>
               </div>
             )}

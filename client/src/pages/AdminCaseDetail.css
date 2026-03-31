@@ -161,6 +161,29 @@
   margin-top: 0;
 }
 
+.admin-case-detail-pdf-open-link {
+  display: inline-block;
+  margin-top: 0.5rem;
+  padding: 0.65rem 1rem;
+  background: #e3f2fd;
+  color: #0d47a1;
+  border-radius: 8px;
+  font-weight: 600;
+  text-decoration: none;
+  border: 1px solid #1565c0;
+}
+
+.admin-case-detail-pdf-open-link:hover {
+  background: #bbdefb;
+}
+
+.admin-case-detail-attachment-pdf {
+  padding: 1rem;
+  background: #f0f9ff;
+  border-radius: 10px;
+  border: 1px solid #e0f2fe;
+}
+
 .admin-case-detail-img-clickable {
   cursor: pointer;
 }

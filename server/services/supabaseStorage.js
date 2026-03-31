@@ -74,16 +74,19 @@ export async function uploadToSupabase(base64DataUrl, fileName) {
 }
 
 /**
- * יוצר קישור זמני לצפייה בתמונה פרטית
+ * יוצר קישור זמני לצפייה במסמך ב-bucket הפרטי
  * @param {string} filePath - הנתיב שקיבלת מהעלאה (למשל 'uploads/123_image.png')
+ * @param {number} expiresSec - תוקף בשניות (ברירת מחדל 600)
  * @returns {Promise<string|null>} - לינק זמני לצפייה או null
  */
-export async function getSignedUrl(filePath) {
+export async function getSignedUrl(filePath, expiresSec = 600) {
   const { supabaseUrl, supabaseServiceRoleKey } = getConfig();
   if (!supabaseUrl || !supabaseServiceRoleKey) {
     console.warn('[Supabase] SUPABASE_URL או SUPABASE_SERVICE_ROLE_KEY חסרים – לא ניתן ליצור קישור');
     return null;
   }
+
+  const ttl = Math.min(Math.max(Number(expiresSec) || 600, 60), 60 * 60 * 24 * 7);
 
   try {
     const supabase = createClient(supabaseUrl, supabaseServiceRoleKey, {
@@ -92,7 +95,7 @@ export async function getSignedUrl(filePath) {
 
     const { data, error } = await supabase.storage
       .from(BUCKET_NAME)
-      .createSignedUrl(filePath, 600); // הלינק יהיה תקף ל-600 שניות (10 דקות)
+      .createSignedUrl(filePath, ttl);
 
     if (error) throw error;
     return data?.signedUrl ?? null;
