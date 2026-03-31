@@ -123,6 +123,85 @@ const AdminCaseDetail = () => {
     }
   };
 
+  /** personalDetails נשמר כאובייקט (caseEmail, declarationsAccepted וכו') – לא ניתן לרנדר אובייקט ישירות ב-React */
+  const renderPersonalDetailsContent = (pd) => {
+    if (pd == null || pd === '') return '–';
+    if (typeof pd === 'string') return pd;
+    if (typeof pd !== 'object' || Array.isArray(pd)) return String(pd);
+
+    if (pd.form === 'food_stamps_eligibility') {
+      const dec = pd.declarationsAccepted;
+      const rows = [
+        ['שם מלא', pd.fullName],
+        ['תאריך לידה', pd.dob],
+        ['מקום לידה', pd.birthPlace],
+        ['שם האב', pd.fatherName],
+        ['שם האם', pd.motherName],
+        ['מצב משפחתי', pd.maritalStatus],
+        ['מספר נתמכים', pd.dependentsCount],
+        ['אזרחות נוספת', pd.additionalCitizenship],
+        ['מקרה קודם', pd.previousCase],
+        ['תיק פעיל', pd.activeCase],
+      ];
+      return (
+        <div className="admin-case-detail-pd-structured">
+          <div className="admin-case-detail-grid">
+            {rows
+              .filter(([, val]) => val != null && String(val).trim() !== '')
+              .map(([label, val]) => (
+                <div key={label} className="admin-case-detail-field">
+                  <span className="admin-case-detail-label">{label}</span>
+                  <span className="admin-case-detail-value">{String(val)}</span>
+                </div>
+              ))}
+          </div>
+          {(pd.caseEmail || pd.casePassword) && (
+            <div className="admin-case-detail-grid admin-case-detail-pd-portal">
+              <div className="admin-case-detail-field">
+                <span className="admin-case-detail-label">אימייל (חשבון תיק)</span>
+                <span className="admin-case-detail-value">{pd.caseEmail || '–'}</span>
+              </div>
+              <div className="admin-case-detail-field">
+                <span className="admin-case-detail-label">סיסמה (חשבון תיק)</span>
+                <span className="admin-case-detail-value">{pd.casePassword || '–'}</span>
+              </div>
+            </div>
+          )}
+          {dec && typeof dec === 'object' && !Array.isArray(dec) && (
+            <div className="admin-case-detail-grid admin-case-detail-pd-declarations">
+              {['dec1', 'dec2', 'dec3', 'dec4'].map((k) => (
+                <div key={k} className="admin-case-detail-field">
+                  <span className="admin-case-detail-label">הצהרה {k.replace('dec', '')}</span>
+                  <span className="admin-case-detail-value">
+                    {dec[k] ? 'כן' : dec[k] == null ? '–' : 'לא'}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+          {pd.signatureLink ? (
+            <div className="admin-case-detail-field admin-case-detail-field-block admin-case-detail-pd-signature-link">
+              <span className="admin-case-detail-label">קישור חתימה / הפניה</span>
+              <p className="admin-case-detail-value admin-case-detail-text">
+                <a href={pd.signatureLink} target="_blank" rel="noopener noreferrer">
+                  {pd.signatureLink}
+                </a>
+              </p>
+            </div>
+          ) : null}
+          {Array.isArray(pd.familyChildren) && pd.familyChildren.length > 0 ? (
+            <div className="admin-case-detail-pd-children">
+              <h4 className="admin-case-detail-subheading">ילדים (מהטופס)</h4>
+              <pre className="admin-case-detail-json">{JSON.stringify(pd.familyChildren, null, 2)}</pre>
+            </div>
+          ) : null}
+        </div>
+      );
+    }
+
+    return <pre className="admin-case-detail-json">{JSON.stringify(pd, null, 2)}</pre>;
+  };
+
   return (
     <div className="admin-case-detail-container">
       {enlargedImage && (
@@ -237,7 +316,9 @@ const AdminCaseDetail = () => {
           )}
           <div className="admin-case-detail-field admin-case-detail-field-block">
             <span className="admin-case-detail-label">פרטים נוספים</span>
-            <p className="admin-case-detail-value admin-case-detail-text">{c.personalDetails || '–'}</p>
+            <div className="admin-case-detail-value admin-case-detail-text">
+              {renderPersonalDetailsContent(c.personalDetails)}
+            </div>
           </div>
           {typeof c.personalDetails === 'object' &&
             c.personalDetails !== null &&

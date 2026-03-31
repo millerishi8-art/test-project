@@ -78,6 +78,35 @@
   line-height: 1.6;
 }
 
+.admin-case-detail-pd-structured .admin-case-detail-pd-portal,
+.admin-case-detail-pd-structured .admin-case-detail-pd-declarations {
+  margin-top: 1rem;
+}
+
+.admin-case-detail-pd-signature-link {
+  margin-top: 1rem;
+}
+
+.admin-case-detail-subheading {
+  margin: 0.75rem 0 0.5rem;
+  font-size: 1rem;
+  color: #333;
+  font-weight: 600;
+}
+
+.admin-case-detail-json {
+  margin: 0;
+  font-size: 0.85rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+  background: #f5f7fb;
+  padding: 0.85rem;
+  border-radius: 8px;
+  border: 1px solid #e0e4ef;
+  direction: ltr;
+  text-align: left;
+}
+
 .admin-case-detail-signature-img-wrap {
   margin-top: 0.5rem;
   padding: 1rem;
