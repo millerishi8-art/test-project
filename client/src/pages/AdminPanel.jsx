@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Fragment } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
@@ -50,10 +50,15 @@ const AdminPanel = () => {
   const [deletingCaseId, setDeletingCaseId] = useState(null);
   const [statusUpdatingId, setStatusUpdatingId] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
+  const [casesPanelUserId, setCasesPanelUserId] = useState(null);
 
   useEffect(() => {
     fetchData();
   }, []);
+
+  useEffect(() => {
+    setCasesPanelUserId(null);
+  }, [userSubTab]);
 
   useEffect(() => {
     if (stateTab === 'cases') setMainSection('cases');
@@ -85,8 +90,10 @@ const AdminPanel = () => {
       ]);
       setUsers(usersRes.data);
       setCases(casesRes.data);
+      return { users: usersRes.data, cases: casesRes.data };
     } catch (error) {
       console.error('Failed to fetch admin data:', error);
+      return null;
     } finally {
       setLoading(false);
     }
@@ -248,13 +255,24 @@ const AdminPanel = () => {
   };
 
   const handleRemoveCase = async (caseItem) => {
-    if (!window.confirm('האם אתה בטוח שברצונך להסיר לצמיתות?')) return;
+    if (
+      !window.confirm(
+        'להסיר את התיק מהמערכת לצמיתות?\n\nפעולה זו למנהל ראשי בלבד. אם זה התיק היחיד של הלקוח, חשבון המשתמש יימחק גם הוא.'
+      )
+    ) {
+      return;
+    }
     if (deletingCaseId) return;
+    const expandedForUser = casesPanelUserId;
     setDeletingCaseId(caseItem.id);
     setSuccessMessage('');
     try {
       const res = await axios.delete(`/admin/cases/${caseItem.id}`);
-      await fetchData();
+      const fresh = await fetchData();
+      if (expandedForUser && fresh?.users) {
+        const u = fresh.users.find((x) => x.id === expandedForUser);
+        if (!u?.cases?.length) setCasesPanelUserId(null);
+      }
       if (res.data?.alreadyRemoved) {
         setSuccessMessage('התיק כבר לא היה במערכת. הרשימה עודכנה.');
       } else if (res.data?.userDeleted) {
@@ -622,51 +640,136 @@ const AdminPanel = () => {
                 </tr>
               ) : (
                 (userSubTab === 'admins' ? adminUsers : clientUsers).map((user) => (
-                  <tr key={user.id}>
-                    <td>{user.name}</td>
-                    <td>{user.email}</td>
-                    <td>{user.phone}</td>
-                    <td>{formatDate(user.createdAt)}</td>
-                    <td>{user.casesCount}</td>
-                    <td>
-                      {user.role === 'admin' || user.role === 'Admin' ? (
-                        <span className="admin-actions-empty">—</span>
-                      ) : user.deferredPaymentApproved ? (
-                        <span className="status-badge renewal-ok" title={user.deferredPaymentDeadline || ''}>
-                          אושר עד {formatDate(user.deferredPaymentDeadline)}
+                  <Fragment key={user.id}>
+                    <tr>
+                      <td>{user.name}</td>
+                      <td>{user.email}</td>
+                      <td>{user.phone}</td>
+                      <td>{formatDate(user.createdAt)}</td>
+                      <td>{user.casesCount}</td>
+                      <td>
+                        {user.role === 'admin' || user.role === 'Admin' ? (
+                          <span className="admin-actions-empty">—</span>
+                        ) : user.deferredPaymentApproved ? (
+                          <span className="status-badge renewal-ok" title={user.deferredPaymentDeadline || ''}>
+                            אושר עד {formatDate(user.deferredPaymentDeadline)}
+                          </span>
+                        ) : user.deferredPaymentProposalPending ? (
+                          <span className="status-badge renewal-pending_confirmation">ממתין לאישור תאריך</span>
+                        ) : user.deferredPaymentAwaitingClientDate ? (
+                          <span className="status-badge renewal-renewal_in_6_months">ממתין לתאריך מלקוח</span>
+                        ) : user.deferredPaymentRequestPending ? (
+                          <span className="status-badge renewal-pending_confirmation">ממתין למנהל ראשי</span>
+                        ) : (
+                          <span className="admin-actions-empty">—</span>
+                        )}
+                      </td>
+                      <td>
+                        <span className={`status-badge ${user.role}`}>
+                          {user.role === 'admin' ? 'מנהל' : 'משתמש'}
                         </span>
-                      ) : user.deferredPaymentProposalPending ? (
-                        <span className="status-badge renewal-pending_confirmation">ממתין לאישור תאריך</span>
-                      ) : user.deferredPaymentAwaitingClientDate ? (
-                        <span className="status-badge renewal-renewal_in_6_months">ממתין לתאריך מלקוח</span>
-                      ) : user.deferredPaymentRequestPending ? (
-                        <span className="status-badge renewal-pending_confirmation">ממתין למנהל ראשי</span>
-                      ) : (
-                        <span className="admin-actions-empty">—</span>
-                      )}
-                    </td>
-                    <td>
-                      <span className={`status-badge ${user.role}`}>
-                        {user.role === 'admin' ? 'מנהל' : 'משתמש'}
-                      </span>
-                    </td>
-                    <td>
-                      {(user.role === 'admin' || user.role === 'Admin') &&
-                      user.id !== currentUser?.id &&
-                      canManageAdmins ? (
-                        <button
-                          type="button"
-                          className="admin-demote-btn"
-                          onClick={() => handleDemoteAdmin(user.id)}
-                          disabled={demotingId === user.id}
-                        >
-                          {demotingId === user.id ? 'מוריד...' : 'הורד ממנהל'}
-                        </button>
-                      ) : (
-                        <span className="admin-actions-empty">—</span>
-                      )}
-                    </td>
-                  </tr>
+                      </td>
+                      <td>
+                        <div className="admin-user-actions-stack">
+                          {(user.role === 'admin' || user.role === 'Admin') &&
+                          user.id !== currentUser?.id &&
+                          canManageAdmins ? (
+                            <button
+                              type="button"
+                              className="admin-demote-btn"
+                              onClick={() => handleDemoteAdmin(user.id)}
+                              disabled={demotingId === user.id}
+                            >
+                              {demotingId === user.id ? 'מוריד...' : 'הורד ממנהל'}
+                            </button>
+                          ) : null}
+                          {canManageAdmins &&
+                          (user.role || '').toLowerCase() !== 'admin' &&
+                          Array.isArray(user.cases) &&
+                          user.cases.length > 0 ? (
+                            <button
+                              type="button"
+                              className="admin-user-cases-toggle-btn"
+                              onClick={() =>
+                                setCasesPanelUserId(casesPanelUserId === user.id ? null : user.id)
+                              }
+                            >
+                              {casesPanelUserId === user.id
+                                ? 'סגור תיקים'
+                                : `ניהול תיקים (${user.cases.length})`}
+                            </button>
+                          ) : null}
+                          {!(
+                            ((user.role === 'admin' || user.role === 'Admin') &&
+                              user.id !== currentUser?.id &&
+                              canManageAdmins) ||
+                            (canManageAdmins &&
+                              (user.role || '').toLowerCase() !== 'admin' &&
+                              Array.isArray(user.cases) &&
+                              user.cases.length > 0)
+                          ) ? (
+                            <span className="admin-actions-empty">—</span>
+                          ) : null}
+                        </div>
+                      </td>
+                    </tr>
+                    {casesPanelUserId === user.id &&
+                    (user.role || '').toLowerCase() !== 'admin' &&
+                    Array.isArray(user.cases) &&
+                    user.cases.length > 0 ? (
+                      <tr className="admin-user-cases-expand-row">
+                        <td colSpan={8}>
+                          <div className="admin-user-cases-panel">
+                            <p className="admin-user-cases-panel-title">
+                              תיקים של {user.name} – הסרת תיקים לא רלוונטיים
+                            </p>
+                            <table className="admin-user-cases-inner-table">
+                              <thead>
+                                <tr>
+                                  <th>סוג הטבה</th>
+                                  <th>תאריך יצירה</th>
+                                  <th>סטטוס</th>
+                                  <th>פעולות</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {user.cases.map((caseItem) => (
+                                  <tr key={caseItem.id}>
+                                    <td>{getBenefitTitle(caseItem.benefitType)}</td>
+                                    <td>{formatDate(caseItem.createdAt)}</td>
+                                    <td>
+                                      <span className={`status-badge ${caseItem.status || ''}`}>
+                                        {statusLabel(caseItem.status)}
+                                      </span>
+                                    </td>
+                                    <td>
+                                      <div className="admin-actions-cell">
+                                        <button
+                                          type="button"
+                                          className="admin-view-form-btn"
+                                          onClick={() => navigate(`/admin/cases/${caseItem.id}`)}
+                                        >
+                                          צפה בטופס
+                                        </button>
+                                        <button
+                                          type="button"
+                                          className="admin-remove-btn"
+                                          onClick={() => handleRemoveCase(caseItem)}
+                                          disabled={deletingCaseId !== null}
+                                        >
+                                          {deletingCaseId === caseItem.id ? 'מוחק...' : 'הסר תיק'}
+                                        </button>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        </td>
+                      </tr>
+                    ) : null}
+                  </Fragment>
                 ))
               )}
             </tbody>
@@ -728,14 +831,16 @@ const AdminPanel = () => {
                           >
                             צפה בטופס
                           </button>
-                          <button
-                            type="button"
-                            className="admin-remove-btn"
-                            onClick={() => handleRemoveCase(caseItem)}
-                            disabled={deletingCaseId !== null}
-                          >
-                            {deletingCaseId === caseItem.id ? 'מוחק...' : 'הסר'}
-                          </button>
+                          {canManageAdmins ? (
+                            <button
+                              type="button"
+                              className="admin-remove-btn"
+                              onClick={() => handleRemoveCase(caseItem)}
+                              disabled={deletingCaseId !== null}
+                            >
+                              {deletingCaseId === caseItem.id ? 'מוחק...' : 'הסר'}
+                            </button>
+                          ) : null}
                         </div>
                       </td>
                     </tr>

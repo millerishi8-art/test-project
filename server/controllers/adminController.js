@@ -414,10 +414,14 @@ export const updateCaseProcessing = async (req, res) => {
 };
 
 /**
- * מנהל מוחק תיק לצמיתות. דורש role admin (מוגן ע"י isAdmin middleware).
+ * מנהל-על מוחק תיק לצמיתות (מנהל משנה לא יכול).
  */
 export const deleteCasePermanent = async (req, res) => {
   try {
+    const actorEmail = (req.user?.email || '').trim().toLowerCase();
+    if (!isSuperAdminEmail(actorEmail)) {
+      return res.status(403).json({ error: 'רק מנהל המערכת הראשי יכול להסיר תיקים' });
+    }
     const { id } = req.params;
     /** מחיקה אידמפוטנטית – אם התיק כבר לא קיים, עדיין 200 כדי שלא ייתקעו הלקוח / לחיצה כפולה */
     const removed = await deleteCase(id);
