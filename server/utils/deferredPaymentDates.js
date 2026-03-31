@@ -21,16 +21,28 @@ export function utcTodayYyyyMmDd() {
   return toYyyyMmDdUtc(new Date());
 }
 
-/** לא יאוחר מחודש ממועד אישור הבקשה הראשון (על בסיס לוח שנה) */
-export function maxProposedYyyyMmDdFromApprovedAt(approvedAtIso) {
-  const d = new Date(approvedAtIso);
-  if (Number.isNaN(d.getTime())) return null;
-  const end = new Date(d);
-  end.setUTCMonth(end.getUTCMonth() + 1);
-  return toYyyyMmDdUtc(end);
-}
-
 export function isYmdInRange(ymd, minYmd, maxYmd) {
   if (!ymd || !minYmd || !maxYmd) return false;
   return ymd >= minYmd && ymd <= maxYmd;
+}
+
+/** תאריך היום בלוח שנה ישראלי (YYYY-MM-DD) */
+export function todayIsraelYyyyMmDd() {
+  return new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jerusalem' });
+}
+
+/** הפרש ימים בין שני תאריכי YYYY-MM-DD (toY - fromY) */
+export function daysBetweenYmd(fromYmd, toYmd) {
+  const a = new Date(`${fromYmd}T12:00:00Z`).getTime();
+  const b = new Date(`${toYmd}T12:00:00Z`).getTime();
+  if (Number.isNaN(a) || Number.isNaN(b)) return 0;
+  return Math.round((b - a) / (24 * 60 * 60 * 1000));
+}
+
+/** יום אחד לפני ymd (למגבלת date input כשחייבים תאריך לפני exclusive) */
+export function subtractOneDayYmd(ymd) {
+  const d = new Date(`${ymd}T12:00:00Z`);
+  if (Number.isNaN(d.getTime())) return null;
+  d.setUTCDate(d.getUTCDate() - 1);
+  return toYyyyMmDdUtc(d);
 }

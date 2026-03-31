@@ -73,18 +73,22 @@ export const caseFormTranslations = {
       'לאחר אישור המנהל אין חובה לצרף קובץ; ניתן עדיין להעלות הוכחת תשלום אם תרצו.',
     deferPaymentCommitmentTitle: 'אושר תשלום מאוחר – התחייבות',
     deferPaymentCommitment:
-      'התחייבות להשלים את התשלום לסוכן עד ליום {{date}}, לפי אישור המנהל (בדרך כלל עד חודש ממועד האישור או מועד אחר שסוכם עם המנהל).',
+      'התחייבות להשלים את התשלום לסוכן עד ליום {{date}}, לפי אישור המנהל.',
     deferPaymentCommitmentFallback:
       'התחייבות להשלים את התשלום לסוכן במועד שסוכם עם המנהל – לפרטים מדויקים בדקו את המייל מאת האתר או צרו קשר עם המנהל.',
     deferPaymentPendingNote:
       'בקשתך נשלחה למנהל הראשי. לאחר אישור הבקשה תתבקשו להזין מועד תשלום, ורק אחרי אישור המועד תוכלו לשלוח את התיק בלי אישור תשלום מיידי.',
     deferPaymentStage1Title: 'הבקשה אושרה – שלב הבא: מועד תשלום',
     deferPaymentStage1Body:
-      'נא לבחור את המועד האחרון שבו אתם מתחייבים לשלם לסוכן על פתיחת התיק. המועד לא יאוחר מחודש ממועד אישור הבקשה.',
-    deferClientMaxLabel: 'תאריך אחרון מותר',
+      'נא לבחור את המועד האחרון שבו אתם מתחייבים לשלם לסוכן על פתיחת התיק, לפי מה שמוצג בטופס ולפי הסכמה עם המנהל.',
+    deferPaymentManagerRequiresEarlier:
+      'המנהל ביקש תאריך מוקדם יותר מהמועד {{date}} שהצעתם. עליכם לבחור תאריך לפני {{date}} (לא כולל).',
+    deferClientMaxLabel: 'תאריך אחרון מותר לבחירה בלוח',
     deferClientDeadlineLabel: 'תאריך יעד לתשלום (התחייבות) *',
     deferClientDeadlineHint:
-      'יש לבחור תאריך מהיום ועד התאריך האחרון המותר. לאחר השליחה המנהל הראשי יאשר את התאריך, ואז יופעל אישור תשלום מיוחד לשליחת הטופס.',
+      'יש לבחור תאריך מהיום ואילך. לאחר השליחה המנהל הראשי יאשר את התאריך, ואז יופעל אישור תשלום מיוחד לשליחת הטופס.',
+    deferClientDeadlineHintEarlier:
+      'חובה לבחור תאריך מהיום ועד התאריך האחרון המותר בלוח (לפני המועד שהמנהל דחה). לאחר השליחה המנהל יאשר שוב.',
     deferClientDeadlineSubmit: 'שליחת התאריך לאישור המנהל',
     deferClientDeadlineSending: 'שולח…',
     deferClientDeadlineRequired: 'נא לבחור תאריך יעד.',
@@ -92,12 +96,12 @@ export const caseFormTranslations = {
     deferPaymentProposalPendingNote:
       'שלחתם תאריך תשלום; ממתינים לאישור המנהל הראשי. לאחר האישור תוצג כאן ההתחייבות ותוכלו להשלים את הטופס בלי הוכחת תשלום מיידי.',
     errorDeferredDeadlineInvalid:
-      'התאריך חייב להיות מהיום ועד חודש ממועד אישור הבקשה. בחרו תאריך חוקי.',
+      'התאריך חייב להיות מהיום ולפי המגבלה בטופס. בחרו תאריך חוקי.',
     deferPaymentButton: 'קשה לי לשלם כרגע',
     deferPaymentPreSubmitConfirm:
       'בקשה לתשלום בהמשך – פנייה למנהל\n\n' +
       'לאחר שליחת הבקשה לא תוכלו להשלים את שליחת הטופס עם אישור תשלום מיידי, עד שהמנהל הראשי יאשר את הבקשה.\n' +
-      'התהליך עם המנהל הראשי: אישור הבקשה ← הזנת תאריך יעד לתשלום (עד חודש) ← אישור המנהל לתאריך ← ואז ניתן יהיה לשלוח את התיק בלי הוכחת תשלום מיידית.\n\n' +
+      'התהליך עם המנהל הראשי: אישור הבקשה ← הזנת תאריך יעד לתשלום ← אישור המנהל לתאריך ← ואז ניתן יהיה לשלוח את התיק בלי הוכחת תשלום מיידית.\n\n' +
       'האם לשלוח כעת את הבקשה למנהל הראשי?',
     deferPaymentSending: 'שולח…',
     deferPaymentRequestSent: 'הבקשה נשלחה למנהל. עדכון יופיע כאן לאחר האישור.',
@@ -302,18 +306,22 @@ export const caseFormTranslations = {
       'After manager approval, uploading payment proof is optional; you may still attach a file if you wish.',
     deferPaymentCommitmentTitle: 'Deferred payment approved – your commitment',
     deferPaymentCommitment:
-      'You commit to complete payment to the agent by {{date}}, per the manager’s approval (typically within one month of approval or another agreed date).',
+      'You commit to complete payment to the agent by {{date}}, per the manager’s approval.',
     deferPaymentCommitmentFallback:
       'Complete payment to the agent by the deadline agreed with the manager—check your email or contact support for the exact date.',
     deferPaymentPendingNote:
       'Your request was sent to the primary admin. After the request is approved you will enter a payment date; only after that date is approved can you submit the case without immediate payment proof.',
     deferPaymentStage1Title: 'Request approved – next: payment date',
     deferPaymentStage1Body:
-      'Choose the latest date by which you commit to pay the agent for opening the case. It must be no later than one month from when your request was approved.',
-    deferClientMaxLabel: 'Latest allowed date',
+      'Choose the latest date by which you commit to pay the agent for opening the case, as shown in the form and agreed with the manager.',
+    deferPaymentManagerRequiresEarlier:
+      'The manager needs an earlier date than {{date}} you proposed. Pick a date strictly before {{date}}.',
+    deferClientMaxLabel: 'Latest date you can select in the picker',
     deferClientDeadlineLabel: 'Payment due date (your commitment) *',
     deferClientDeadlineHint:
-      'Pick a date from today through the latest allowed date. The primary admin must then approve it before you can submit the form without immediate payment proof.',
+      'Pick a date from today onward. The primary admin must approve it before you can submit the form without immediate payment proof.',
+    deferClientDeadlineHintEarlier:
+      'You must pick a date from today through the latest date allowed in the picker (before the date the manager rejected). The manager will confirm again after you submit.',
     deferClientDeadlineSubmit: 'Submit date for approval',
     deferClientDeadlineSending: 'Sending…',
     deferClientDeadlineRequired: 'Please select a date.',
@@ -321,12 +329,12 @@ export const caseFormTranslations = {
     deferPaymentProposalPendingNote:
       'You submitted a payment date; waiting for the primary admin to approve it. After approval, your commitment will show here and you can complete the form without immediate payment proof.',
     errorDeferredDeadlineInvalid:
-      'The date must be between today and one month from request approval. Choose a valid date.',
+      'The date must be valid and within the limits shown in the form. Choose again.',
     deferPaymentButton: 'Cannot pay right now',
     deferPaymentPreSubmitConfirm:
       'Deferred payment – request to the primary admin\n\n' +
       'After you send this request, you will not be able to submit the form with immediate payment proof until the primary admin approves it.\n' +
-      'The process: request approval → you enter a payment due date (within one month) → admin approves the date → you can then submit without immediate payment proof.\n\n' +
+      'The process: request approval → you enter a payment due date → admin approves the date → you can then submit without immediate payment proof.\n\n' +
       'Send the request to the primary admin now?',
     deferPaymentSending: 'Sending…',
     deferPaymentRequestSent: 'Your request was sent. This page will update after approval.',

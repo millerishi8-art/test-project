@@ -22,10 +22,8 @@ import {
 } from '../services/email.js';
 import { getSuperAdminEmail } from '../utils/adminEmails.js';
 import {
-  maxProposedYyyyMmDdFromApprovedAt,
   parseYyyyMmDd,
   utcTodayYyyyMmDd,
-  isYmdInRange,
 } from '../utils/deferredPaymentDates.js';
 
 const EXTRA_CITIZENSHIP_CODES = new Set(iso3166Alpha2Codes.filter((c) => c !== 'US'));
@@ -303,7 +301,8 @@ export const requestDeferredPayment = async (req, res) => {
 };
 
 /**
- * לקוח שולח תאריך יעד לתשלום (אחרי אישור בשלב ראשון) – לא יאוחר מחודש ממועד האישור.
+ * לקוח שולח תאריך יעד לתשלום (אחרי אישור בשלב ראשון). גבול עליון לפי החלטת המנהל;
+ * אם נדרש תאריך מוקדם יותר – התאריך חייב להיות לפני הפסקה שעל המנהל.
  */
 export const submitDeferredPaymentProposedDeadline = async (req, res) => {
   try {
@@ -335,9 +334,16 @@ export const submitDeferredPaymentProposedDeadline = async (req, res) => {
       });
     }
     const minY = utcTodayYyyyMmDd();
-    const maxY = maxProposedYyyyMmDdFromApprovedAt(anchor);
-
-    if (!isYmdInRange(chosen, minY, maxY)) {
+    if (chosen < minY) {
+      return res.status(400).json({
+        error: ERROR_MESSAGES.CASES.DEFERRED_DEADLINE_INVALID,
+        code: 'DEFERRED_DEADLINE_INVALID',
+      });
+    }
+    const exclusiveUpper = user.deferredPaymentDeadlineMustBeBeforeYmd
+      ? parseYyyyMmDd(user.deferredPaymentDeadlineMustBeBeforeYmd)
+      : null;
+    if (exclusiveUpper && !(chosen < exclusiveUpper)) {
       return res.status(400).json({
         error: ERROR_MESSAGES.CASES.DEFERRED_DEADLINE_INVALID,
         code: 'DEFERRED_DEADLINE_INVALID',
@@ -349,6 +355,7 @@ export const submitDeferredPaymentProposedDeadline = async (req, res) => {
       deferredPaymentProposalPending: true,
       deferredPaymentProposalSubmittedAt: new Date().toISOString(),
       deferredPaymentAwaitingClientDate: false,
+      deferredPaymentDeadlineMustBeBeforeYmd: null,
     });
     if (!updated) {
       return res.status(500).json({ error: 'שגיאה בשמירת התאריך' });

@@ -286,9 +286,9 @@ export async function sendDeferredPaymentApprovedToClient(to, name, deadlineIso)
 }
 
 /**
- * לקוח קיבל אישור ראשון – צריך להזין תאריך יעד לתשלום (לא יאוחר מחודש).
+ * לקוח קיבל אישור ראשון – צריך להזין תאריך יעד לתשלום (טווח התאריכים לפי החלטת המנהל בתצוגת האתר).
  */
-export async function sendDeferredPaymentRequestApprovedAwaitingDate(to, name, maxYmd) {
+export async function sendDeferredPaymentRequestApprovedAwaitingDate(to, name) {
   const config = getConfig();
   if (!config.isConfigured) {
     console.warn('[Email] Not configured. Cannot send awaiting-date email.');
@@ -301,27 +301,62 @@ export async function sendDeferredPaymentRequestApprovedAwaitingDate(to, name, m
   if (!fromAddress || !(to || '').trim()) return false;
 
   const displayName = (name || '').trim() || 'משתמש';
-  const maxStr = maxYmd ? String(maxYmd) : '';
 
   const subject = 'אושרה בקשתך – נא להזין מועד אחרון לתשלום';
   const html = `
     <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 520px;">
       <h2>שלום ${displayName},</h2>
       <p>בקשתך ל<strong>תשלום מאוחר</strong> בפתיחת התיק אושרה בשלב הראשון.</p>
-      <p>היכנס/י לטופס פתיחת התיק באתר, ובחלק <strong>אישור תשלום</strong> הזינ/י את <strong>מועד היעד האחרון</strong> שאת/ה מתחייב/ת לשלם לסוכן (לא יאוחר מחודש ממועד האישור).</p>
-      ${maxStr ? `<p><strong>תאריך אחרון מותר בבחירה:</strong> עד ${maxStr}</p>` : ''}
+      <p>היכנס/י לטופס פתיחת התיק באתר, ובחלק <strong>אישור תשלום</strong> הזינ/י את <strong>מועד היעד האחרון</strong> שאת/ה מתחייב/ת לשלם לסוכן, לפי האישור והלוח שמוצגים באתר.</p>
       <p>לאחר שתשלח/י את התאריך, המנהל הראשי יאשר אותו – ואז יוכלו להשלים את שליחת התיק בלי קובץ תשלום מיידי.</p>
       <hr style="border: none; border-top: 1px solid #eee;" />
       <p style="color: #888; font-size: 12px;">סוכן ביטוח</p>
     </div>
   `;
-  const text = `שלום ${displayName},\nבקשת תשלום מאוחר אושרה בשלב ראשון. היכנסו לאתר לטופס פתיחת התיק והזינו מועד אחרון לתשלום (עד ${maxStr}).\nלאחר אישור המנהל לתאריך תוכלו להגיש את התיק.`;
+  const text = `שלום ${displayName},\nבקשת תשלום מאוחר אושרה בשלב ראשון. היכנסו לאתר לטופס פתיחת התיק והזינו מועד אחרון לתשלום.\nלאחר אישור המנהל לתאריך תוכלו להגיש את התיק.`;
 
   try {
     await transport.sendMail({ from: fromAddress, to: (to || '').trim(), subject, text, html });
     return true;
   } catch (err) {
     console.error('[Email] Awaiting date email failed:', err?.message || err);
+    return false;
+  }
+}
+
+/** המנהל דורש תאריך יעד מוקדם יותר מהתאריך שהלקוח הוציע */
+export async function sendDeferredPaymentRequireEarlierDateEmail(to, name, rejectedProposedYmd) {
+  const config = getConfig();
+  if (!config.isConfigured) {
+    console.warn('[Email] Not configured. Cannot send require-earlier-date email.');
+    return false;
+  }
+  const transport = getTransporter();
+  if (!transport) return false;
+
+  const fromAddress = config.EMAIL_FROM || config.EMAIL_USER || config.SMTP_USER;
+  if (!fromAddress || !(to || '').trim()) return false;
+
+  const displayName = (name || '').trim() || 'משתמש';
+  const dateStr = (rejectedProposedYmd || '').trim() || '—';
+
+  const subject = 'נדרש תאריך תשלום מוקדם יותר';
+  const html = `
+    <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 520px;">
+      <h2>שלום ${displayName},</h2>
+      <p>המנהל בחן את מועד התשלום שהצעת (<strong>${dateStr}</strong>) ומבקש שתבחר/י <strong>תאריך מוקדם לפני</strong> מועד זה (לא כולל ${dateStr}).</p>
+      <p>היכנס/י לטופס פתיחת התיק באתר, ושלח/י מחדש את תאריך היעד בעמוד אישור התשלום.</p>
+      <hr style="border: none; border-top: 1px solid #eee;" />
+      <p style="color: #888; font-size: 12px;">סוכן ביטוח</p>
+    </div>
+  `;
+  const text = `שלום ${displayName},\nנדרש תאריך תשלום מוקדם יותר מהתאריך שהצעת (${dateStr}). היכנסו לאתר ובחרו תאריך לפני ${dateStr} (לא כולל).\n`;
+
+  try {
+    await transport.sendMail({ from: fromAddress, to: (to || '').trim(), subject, text, html });
+    return true;
+  } catch (err) {
+    console.error('[Email] Require earlier date email failed:', err?.message || err);
     return false;
   }
 }
@@ -365,6 +400,93 @@ export async function sendDeferredPaymentProposalSubmittedToAdmin(adminEmail, { 
     return true;
   } catch (err) {
     console.error('[Email] Proposal to admin failed:', err?.message || err);
+    return false;
+  }
+}
+
+/**
+ * תזכורת שבועית – אל תשכחו לשלם עד מועד הפירעון (תשלום מאוחר מאושר).
+ */
+export async function sendDeferredPaymentWeeklyReminderEmail(to, name, deadlineYmd) {
+  const config = getConfig();
+  if (!config.isConfigured) return false;
+  const transport = getTransporter();
+  if (!transport) return false;
+
+  const fromAddress = config.EMAIL_FROM || config.EMAIL_USER || config.SMTP_USER;
+  if (!fromAddress || !(to || '').trim()) return false;
+
+  const displayName = (name || '').trim() || 'משתמש';
+  const dateStr = (deadlineYmd || '').trim() || '—';
+
+  const subject = 'תזכורת שבועית: מועד התשלום לסוכן עדיין פתוח';
+  const html = `
+    <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 520px;">
+      <h2>שלום ${displayName},</h2>
+      <p>זוהי <strong>תזכורת שבועית</strong> בנוגע להתחייבות התשלום לסוכן על פתיחת התיק.</p>
+      <p><strong>מועד הפירעון שנקבע:</strong> ${dateStr}</p>
+      <p>נא <strong>לא לשכוח להשלים את התשלום</strong> עד למועד זה. היעדר תשלום במועד עלול לעכב את הטיפול בתיק.</p>
+      <p style="color: #555;">אם כבר שילמתם – אפשר להתעלם מהודעה זו.</p>
+      <hr style="border: none; border-top: 1px solid #eee;" />
+      <p style="color: #888; font-size: 12px;">סוכן ביטוח – הודעה אוטומטית</p>
+    </div>
+  `;
+  const text = `שלום ${displayName},\nתזכורת שבועית: מועד התשלום לסוכן הוא ${dateStr}. נא לא לשכוח להשלים את התשלום עד למועד.\nאם כבר שילמתם – ניתן להתעלם.`;
+
+  try {
+    await transport.sendMail({
+      from: fromAddress,
+      to: (to || '').trim(),
+      subject,
+      text,
+      html,
+    });
+    return true;
+  } catch (err) {
+    console.error('[Email] Weekly deferred reminder failed:', err?.message || err);
+    return false;
+  }
+}
+
+/**
+ * יום הפירעון – אזהרה שהיום היום האחרון + השלכות אפשריות.
+ */
+export async function sendDeferredPaymentDueDateFinalWarningEmail(to, name, deadlineYmd) {
+  const config = getConfig();
+  if (!config.isConfigured) return false;
+  const transport = getTransporter();
+  if (!transport) return false;
+
+  const fromAddress = config.EMAIL_FROM || config.EMAIL_USER || config.SMTP_USER;
+  if (!fromAddress || !(to || '').trim()) return false;
+
+  const displayName = (name || '').trim() || 'משתמש';
+  const dateStr = (deadlineYmd || '').trim() || '—';
+
+  const subject = 'אזהרה: היום האחרון לתשלום לסוכן לפי ההתחייבות';
+  const html = `
+    <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 540px;">
+      <h2 style="color: #b71c1c;">שלום ${displayName},</h2>
+      <p><strong>היום (${dateStr}) הוא יום הפירעון האחרון</strong> שקבעתם להשלמת התשלום לסוכן על פתיחת התיק, לפי האישור במערכת.</p>
+      <p>נא <strong>להשלים את התשלום היום</strong>. אי־עמידה במועד עלולה, לפי נהלי העבודה, להוביל <strong>לסגירת או עצירת תהליך התיק</strong> ול<strong>השלכות שליליות</strong> נוספות.</p>
+      <p>אם נדרש סידור או הבהרה – צרו קשר מיידי עם הסוכן.</p>
+      <hr style="border: none; border-top: 1px solid #eee;" />
+      <p style="color: #888; font-size: 12px;">סוכן ביטוח – הודעה אוטומטית</p>
+    </div>
+  `;
+  const text = `שלום ${displayName},\nהיום (${dateStr}) הוא יום הפירעון האחרון לתשלום לסוכן. נא להשלים היום.\nאי-תשלום עלול להוביל לסגירת התיק והשלכות שליליות.\nצרו קשר עם הסוכן במידת הצורך.`;
+
+  try {
+    await transport.sendMail({
+      from: fromAddress,
+      to: (to || '').trim(),
+      subject,
+      text,
+      html,
+    });
+    return true;
+  } catch (err) {
+    console.error('[Email] Due-date final warning failed:', err?.message || err);
     return false;
   }
 }

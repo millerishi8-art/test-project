@@ -1,6 +1,12 @@
 {
   "version": 2,
   "installCommand": "npm install && npm install --prefix server && npm install --prefix client",
+  "crons": [
+    {
+      "path": "/api/cron/deferred-payment-reminders",
+      "schedule": "0 4 * * *"
+    }
+  ],
   "rewrites": [
     {
       "source": "/api/(.*)",

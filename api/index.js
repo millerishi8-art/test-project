@@ -10,6 +10,8 @@
  * - JWT_SECRET
  * - ADMIN_EMAIL (ובהתאם ADMIN_PASSWORD)
  * - EMAIL_USER, EMAIL_PASS (או SMTP/שירות מייל אחר)
+ * - CRON_SECRET – מחרוזת אקראית; Vercel Cron שולח Authorization: Bearer <CRON_SECRET> לנתיב
+ *   GET /api/cron/deferred-payment-reminders (תזכורות תשלום מאוחר). ללא שרת שרץ 24/7 נדרש Cron ב-Vercel או שירות חיצוני.
  */
 import app from '../server/app.js';
 

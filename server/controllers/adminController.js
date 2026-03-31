@@ -5,12 +5,12 @@ import { isSuperAdminEmail, getSuperAdminEmail } from '../utils/adminEmails.js';
 import {
   sendDeferredPaymentApprovedToClient,
   sendDeferredPaymentRequestApprovedAwaitingDate,
+  sendDeferredPaymentRequireEarlierDateEmail,
 } from '../services/email.js';
 import {
-  maxProposedYyyyMmDdFromApprovedAt,
   parseYyyyMmDd,
   utcTodayYyyyMmDd,
-  isYmdInRange,
+  subtractOneDayYmd,
 } from '../utils/deferredPaymentDates.js';
 
 /**
@@ -94,6 +94,7 @@ export const getAllUsers = async (req, res) => {
         deferredPaymentProposedDeadline: user.deferredPaymentProposedDeadline || null,
         deferredPaymentProposalPending: !!user.deferredPaymentProposalPending,
         deferredPaymentProposalSubmittedAt: user.deferredPaymentProposalSubmittedAt || null,
+        deferredPaymentDeadlineMustBeBeforeYmd: user.deferredPaymentDeadlineMustBeBeforeYmd || null,
       };
     }));
 
@@ -142,7 +143,7 @@ export const demoteAdmin = async (req, res) => {
 
 /**
  * מנהל-על – זרימת תשלום מאוחר דו-שלבית.
- * Body: { approveRequest: true } | { approveDeadline: true } | { reject: true } | { rejectProposal: true }
+ * Body: { approveRequest: true } | { approveDeadline: true } | { reject: true } | { rejectProposal: true } | { requireEarlierDate: true }
  */
 export const patchUserDeferredPayment = async (req, res) => {
   try {
@@ -170,6 +171,9 @@ export const patchUserDeferredPayment = async (req, res) => {
         deferredPaymentProposedDeadline: null,
         deferredPaymentProposalPending: false,
         deferredPaymentProposalSubmittedAt: null,
+        deferredPaymentWeeklyReminderLastAt: null,
+        deferredPaymentDueDateWarningSentAt: null,
+        deferredPaymentDeadlineMustBeBeforeYmd: null,
       });
       return res.json({
         ok: true,
@@ -186,8 +190,39 @@ export const patchUserDeferredPayment = async (req, res) => {
         deferredPaymentProposedDeadline: null,
         deferredPaymentProposalSubmittedAt: null,
         deferredPaymentAwaitingClientDate: true,
+        deferredPaymentDeadlineMustBeBeforeYmd: null,
       });
       return res.json({ ok: true, user: { id: updated?.id || id } });
+    }
+
+    if (body.requireEarlierDate === true) {
+      if (!user.deferredPaymentProposalPending || !user.deferredPaymentProposedDeadline) {
+        return res.status(400).json({ error: 'אין תאריך ממתין לאישור מהלקוח' });
+      }
+      const rejected = parseYyyyMmDd(user.deferredPaymentProposedDeadline);
+      if (!rejected) {
+        return res.status(400).json({ error: 'תאריך לא תקין' });
+      }
+      const minY = utcTodayYyyyMmDd();
+      const lastSelectable = subtractOneDayYmd(rejected);
+      if (!lastSelectable || lastSelectable < minY) {
+        return res.status(400).json({
+          error:
+            'לא ניתן לדרוש תאריך מוקדם יותר – אין תאריך חוקי לפני התאריך שהלקוח בחר (מול היום).',
+        });
+      }
+      const updated = await updateUserById(id, {
+        deferredPaymentProposalPending: false,
+        deferredPaymentProposedDeadline: null,
+        deferredPaymentProposalSubmittedAt: null,
+        deferredPaymentAwaitingClientDate: true,
+        deferredPaymentDeadlineMustBeBeforeYmd: rejected,
+      });
+      if (!updated) {
+        return res.status(500).json({ error: 'שגיאה בעדכון המשתמש' });
+      }
+      await sendDeferredPaymentRequireEarlierDateEmail(user.email, user.name, rejected);
+      return res.json({ ok: true, user: { id: updated.id, deferredPaymentAwaitingClientDate: true } });
     }
 
     if (body.approveRequest === true) {
@@ -201,12 +236,12 @@ export const patchUserDeferredPayment = async (req, res) => {
         deferredPaymentProposedDeadline: null,
         deferredPaymentProposalPending: false,
         deferredPaymentProposalSubmittedAt: null,
+        deferredPaymentDeadlineMustBeBeforeYmd: null,
       });
       if (!updated) {
         return res.status(500).json({ error: 'שגיאה בעדכון המשתמש' });
       }
-      const maxYmd = maxProposedYyyyMmDdFromApprovedAt(now);
-      await sendDeferredPaymentRequestApprovedAwaitingDate(user.email, user.name, maxYmd || '');
+      await sendDeferredPaymentRequestApprovedAwaitingDate(user.email, user.name);
       return res.json({
         ok: true,
         user: {
@@ -230,8 +265,7 @@ export const patchUserDeferredPayment = async (req, res) => {
         return res.status(400).json({ error: 'חסר מועד אישור ראשון' });
       }
       const minY = utcTodayYyyyMmDd();
-      const maxY = maxProposedYyyyMmDdFromApprovedAt(anchor);
-      if (!isYmdInRange(chosen, minY, maxY)) {
+      if (chosen < minY) {
         return res.status(400).json({ error: 'התאריך מחוץ לטווח המותר' });
       }
       const updated = await updateUserById(id, {
@@ -242,6 +276,9 @@ export const patchUserDeferredPayment = async (req, res) => {
         deferredPaymentAwaitingClientDate: false,
         deferredPaymentProposedDeadline: null,
         deferredPaymentProposalSubmittedAt: null,
+        deferredPaymentWeeklyReminderLastAt: null,
+        deferredPaymentDueDateWarningSentAt: null,
+        deferredPaymentDeadlineMustBeBeforeYmd: null,
       });
       if (!updated) {
         return res.status(500).json({ error: 'שגיאה בעדכון המשתמש' });
@@ -259,7 +296,7 @@ export const patchUserDeferredPayment = async (req, res) => {
 
     return res.status(400).json({
       error:
-        'נא לשלוח approveRequest, approveDeadline, reject או rejectProposal',
+        'נא לשלוח approveRequest, approveDeadline, reject, rejectProposal או requireEarlierDate',
     });
   } catch (error) {
     console.error('patchUserDeferredPayment error:', error);

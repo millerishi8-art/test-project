@@ -135,7 +135,7 @@ const AdminPanel = () => {
   const handleSuperApproveRequest = async (userId) => {
     if (
       !window.confirm(
-        'לאשר את הבקשה? יישלח מייל ללקוח להזנת מועד תשלום (לא יאוחר מחודש ממועד זה).'
+        'לאשר את הבקשה? יישלח מייל ללקוח להזנת מועד תשלום; טווח התאריכים לפי הנחיות המוצגות בטופס ולפי המנהל.'
       )
     ) {
       return;
@@ -189,8 +189,31 @@ const AdminPanel = () => {
     }
   };
 
+  const handleSuperRequireEarlierDate = async (userId) => {
+    if (
+      !window.confirm(
+        'לדרוש מהלקוח תאריך מוקדם יותר? יישלח מייל והלקוח יוכל לבחור רק תאריך לפני זה שהוצע כעת (לא כולל).'
+      )
+    ) {
+      return;
+    }
+    setDeferUpdatingId(userId);
+    setSuccessMessage('');
+    try {
+      await axios.patch(`/admin/users/${userId}/deferred-payment`, { requireEarlierDate: true });
+      await fetchData();
+      setSuccessMessage('נשלחה דרישה לתאריך מוקדם יותר; מייל ללקוח.');
+      setTimeout(() => setSuccessMessage(''), 4000);
+    } catch (err) {
+      console.error('require earlier date failed', err);
+      alert(err.response?.data?.error || 'שגיאה בפעולה');
+    } finally {
+      setDeferUpdatingId(null);
+    }
+  };
+
   const handleSuperRejectProposal = async (userId) => {
-    if (!window.confirm('לדחות את התאריך שהלקוח בחר ולהחזיר אותו להזנה מחדש?')) return;
+    if (!window.confirm('לדחות את התאריך שהלקוח בחר ולהחזיר אותו להזנה מחדש (ללא הגבלת "לפני תאריך מסוים")?')) return;
     setDeferUpdatingId(userId);
     setSuccessMessage('');
     try {
@@ -405,7 +428,7 @@ const AdminPanel = () => {
             </div>
           )}
           <p className="admin-superadmin-intro">
-            בקשות תשלום מאוחר: אישור ראשון → הלקוח בוחר תאריך (עד חודש) → אישור סופי לתאריך. רק לך מוצג אזור זה.
+            בקשות תשלום מאוחר: אישור ראשון → הלקוח בוחר תאריך → אישור סופי (או דרישה לתאריך מוקדם יותר) → סיום. רק לך מוצג אזור זה.
           </p>
 
           <h2 className="admin-superadmin-subtitle">בקשות חדשות (ממתינות לאישור ראשון)</h2>
@@ -532,6 +555,15 @@ const AdminPanel = () => {
                           disabled={deferUpdatingId !== null}
                         >
                           {deferUpdatingId === user.id ? 'מעדכן...' : 'אשר תאריך'}
+                        </button>
+                        <button
+                          type="button"
+                          className="admin-defer-require-earlier-btn"
+                          onClick={() => handleSuperRequireEarlierDate(user.id)}
+                          disabled={deferUpdatingId !== null}
+                          title="הלקוח יוכל לבחור רק תאריך לפני זה שהוצע"
+                        >
+                          דרוש תאריך מוקדם יותר
                         </button>
                         <button
                           type="button"

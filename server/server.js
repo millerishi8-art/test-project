@@ -4,6 +4,7 @@
  */
 import app from './app.js';
 import { connectToMongoDB, closeMongoDB } from './db/mongodb.js';
+import { scheduleDeferredPaymentReminders } from './jobs/deferredPaymentReminders.js';
 
 const PORT = process.env.PORT || 5000;
 let server;
@@ -28,6 +29,16 @@ async function start() {
     console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
     const hasEmail = !!(process.env.EMAIL_USER && process.env.EMAIL_PASS);
     console.log(hasEmail ? '[Email] מוגדר' : '[Email] לא מוגדר – הגדר EMAIL_USER ו-EMAIL_PASS ב-server/.env');
+
+    if ((process.env.DISABLE_DEFERRED_REMINDER_CRON || '').trim() !== '1') {
+      try {
+        scheduleDeferredPaymentReminders();
+      } catch (e) {
+        console.error('[DeferredPaymentReminders] failed to schedule:', e?.message || e);
+      }
+    } else {
+      console.log('[DeferredPaymentReminders] disabled via DISABLE_DEFERRED_REMINDER_CRON=1');
+    }
   });
 }
 

@@ -122,6 +122,12 @@ export async function updateUserById(id, updateFields) {
       set.deferredPaymentProposalPending = !!allowed.deferredPaymentProposalPending;
     if (allowed.deferredPaymentProposalSubmittedAt !== undefined)
       set.deferredPaymentProposalSubmittedAt = allowed.deferredPaymentProposalSubmittedAt;
+    if (allowed.deferredPaymentWeeklyReminderLastAt !== undefined)
+      set.deferredPaymentWeeklyReminderLastAt = allowed.deferredPaymentWeeklyReminderLastAt;
+    if (allowed.deferredPaymentDueDateWarningSentAt !== undefined)
+      set.deferredPaymentDueDateWarningSentAt = allowed.deferredPaymentDueDateWarningSentAt;
+    if (allowed.deferredPaymentDeadlineMustBeBeforeYmd !== undefined)
+      set.deferredPaymentDeadlineMustBeBeforeYmd = allowed.deferredPaymentDeadlineMustBeBeforeYmd;
     if (Object.keys(set).length === 0) return await findUserById(id);
     const result = await collection.findOneAndUpdate(
       { id },
@@ -274,6 +280,9 @@ export function serializeUserForClient(user) {
   }
   if (user.deferredPaymentProposalSubmittedAt != null) {
     out.deferredPaymentProposalSubmittedAt = String(user.deferredPaymentProposalSubmittedAt);
+  }
+  if (user.deferredPaymentDeadlineMustBeBeforeYmd != null) {
+    out.deferredPaymentDeadlineMustBeBeforeYmd = String(user.deferredPaymentDeadlineMustBeBeforeYmd);
   }
   return out;
 }

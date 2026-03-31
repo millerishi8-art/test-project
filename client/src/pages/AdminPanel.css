@@ -553,8 +553,25 @@
   background: #eeeeee;
 }
 
+.admin-defer-require-earlier-btn {
+  padding: 0.4rem 0.65rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #0d47a1;
+  background: #e3f2fd;
+  border: 1px solid #1565c0;
+  border-radius: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.admin-defer-require-earlier-btn:hover:not(:disabled) {
+  background: #bbdefb;
+}
+
 .admin-defer-approve-btn:disabled,
-.admin-defer-reject-btn:disabled {
+.admin-defer-reject-btn:disabled,
+.admin-defer-require-earlier-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }

@@ -104,18 +104,31 @@ const CaseForm = () => {
     return `${y}-${m}-${da}`;
   }, []);
 
+  /** מקסימום ל-date picker: יום לפני הפסקה הבלעדית, או ללא מקסימום */
   const deferClientMaxYmd = useMemo(() => {
-    const raw = user?.deferredPaymentRequestApprovedAt;
-    if (!raw) return '';
-    const d = new Date(raw);
+    const exclusive = user?.deferredPaymentDeadlineMustBeBeforeYmd;
+    if (!exclusive || typeof exclusive !== 'string') return '';
+    const d = new Date(`${exclusive.trim()}T12:00:00Z`);
     if (Number.isNaN(d.getTime())) return '';
-    const e = new Date(d);
-    e.setUTCMonth(e.getUTCMonth() + 1);
-    const y = e.getUTCFullYear();
-    const m = String(e.getUTCMonth() + 1).padStart(2, '0');
-    const day = String(e.getUTCDate()).padStart(2, '0');
+    d.setUTCDate(d.getUTCDate() - 1);
+    const y = d.getUTCFullYear();
+    const m = String(d.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(d.getUTCDate()).padStart(2, '0');
     return `${y}-${m}-${day}`;
-  }, [user?.deferredPaymentRequestApprovedAt]);
+  }, [user?.deferredPaymentDeadlineMustBeBeforeYmd]);
+
+  const deferExclusiveBeforeFormatted = useMemo(() => {
+    const iso = user?.deferredPaymentDeadlineMustBeBeforeYmd;
+    if (!iso || typeof iso !== 'string') return '';
+    const str = iso.trim();
+    const d = /^\d{4}-\d{2}-\d{2}$/.test(str) ? new Date(`${str}T12:00:00`) : new Date(str);
+    if (Number.isNaN(d.getTime())) return str;
+    return d.toLocaleDateString(language === 'he' ? 'he-IL' : 'en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+  }, [user?.deferredPaymentDeadlineMustBeBeforeYmd, language]);
 
   const deferredDeadlineFormatted = useMemo(() => {
     const iso = user?.deferredPaymentDeadline;
@@ -1161,6 +1174,11 @@ const CaseForm = () => {
                         <div className="case-form-defer-stage1-banner" role="status">
                           <p className="case-form-defer-commitment-title">{t.deferPaymentStage1Title}</p>
                           <p className="case-form-defer-commitment-text">{t.deferPaymentStage1Body}</p>
+                          {user?.deferredPaymentDeadlineMustBeBeforeYmd ? (
+                            <p className="case-form-defer-earlier-note" role="alert">
+                              {t.deferPaymentManagerRequiresEarlier.replace(/\{\{date\}\}/g, deferExclusiveBeforeFormatted)}
+                            </p>
+                          ) : null}
                           {deferClientMaxYmd ? (
                             <p className="case-form-defer-max-ymd">
                               {t.deferClientMaxLabel}: <strong>{deferClientMaxYmd}</strong>
@@ -1190,7 +1208,11 @@ const CaseForm = () => {
                                 : t.deferClientDeadlineSubmit}
                             </button>
                           </div>
-                          <p className="upload-field-hint">{t.deferClientDeadlineHint}</p>
+                          <p className="upload-field-hint">
+                            {user?.deferredPaymentDeadlineMustBeBeforeYmd
+                              ? t.deferClientDeadlineHintEarlier
+                              : t.deferClientDeadlineHint}
+                          </p>
                         </div>
                       )}
                       {deferredProposalPending && (
