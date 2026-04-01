@@ -4,10 +4,21 @@ const BUCKET_NAME = 'private-cases';
 
 /**
  * מחזיר את הגדרות Supabase מ־environment
+ *
+ * URL: SUPABASE_URL או NEXT_PUBLIC_SUPABASE_URL (כמו ב-Vercel / מסך Connect של Supabase).
+ * מפתח: חייב להיות service_role (JWT או מפתח secret מהדאשבורד) — לא publishable/anon.
  */
 function getConfig() {
-  const supabaseUrl = (process.env.SUPABASE_URL || '').trim();
-  const supabaseServiceRoleKey = (process.env.SUPABASE_SERVICE_ROLE_KEY || '').trim();
+  const supabaseUrl = (
+    process.env.SUPABASE_URL ||
+    process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    ''
+  ).trim();
+  const supabaseServiceRoleKey = (
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.SUPABASE_SECRET_KEY ||
+    ''
+  ).trim();
   return { supabaseUrl, supabaseServiceRoleKey };
 }
 
