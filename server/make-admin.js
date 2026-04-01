@@ -4,13 +4,8 @@
  * Default email: millerbitoach@gmail.com
  */
 
+import './loadEnv.js';
 import { MongoClient } from 'mongodb';
-import dotenv from 'dotenv';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-dotenv.config({ path: path.join(__dirname, '.env') });
 
 const EMAIL = (process.argv[2] || 'millerbitoach@gmail.com').trim().toLowerCase();
 const COLLECTION_NAME = 'users';

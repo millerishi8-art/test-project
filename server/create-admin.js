@@ -1,14 +1,9 @@
+import './loadEnv.js';
 import bcrypt from 'bcryptjs';
-import dotenv from 'dotenv';
-import path from 'path';
-import { fileURLToPath } from 'url';
 import { v4 as uuidv4 } from 'uuid';
 import { connectToMongoDB } from './db/mongodb.js';
 import { createUser, findUserByEmail, updateUserByEmail } from './models/User.js';
 import { ROLES } from './components/constants.js';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-dotenv.config({ path: path.join(__dirname, '.env') });
 
 async function run() {
   try {

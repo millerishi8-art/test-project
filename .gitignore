@@ -4,7 +4,11 @@ node_modules/
 # Environment and local data (never commit credentials)
 .env
 .env.local
+.env.*.local
 server/.env
+!.env.example
+!server/.env.example
+!client/.env.example
 *.log
 # Local JSON dumps under server/data (optional). Do not ignore server/data/*.js (e.g. countryCodes.js for casesController).
 server/data/*.json

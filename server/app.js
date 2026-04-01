@@ -2,8 +2,7 @@
  * אפליקציית Express משותפת – לשימוש מקומי (server.js) ולפונקציות Serverless ב-Vercel (api/index.js).
  * ללא listen() וחיבור MongoDB – אלה נשארים ב-server.js להרצה מקומית.
  */
-import dotenv from 'dotenv';
-dotenv.config();
+import './loadEnv.js';
 
 import express from 'express';
 import cors from 'cors';
