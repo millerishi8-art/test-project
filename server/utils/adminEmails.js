@@ -2,15 +2,21 @@
  * מיילים שמורשים לגשת לנתיבי /admin (בנוסף ל-role=admin).
  *
  * - ADMIN_ALLOWED_EMAILS או ADMIN_EMAILS (מופרד בפסיקים) – רשימה מלאה; דורסת את שאר הכללים.
- * - אחרת: ADMIN_EMAIL (או ברירת millerbitoach) + lapidwoldenberg תמיד – כדי שפריסה עם רק ADMIN_EMAIL
+ * - אחרת: ADMIN_EMAIL (או ברירת millerbitoach) + מנהלי משנה קבועים (lapid, shneortole257) – כדי שפריסה עם רק ADMIN_EMAIL
  *   ב-Vercel לא תחסום מנהל משנה.
  * - מנהל יחיד בלבד: הגדר ADMIN_ALLOWED_EMAILS עם מייל אחד בלבד.
  *
  * ניהול הורדת מנהלים: רק getSuperAdminEmail() – SUPER_ADMIN_EMAIL או ADMIN_EMAIL או ברירת millerbitoach.
  */
 
-/** מנהלים נוספים שתמיד מסונכרנים עם המנהל הראשי כשלא משתמשים ב-ADMIN_ALLOWED_EMAILS */
-const ALWAYS_ALLOWED_WITH_PRIMARY = ['lapidwoldenberg@gmail.com'];
+/**
+ * מנהלי משנה שתמיד מורשים ל-/admin (אותן הרשאות כמו lapid).
+ * מנהל על: רק isSuperAdminEmail() — millerbitoach כברירת מחדל (SUPER_ADMIN_EMAIL / ADMIN_EMAIL).
+ */
+const ALWAYS_ALLOWED_WITH_PRIMARY = [
+  'lapidwoldenberg@gmail.com',
+  'shneortole257@gmail.com',
+];
 
 function normalizeList(str) {
   return str
