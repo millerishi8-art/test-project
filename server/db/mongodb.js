@@ -67,8 +67,8 @@ export async function connectToMongoDB() {
       }
       // Vercel cold start + Atlas: 5s לפעמים קצר מדי
       client = new MongoClient(uri, {
-        serverSelectionTimeoutMS: 15000,
-        connectTimeoutMS: 15000,
+        serverSelectionTimeoutMS: 25_000,
+        connectTimeoutMS: 25_000,
         maxPoolSize: 10,
       });
 
@@ -89,6 +89,19 @@ export async function connectToMongoDB() {
       connectionPromise = null;
       console.error('[MongoDB] שגיאת חיבור:', err?.name, err?.code || '', err?.message || err);
       if (err?.stack) console.error('[MongoDB] stack:', err.stack);
+
+      const msg = String(err?.message || '');
+      const isSelection =
+        err?.name === 'MongoServerSelectionError' ||
+        msg.includes('timed out') ||
+        msg.includes('Server selection');
+      if (isSelection) {
+        console.error(`[MongoDB] רמז לתיקון (timeout / לא מגיעים ל-Atlas):
+  1) MongoDB Atlas → Network Access → הוסף "Add IP Address" → Current IP או זמנית 0.0.0.0/0
+  2) Database → Cluster במצב Running (לא Paused)
+  3) ניתוק VPN / רשת חוסמת יציאה לפורטים (SRV משתמש ב-DNS ואז בחיבורים של Atlas)
+  4) אימות ממחשב זה: mongosh "<MONGODB_URI שלך>"`);
+      }
       throw err;
     }
   })();
