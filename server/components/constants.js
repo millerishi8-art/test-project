@@ -61,6 +61,22 @@ export const ERROR_MESSAGES = {
   },
 };
 
+/** הודעת DB ללקוח – מפרטת פריסת Vercel כשהשרת רץ שם */
+export function getDbUnavailableMessage() {
+  if (process.env.VERCEL) {
+    return (
+      'מסד הנתונים לא מחובר. ב-Vercel: Project → Settings → Environment Variables — הוסף MONGODB_URI ' +
+      '(מחרוזת mongodb+srv://... מלאה מ-MongoDB Atlas, כולל משתמש וסיסמה), וגם JWT_SECRET. ' +
+      'סמן לכל סביבות (Production/Preview). שמור ובצע Redeploy. ' +
+      'אפשר גם להשתמש בשם DATABASE_URL אם כך הגדרת ב-Vercel.'
+    );
+  }
+  return (
+    ERROR_MESSAGES.SERVER.DB_UNAVAILABLE ||
+    'מסד הנתונים לא זמין. הגדר MONGODB_URI ב-server/.env והפעל מחדש את השרת (npm run dev).'
+  );
+}
+
 /** הודעות הצלחה (עברית) */
 export const SUCCESS_MESSAGES = {
   AUTH: {

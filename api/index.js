@@ -7,7 +7,7 @@
  * - SUPABASE_URL (או NEXT_PUBLIC_SUPABASE_URL לאותו ערך)
  * - SUPABASE_SERVICE_ROLE_KEY — מפתח service_role מ-Supabase → Settings → API (JWT/secret).
  *   לא להשתמש ב-publishable / sb_publishable_* לשרת — אלה לא יעבדו להעלאה וחתימת private-cases.
- * - MONGODB_URI (מחרוזת מלאה; הקוד לא בונה URI מ-MONGODB_PASSWORD בלבד)
+ * - MONGODB_URI (מחרוזת מלאה; או DATABASE_URL / MONGO_URI – אותו ערך)
  * - MONGODB_DB_NAME (אופציונלי; ברירת מחדל insurance-agent — חייב להתאים למסד שבו נמצאת collection users)
  * - JWT_SECRET
  * - ADMIN_EMAIL (ובהתאם ADMIN_PASSWORD)

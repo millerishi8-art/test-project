@@ -28,18 +28,55 @@ function databaseNameFromUri(uri) {
 }
 
 function getConnectionUri() {
-  let uri = (process.env.MONGODB_URI || '').trim();
+  let uri = (
+    process.env.MONGODB_URI ||
+    process.env.DATABASE_URL ||
+    process.env.MONGO_URI ||
+    ''
+  ).trim();
   if (!uri) {
     throw new Error(
-      'MONGODB_URI חסר. הגדר ב-.env את מחרוזת החיבור ל-MongoDB (כולל משתמש וסיסמה).'
+      'MONGODB_URI חסר. הגדר MONGODB_URI (או DATABASE_URL) – מקומית ב-server/.env, ב-Vercel ב-Environment Variables.'
     );
   }
   uri = uri.replace(/^['"]|['"]$/g, '');
   return uri;
 }
+
+function isLikelyNetworkTimeout(err) {
+  const code = err?.code;
+  const msg = String(err?.message || '').toLowerCase();
+  return (
+    code === 'ETIMEDOUT' ||
+    code === 'ECONNRESET' ||
+    err?.name === 'MongoServerSelectionError' ||
+    err?.name === 'MongoNetworkError' ||
+    msg.includes('timed out') ||
+    msg.includes('server selection') ||
+    msg.includes('econnreset')
+  );
+}
+
+async function connectMongoClient(uri, useFamily4) {
+  const c = new MongoClient(uri, {
+    serverSelectionTimeoutMS: 45_000,
+    connectTimeoutMS: 45_000,
+    maxPoolSize: 10,
+    ...(useFamily4 ? { family: 4 } : {}),
+  });
+  await c.connect();
+  return c;
+}
+
+function logMongoTimeoutHints() {
+  console.error(`[MongoDB] timeout – בדוק: קלסטר Running ב-Atlas; Network Access (IP / 0.0.0.0/0); VPN/אנטיוירוס; נסה ב-server/.env:
+  MONGODB_FORCE_IPV4=1
+אימות: mongosh "<MONGODB_URI>"`);
+}
+
 /**
  * מתחבר ל-MongoDB Atlas ומחזיר את ה-DB.
- * חובה: MONGODB_URI ב-.env. אופציונלי: MONGODB_DB_NAME.
+ * חובה: MONGODB_URI ב-.env. אופציונלי: MONGODB_DB_NAME, MONGODB_FORCE_IPV4=1
  */
 let isConnecting = false;
 let connectionPromise = null;
@@ -65,43 +102,60 @@ export async function connectToMongoDB() {
           '(MONGODB_DB_NAME). אם הטבלאות נמצאות תחת השם ב-URI, הגדר MONGODB_DB_NAME בהתאם או הסר את נתיב ה-DB מה-URI.'
         );
       }
-      const forceIpv4 = (process.env.MONGODB_FORCE_IPV4 || '').trim() === '1';
-      // Atlas + רשת איטית / IPv6 תקול ב-Windows: העלה timeout; אופציונלית IPv4 בלבד
-      client = new MongoClient(uri, {
-        serverSelectionTimeoutMS: 45_000,
-        connectTimeoutMS: 45_000,
-        maxPoolSize: 10,
-        ...(forceIpv4 ? { family: 4 } : {}),
-      });
+      const forceIpv4Env = (process.env.MONGODB_FORCE_IPV4 || '').trim() === '1';
+      const attempts = forceIpv4Env ? [true] : [false, true];
+      let lastErr = null;
 
-      await client.connect();
-      db = client.db(DB_NAME);
-      console.log(
-        '[MongoDB] חיבור הצליח | מסד פעיל:',
-        DB_NAME,
-        '| NODE_ENV:',
-        process.env.NODE_ENV || '(לא מוגדר)',
-        '| VERCEL:',
-        process.env.VERCEL ? '1' : '0'
-      );
+      for (let i = 0; i < attempts.length; i++) {
+        const useFamily4 = attempts[i];
+        try {
+          if (i === 1) {
+            console.warn(
+              '[MongoDB] ניסיון שני: חיבור עם IPv4 בלבד (family: 4) — נפוץ אחרי ETIMEDOUT ב-Windows מול Atlas.'
+            );
+          }
+          client = await connectMongoClient(uri, useFamily4);
+          db = client.db(DB_NAME);
+          if (i === 1 && !forceIpv4Env) {
+            console.warn('[MongoDB] טיפ: להימנע מניסיון כפול, הוסף ל-server/.env: MONGODB_FORCE_IPV4=1');
+          }
+          console.log(
+            '[MongoDB] חיבור הצליח | מסד פעיל:',
+            DB_NAME,
+            '| NODE_ENV:',
+            process.env.NODE_ENV || '(לא מוגדר)',
+            '| VERCEL:',
+            process.env.VERCEL ? '1' : '0'
+          );
+          isConnecting = false;
+          return db;
+        } catch (err) {
+          lastErr = err;
+          if (client) {
+            try {
+              await client.close();
+            } catch (_) {}
+            client = null;
+          }
+          const canRetrySecondIpv4 =
+            !forceIpv4Env && i === 0 && attempts.length > 1 && isLikelyNetworkTimeout(err);
+          if (!canRetrySecondIpv4) {
+            break;
+          }
+        }
+      }
+
       isConnecting = false;
-      return db;
+      connectionPromise = null;
+      console.error('[MongoDB] שגיאת חיבור:', lastErr?.name, lastErr?.code || '', lastErr?.message || lastErr);
+      if (lastErr?.stack) console.error('[MongoDB] stack:', lastErr.stack);
+      if (lastErr && isLikelyNetworkTimeout(lastErr)) {
+        logMongoTimeoutHints();
+      }
+      throw lastErr;
     } catch (err) {
       isConnecting = false;
       connectionPromise = null;
-      console.error('[MongoDB] שגיאת חיבור:', err?.name, err?.code || '', err?.message || err);
-      if (err?.stack) console.error('[MongoDB] stack:', err.stack);
-
-      const msg = String(err?.message || '');
-      const isSelection =
-        err?.name === 'MongoServerSelectionError' ||
-        msg.includes('timed out') ||
-        msg.includes('Server selection');
-      if (isSelection) {
-        console.error(`[MongoDB] timeout – בדוק: קלסטר Running ב-Atlas; VPN/אנטיוירוס; נסה ב-server/.env שורה:
-  MONGODB_FORCE_IPV4=1
-(עוזר כש-IPv6 ברשת לא עובד). אימות: mongosh "<MONGODB_URI>"`);
-      }
       throw err;
     }
   })();

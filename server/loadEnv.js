@@ -30,3 +30,12 @@ if (isNonProd) {
     console.warn('[Env] dotenv message:', result.error.message);
   }
 }
+
+const hasMongoUri = Boolean(
+  (process.env.MONGODB_URI || process.env.DATABASE_URL || process.env.MONGO_URI || '').trim()
+);
+if (process.env.VERCEL && !hasMongoUri) {
+  console.error(
+    '[Env] Vercel: חסר MONGODB_URI / DATABASE_URL. הגדר ב-Project → Settings → Environment Variables והרץ Redeploy.'
+  );
+}
