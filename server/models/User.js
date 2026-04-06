@@ -2,10 +2,41 @@ import { getSupabaseAdmin } from '../db/supabaseClient.js';
 
 const TABLE = 'app_users';
 
+/** מיפוי שדות טיפוסי עמודת-DB לשמות בשימוש האפליקציה */
+function mapFlatColumnToAppFields(flat) {
+  const o = { ...flat };
+  if ('email_verified' in o && o.emailVerified === undefined) {
+    o.emailVerified = !!o.email_verified;
+    delete o.email_verified;
+  }
+  if ('created_at' in o && o.createdAt === undefined) {
+    o.createdAt = o.created_at;
+    delete o.created_at;
+  }
+  if ('updated_at' in o && o.updatedAt === undefined) {
+    o.updatedAt = o.updated_at;
+    delete o.updated_at;
+  }
+  return o;
+}
+
+/**
+ * איחוד שורה: תחילה data JSONB, ואז ערכים משדות טבלה (לא-null) — עמודות דורסות, כדי לאפשר אימייל/מטא בעמודה בלי JSON stale.
+ */
 function rowToUser(row) {
-  if (!row || row.data == null) return null;
-  const d = typeof row.data === 'object' && !Array.isArray(row.data) ? row.data : {};
-  return { ...d, id: row.id };
+  if (!row) return null;
+  const fromData =
+    row.data != null && typeof row.data === 'object' && !Array.isArray(row.data) ? { ...row.data } : {};
+  const fromRow = {};
+  for (const key of Object.keys(row)) {
+    if (key === 'id' || key === 'data') continue;
+    const val = row[key];
+    if (val !== undefined && val !== null) {
+      fromRow[key] = val;
+    }
+  }
+  const mappedFlat = mapFlatColumnToAppFields(fromRow);
+  return { ...fromData, ...mappedFlat, id: row.id != null ? String(row.id) : '' };
 }
 
 function normalizeUserPayload(userData) {
@@ -15,12 +46,12 @@ function normalizeUserPayload(userData) {
 }
 
 /**
- * מבנה משתמש – אובייקט שטוח בתוך data JSONB (תאימות למסד קודם)
+ * מבנה משתמש – אובייקט שטוח ב-data JSONB ו/או עמודות טבלה
  */
 export async function readUsers() {
   try {
     const sb = getSupabaseAdmin();
-    const { data, error } = await sb.from(TABLE).select('id, data').order('id');
+    const { data, error } = await sb.from(TABLE).select('*').order('id');
     if (error) throw error;
     return (data || []).map(rowToUser);
   } catch (error) {
@@ -32,7 +63,7 @@ export async function readUsers() {
 export async function findUserById(id) {
   try {
     const sb = getSupabaseAdmin();
-    const { data, error } = await sb.from(TABLE).select('id, data').eq('id', id).maybeSingle();
+    const { data, error } = await sb.from(TABLE).select('*').eq('id', id).maybeSingle();
     if (error) throw error;
     return rowToUser(data);
   } catch (error) {
@@ -46,24 +77,39 @@ function emailRegex(email) {
   return e ? new RegExp(`^${e}$`, 'i') : null;
 }
 
+async function findUserByEmailColumn(sb, normalized) {
+  try {
+    const { data, error } = await sb.from(TABLE).select('*').eq('email', normalized).maybeSingle();
+    if (error) return null;
+    return rowToUser(data);
+  } catch {
+    return null;
+  }
+}
+
 export async function findUserByEmail(email) {
   const normalized = (email || '').trim().toLowerCase();
   if (!normalized) return null;
   const sb = getSupabaseAdmin();
+  const byColumn = await findUserByEmailColumn(sb, normalized);
+  if (byColumn) return byColumn;
+
   try {
     const { data, error } = await sb.rpc('find_app_users_by_email_normalized', { e: normalized });
     if (!error) {
       const rows = Array.isArray(data) ? data : [];
-      if (rows.length === 0) return null;
-      const re = emailRegex(email);
-      const match = rows.find((r) => re && re.test(String((r.data && r.data.email) || '').trim()));
-      return rowToUser(match || rows[0]);
+      if (rows.length > 0) {
+        const re = emailRegex(email);
+        const hydrated = rows.map((r) => rowToUser(r)).filter(Boolean);
+        const match = hydrated.find((u) => re && re.test(String(u.email || '').trim()));
+        return match || hydrated[0];
+      }
     }
   } catch (_) {
     /* RPC חסר – נופל לסריקה */
   }
   try {
-    const { data: all, error } = await sb.from(TABLE).select('id, data');
+    const { data: all, error } = await sb.from(TABLE).select('*');
     if (error) throw error;
     const re = emailRegex(email);
     const u = (all || []).map(rowToUser).find((x) => x && re && re.test(String(x.email || '').trim()));
@@ -82,10 +128,20 @@ export async function createUser(userData) {
   if (data.authProvider === 'supabase') {
     delete data.password;
   }
-  const { error } = await sb.from(TABLE).insert({ id, data });
+  const withColumns = {
+    id,
+    data,
+    ...(normalized.email ? { email: normalized.email } : {}),
+    ...(normalized.name != null ? { name: normalized.name } : {}),
+    ...(normalized.phone != null ? { phone: normalized.phone } : {}),
+  };
+  let { error } = await sb.from(TABLE).insert(withColumns);
   if (error) {
-    console.error('User createUser error:', error?.message || error);
-    throw error;
+    const { error: err2 } = await sb.from(TABLE).insert({ id, data });
+    if (err2) {
+      console.error('User createUser error:', err2?.message || err2);
+      throw err2;
+    }
   }
   return normalized;
 }
@@ -129,12 +185,18 @@ export async function updateUserById(id, updateFields) {
 
     const data = normalizeUserPayload(next);
     if (Object.keys(allowed).length === 0) return current;
-    const { data: out, error } = await sb
-      .from(TABLE)
-      .update({ data })
-      .eq('id', id)
-      .select('id, data')
-      .single();
+    const patch = {
+      data,
+      ...(next.email ? { email: next.email } : {}),
+      ...(next.name != null ? { name: next.name } : {}),
+      ...(next.phone != null ? { phone: next.phone } : {}),
+    };
+    let { data: out, error } = await sb.from(TABLE).update(patch).eq('id', id).select('*').single();
+    if (error) {
+      const r2 = await sb.from(TABLE).update({ data }).eq('id', id).select('*').single();
+      out = r2.data;
+      error = r2.error;
+    }
     if (error) throw error;
     return rowToUser(out);
   } catch (error) {
@@ -154,9 +216,12 @@ export async function updateUserByEmail(email, updateFields) {
     rows = Array.isArray(data) ? data : [];
     if (rows.length === 0) {
       const re = emailRegex(email);
-      const { data: all, error: e2 } = await sb.from(TABLE).select('id, data');
+      const { data: all, error: e2 } = await sb.from(TABLE).select('*');
       if (e2) throw e2;
-      rows = (all || []).filter((r) => re && re.test((r.data?.email || '').trim()));
+      rows = (all || []).filter((r) => {
+        const u = rowToUser(r);
+        return u && re && re.test(String(u.email || '').trim());
+      });
     }
     if (rows.length === 0) return null;
     const { id, ...allowed } = updateFields;
@@ -178,7 +243,7 @@ export async function findUserByVerificationToken(token) {
     const now = new Date().toISOString();
     const { data, error } = await sb
       .from(TABLE)
-      .select('id, data')
+      .select('*')
       .eq('data->>emailVerificationToken', token.trim())
       .gt('data->>emailVerificationTokenExpires', now)
       .maybeSingle();
@@ -208,12 +273,26 @@ export async function deleteUserByEmail(email) {
     const sb = getSupabaseAdmin();
     const normalized = (email || '').trim().toLowerCase();
     if (!normalized) return 0;
-    const { data, error } = await sb.rpc('find_app_users_by_email_normalized', { e: normalized });
-    if (error) throw error;
-    const rows = Array.isArray(data) ? data : [];
+    const ids = new Set();
+    const colUser = await findUserByEmailColumn(sb, normalized);
+    if (colUser?.id) ids.add(colUser.id);
+    try {
+      const { data, error } = await sb.rpc('find_app_users_by_email_normalized', { e: normalized });
+      if (!error) {
+        for (const row of Array.isArray(data) ? data : []) {
+          if (row?.id) ids.add(row.id);
+        }
+      }
+    } catch (_) {
+      /* RPC חסר */
+    }
+    if (ids.size === 0) {
+      const u = await findUserByEmail(email);
+      if (u?.id) ids.add(u.id);
+    }
     let n = 0;
-    for (const row of rows) {
-      const ok = await deleteUserById(row.id);
+    for (const id of ids) {
+      const ok = await deleteUserById(id);
       if (ok) n += 1;
     }
     return n;

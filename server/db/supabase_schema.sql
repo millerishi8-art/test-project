@@ -6,8 +6,17 @@ CREATE TABLE IF NOT EXISTS public.app_users (
   data JSONB NOT NULL DEFAULT '{}'::jsonb
 );
 
+-- עמודות אופציונליות לחיפוש/סנכרון; הקוד תומך גם רק ב-data JSONB
+ALTER TABLE public.app_users ADD COLUMN IF NOT EXISTS email TEXT;
+ALTER TABLE public.app_users ADD COLUMN IF NOT EXISTS name TEXT;
+ALTER TABLE public.app_users ADD COLUMN IF NOT EXISTS phone TEXT;
+
 CREATE INDEX IF NOT EXISTS app_users_email_lower_idx
   ON public.app_users (lower(trim(data ->> 'email')));
+
+CREATE INDEX IF NOT EXISTS app_users_email_col_lower_idx
+  ON public.app_users (lower(trim(email)))
+  WHERE email IS NOT NULL AND trim(email) <> '';
 
 CREATE TABLE IF NOT EXISTS public.app_cases (
   id TEXT PRIMARY KEY,
@@ -25,7 +34,12 @@ STABLE
 AS $$
   SELECT *
   FROM public.app_users
-  WHERE lower(trim(data ->> 'email')) = lower(trim(e));
+  WHERE lower(trim(COALESCE(data ->> 'email', ''))) = lower(trim(e))
+     OR (
+          email IS NOT NULL
+          AND trim(email) <> ''
+          AND lower(trim(email)) = lower(trim(e))
+        );
 $$;
 
 GRANT EXECUTE ON FUNCTION public.find_app_users_by_email_normalized(TEXT) TO anon, authenticated, service_role;
