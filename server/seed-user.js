@@ -9,7 +9,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { v4 as uuidv4 } from 'uuid';
-import { connectToMongoDB } from './db/mongodb.js';
+import { connectToDatabase } from './db/database.js';
 import { createUser, findUserByEmail, updateUserById } from './models/User.js';
 import { ROLES } from './components/constants.js';
 
@@ -21,9 +21,9 @@ const SEED_PASSWORD = 'Noam5770';
 
 async function run() {
   try {
-    await connectToMongoDB();
+    await connectToDatabase();
   } catch (err) {
-    console.error('Failed to connect to MongoDB:', err.message);
+    console.error('Failed to connect to database:', err.message);
     process.exit(1);
   }
 

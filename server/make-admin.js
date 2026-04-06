@@ -6,7 +6,7 @@
  */
 
 import './loadEnv.js';
-import { connectToMongoDB } from './db/mongodb.js';
+import { connectToDatabase } from './db/database.js';
 import { findUserByEmail, updateUserByEmail } from './models/User.js';
 import { ROLES } from './components/constants.js';
 
@@ -14,7 +14,7 @@ const EMAIL = (process.argv[2] || 'millerbitoach@gmail.com').trim().toLowerCase(
 
 async function main() {
   try {
-    await connectToMongoDB();
+    await connectToDatabase();
   } catch (err) {
     console.error('Database connection error:', err.message);
     process.exit(1);

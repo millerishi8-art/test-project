@@ -1,5 +1,10 @@
 import { createClient } from '@supabase/supabase-js';
-import { getSupabaseAdmin } from '../db/supabaseClient.js';
+import {
+  getSupabaseAdmin,
+  resolveSupabaseUrl,
+  resolveSupabaseAnonKey,
+  resolveSupabaseServiceRoleKey,
+} from '../db/supabaseClient.js';
 
 let anonClient = null;
 
@@ -7,26 +12,24 @@ let anonClient = null;
 export function isSupabasePasswordAuthEnabled() {
   const ap = (process.env.AUTH_PROVIDER || '').trim().toLowerCase();
   if (ap !== 'supabase') return false;
-  const url = (process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim();
-  const anon = (process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '').trim();
-  const service = (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY || '').trim();
+  const url = resolveSupabaseUrl();
+  const anon = resolveSupabaseAnonKey();
+  const service = resolveSupabaseServiceRoleKey();
   return !!(url && anon && service);
 }
 
 /** נדרש להתחברות משתמשים עם authProvider=supabase גם כשההרשמה הייתה בזרימה החדשה */
 export function canSignInWithSupabasePassword() {
-  const url = (process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim();
-  const anon = (process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '').trim();
-  return !!(url && anon);
+  return !!(resolveSupabaseUrl() && resolveSupabaseAnonKey());
 }
 
 export function getSupabaseAnon() {
   if (anonClient) return anonClient;
-  const url = (process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim();
-  const anon = (process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '').trim();
+  const url = resolveSupabaseUrl();
+  const anon = resolveSupabaseAnonKey();
   if (!url || !anon) {
     throw new Error(
-      'חסרים SUPABASE_URL ו-SUPABASE_ANON_KEY (או NEXT_PUBLIC_*) כש-AUTH_PROVIDER=supabase'
+      'חסרים כתובת פרויקט Supabase ו-SUPABASE_ANON_KEY (או NEXT_PUBLIC_SUPABASE_ANON_KEY / VITE_SUPABASE_ANON_KEY) כש-AUTH_PROVIDER=supabase'
     );
   }
   anonClient = createClient(url, anon, {

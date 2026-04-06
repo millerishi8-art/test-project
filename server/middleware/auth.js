@@ -1,7 +1,7 @@
 import jwt from 'jsonwebtoken';
 import { findUserById } from '../models/User.js';
 import { ERROR_MESSAGES, ROLES } from '../components/constants.js';
-import { connectToMongoDB } from '../db/mongodb.js';
+import { connectToDatabase } from '../db/database.js';
 import { isAllowedAdminEmail } from '../utils/adminEmails.js';
 import { getSupabaseAdmin } from '../db/supabaseClient.js';
 
@@ -19,7 +19,7 @@ export const authenticateToken = async (req, res, next) => {
   }
 
   try {
-    await connectToMongoDB();
+    await connectToDatabase();
     const sb = getSupabaseAdmin();
     const { data: got, error: authErr } = await sb.auth.getUser(token);
     if (!authErr && got?.user) {

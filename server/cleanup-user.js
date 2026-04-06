@@ -1,12 +1,12 @@
 /**
- * Delete user(s) with email millerbitoach@gmail.com from MongoDB.
+ * Delete user(s) with email millerbitoach@gmail.com from Supabase app_users.
  * Run from project root: node server/cleanup-user.js
  * Use this to remove the test user so you can register again with a fresh bcrypt-hashed password.
  */
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { connectToMongoDB } from './db/mongodb.js';
+import { connectToDatabase } from './db/database.js';
 import { deleteUserByEmail } from './models/User.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -16,9 +16,9 @@ const EMAIL_TO_DELETE = 'millerbitoach@gmail.com';
 
 async function run() {
   try {
-    await connectToMongoDB();
+    await connectToDatabase();
   } catch (err) {
-    console.error('Failed to connect to MongoDB:', err.message);
+    console.error('Failed to connect to database:', err.message);
     process.exit(1);
   }
 

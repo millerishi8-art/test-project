@@ -15,7 +15,7 @@ function normalizeUserPayload(userData) {
 }
 
 /**
- * מבנה משתמש – זהה לשהיה ב-MongoDB (אובייקט שטוח בתוך data JSONB)
+ * מבנה משתמש – אובייקט שטוח בתוך data JSONB (תאימות למסד קודם)
  */
 export async function readUsers() {
   try {

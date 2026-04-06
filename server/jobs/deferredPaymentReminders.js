@@ -1,5 +1,5 @@
 import cron from 'node-cron';
-import { connectToMongoDB } from '../db/mongodb.js';
+import { connectToDatabase } from '../db/database.js';
 import { readUsers, updateUserById } from '../models/User.js';
 import {
   parseYyyyMmDd,
@@ -18,7 +18,7 @@ const ONE_DAY_MS = 24 * 60 * 60 * 1000;
  * ריצה יומית: תזכורת שבועית למי שמועד פירעון עתידי; ביום הפירעון — מייל אזהרת יום אחרון (פעם אחת).
  */
 export async function runDeferredPaymentReminderJob() {
-  await connectToMongoDB();
+  await connectToDatabase();
   const users = await readUsers();
   const todayIl = todayIsraelYyyyMmDd();
   const now = Date.now();

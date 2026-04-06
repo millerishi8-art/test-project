@@ -3,29 +3,30 @@
  * ב-Vercel משתמשים ב-api/index.js (Serverless) ללא קובץ זה.
  */
 import app from './app.js';
-import { connectToMongoDB, closeMongoDB } from './db/mongodb.js';
+import { connectToDatabase, closeDatabaseConnection } from './db/database.js';
+import { resolveSupabaseUrl, resolveSupabaseServiceRoleKey } from './db/supabaseClient.js';
 import { scheduleDeferredPaymentReminders } from './jobs/deferredPaymentReminders.js';
 
 const PORT = process.env.PORT || 5000;
 let server;
 
 function hasSupabaseEnv() {
-  const url = (process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim();
-  const key = (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY || '').trim();
-  return !!(url && key);
+  return !!(resolveSupabaseUrl() && resolveSupabaseServiceRoleKey());
 }
 
 async function start() {
   if (hasSupabaseEnv()) {
     try {
-      await connectToMongoDB();
+      await connectToDatabase();
       console.log('Database: Supabase מחובר');
     } catch (err) {
       console.error('Database: שגיאת חיבור –', err.message);
       console.log('השרת ממשיך לרוץ – בקשות ל-DB עלולות להיכשל עד שתתקן את ההגדרות או את הטבלאות');
     }
   } else {
-    console.log('Database: חסרים SUPABASE_URL ו-SUPABASE_SERVICE_ROLE_KEY (או NEXT_PUBLIC_SUPABASE_URL) ב-server/.env');
+    console.log(
+      'Database: חסרים משתני Supabase (URL + service role). ראה SUPABASE_URL / NEXT_PUBLIC_SUPABASE_URL / VITE_SUPABASE_URL ו-SUPABASE_SERVICE_ROLE_KEY ב-server/.env או ב-Vercel.'
+    );
   }
 
   server = app.listen(PORT, '0.0.0.0', () => {
@@ -48,7 +49,7 @@ async function start() {
 
 function shutdown() {
   if (server) server.close();
-  closeMongoDB().catch(() => {});
+  closeDatabaseConnection();
   process.exit(0);
 }
 

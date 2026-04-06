@@ -1,7 +1,7 @@
 import './loadEnv.js';
 import bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
-import { connectToMongoDB } from './db/mongodb.js';
+import { connectToDatabase } from './db/database.js';
 import { createUser, findUserByEmail, updateUserByEmail } from './models/User.js';
 import { ROLES } from './components/constants.js';
 import {
@@ -12,7 +12,7 @@ import {
 
 async function run() {
   try {
-    await connectToMongoDB();
+    await connectToDatabase();
   } catch (err) {
     console.error('שגיאה בחיבור למסד הנתונים:', err.message);
     process.exit(1);

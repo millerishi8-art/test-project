@@ -13,7 +13,7 @@ import {
   FOOD_STAMPS_DECLARATIONS_HEBREW,
 } from '../components/constants.js';
 import { uploadToSupabase } from '../services/supabaseStorage.js';
-import { connectToMongoDB } from '../db/mongodb.js';
+import { connectToDatabase } from '../db/database.js';
 import iso3166Alpha2Codes from '../data/countryCodes.js';
 import { findUserById, updateUserById } from '../models/User.js';
 import {
@@ -142,7 +142,7 @@ function normalizePersonalDetails(body) {
 
 export const submitCase = async (req, res) => {
   try {
-    await connectToMongoDB();
+    await connectToDatabase();
     const {
       familyBackground,
       signature,
@@ -252,7 +252,7 @@ export const submitCase = async (req, res) => {
  */
 export const requestDeferredPayment = async (req, res) => {
   try {
-    await connectToMongoDB();
+    await connectToDatabase();
     const user = await findUserById(req.user.id);
     if (!user) {
       return res.status(404).json({ error: ERROR_MESSAGES.AUTH.USER_NOT_FOUND });
@@ -306,7 +306,7 @@ export const requestDeferredPayment = async (req, res) => {
  */
 export const submitDeferredPaymentProposedDeadline = async (req, res) => {
   try {
-    await connectToMongoDB();
+    await connectToDatabase();
     const raw = req.body?.deadline ?? req.body?.proposedDeadline;
     const user = await findUserById(req.user.id);
     if (!user) {
@@ -386,7 +386,7 @@ export const submitDeferredPaymentProposedDeadline = async (req, res) => {
  */
 export const getMyCases = async (req, res) => {
   try {
-    await connectToMongoDB();
+    await connectToDatabase();
     const userCases = await findCasesByUserId(req.user.id);
     res.json(userCases);
   } catch (error) {
@@ -400,7 +400,7 @@ export const getMyCases = async (req, res) => {
  */
 export const renewCase = async (req, res) => {
   try {
-    await connectToMongoDB();
+    await connectToDatabase();
     const { caseId } = req.params;
     const cases = await readCases();
     const caseIndex = cases.findIndex((c) => c.id === caseId && c.userId === req.user.id);

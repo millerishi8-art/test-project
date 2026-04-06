@@ -6,7 +6,7 @@ import { findUserByEmail, findUserById, createUser, updateUserById, sanitizeUser
 import { ROLES, ERROR_MESSAGES, SUCCESS_MESSAGES, getDbUnavailableMessage } from '../components/constants.js';
 import { sendVerificationCodeEmail, sendPasswordResetCodeEmail } from '../services/email.js';
 import { sendVerificationSms } from '../services/sms.js';
-import { connectToMongoDB } from '../db/mongodb.js';
+import { connectToDatabase } from '../db/database.js';
 import { isSuperAdminEmail } from '../utils/adminEmails.js';
 import {
   isSupabasePasswordAuthEnabled,
@@ -39,7 +39,6 @@ function isInfrastructureError(error) {
   const errMsg = errorMessageString(error).toLowerCase();
   const errCode = error?.code;
   const codeStr = errCode != null ? String(errCode).toLowerCase() : '';
-  if (error?.name === 'MongoServerSelectionError' || error?.name === 'MongoNetworkError') return true;
   if (codeStr === '42p01' || codeStr === '08006' || codeStr === '08001') return true;
   if (
     errMsg.includes('supabase') ||
@@ -48,14 +47,14 @@ function isInfrastructureError(error) {
     errMsg.includes('טבלאות חסרות') ||
     errMsg.includes('supabase_schema.sql') ||
     errMsg.includes('relation') ||
+    errMsg.includes('schema cache') ||
     errMsg.includes('does not exist') ||
     errMsg.includes('service_role') ||
     errMsg.includes('invalid api key') ||
+    errMsg.includes('invalid jwt') ||
+    errMsg.includes('מפתח api') ||
+    errMsg.includes('חסרים משתני supabase') ||
     errMsg.includes('fetch failed') ||
-    errMsg.includes('mongodb') ||
-    errMsg.includes('mongo') ||
-    errMsg.includes('mongoserver') ||
-    errMsg.includes('mongodb_uri') ||
     errMsg.includes('לא מחובר') ||
     errMsg.includes('e11000') ||
     errMsg.includes('duplicate key') ||
@@ -124,7 +123,7 @@ function phoneCodeExpiresAt() {
 export const register = async (req, res) => {
   try {
     // בVercel, המשתנים לפעמים לא זמינים מיד או שהחיבור ל-DB לא הושלם. נוודא חיבור פה גם.
-    await connectToMongoDB();
+    await connectToDatabase();
 
     if (!ROLES?.USER || !ERROR_MESSAGES?.AUTH?.FIELDS_REQUIRED) {
       console.error('[Backend] Registration: ROLES or ERROR_MESSAGES missing – check server/components/constants.js');
@@ -306,7 +305,7 @@ export const register = async (req, res) => {
 export const login = async (req, res) => {
   try {
     // בVercel, המשתנים לפעמים לא זמינים מיד או שהחיבור ל-DB לא הושלם. נוודא חיבור פה גם.
-    await connectToMongoDB();
+    await connectToDatabase();
     if (!ERROR_MESSAGES?.AUTH?.EMAIL_PASSWORD_REQUIRED) {
       console.error('[Backend] Login: ERROR_MESSAGES missing – check server/components/constants.js');
       return res.status(500).json({ error: 'שגיאת שרת בהתחברות' });
@@ -460,7 +459,7 @@ export const login = async (req, res) => {
  */
 export const getMe = async (req, res) => {
   try {
-    await connectToMongoDB();
+    await connectToDatabase();
     if (!req.user?.id) {
       return res.status(401).json({ error: ERROR_MESSAGES?.AUTH?.TOKEN_INVALID || 'טוקן לא תקין' });
     }
@@ -492,7 +491,7 @@ export const getMe = async (req, res) => {
  */
 export const verifyCode = async (req, res) => {
   try {
-    await connectToMongoDB();
+    await connectToDatabase();
     const email = (req.body.email || '').trim().toLowerCase();
     const code = (req.body.code || '').trim().replace(/\D/g, '').slice(0, 6);
 
@@ -545,7 +544,7 @@ export const verifyCode = async (req, res) => {
  */
 export const resendVerificationEmail = async (req, res) => {
   try {
-    await connectToMongoDB();
+    await connectToDatabase();
     const email = (req.body.email || '').trim();
     if (!email) {
       return res.status(400).json({ error: ERROR_MESSAGES.AUTH.EMAIL_PASSWORD_REQUIRED });
@@ -589,7 +588,7 @@ export const resendVerificationEmail = async (req, res) => {
  */
 export const requestPhoneVerification = async (req, res) => {
   try {
-    await connectToMongoDB();
+    await connectToDatabase();
     const email = (req.body.email || '').trim();
     if (!email) {
       return res.status(400).json({ error: ERROR_MESSAGES.AUTH.EMAIL_PASSWORD_REQUIRED });
@@ -631,7 +630,7 @@ export const requestPhoneVerification = async (req, res) => {
  */
 export const verifyPhone = async (req, res) => {
   try {
-    await connectToMongoDB();
+    await connectToDatabase();
     const email = (req.body.email || '').trim();
     const code = (req.body.code || '').trim();
     if (!email || !code) {
@@ -678,7 +677,7 @@ export const verifyPhone = async (req, res) => {
  */
 export const requestPasswordReset = async (req, res) => {
   try {
-    await connectToMongoDB();
+    await connectToDatabase();
     const email = (req.body.email || '').trim().toLowerCase();
     if (!email) {
       return res.status(400).json({ error: ERROR_MESSAGES.AUTH.EMAIL_PASSWORD_REQUIRED });
@@ -709,7 +708,7 @@ export const requestPasswordReset = async (req, res) => {
  */
 export const resetPassword = async (req, res) => {
   try {
-    await connectToMongoDB();
+    await connectToDatabase();
     const email = (req.body.email || '').trim().toLowerCase();
     const code = (req.body.code || '').trim().replace(/\D/g, '').slice(0, 6);
     const newPassword = req.body.newPassword;
