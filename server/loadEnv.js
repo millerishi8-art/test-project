@@ -22,8 +22,8 @@ if (isNonProd) {
     SUPABASE_SERVICE_ROLE_SET: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()),
     EMAIL_USER: Boolean(process.env.EMAIL_USER?.trim()),
   };
-  console.log('[Env] Loaded server environment (secrets not printed):', summary);
+  console.log('[Env] Loaded (flags only, no secrets):', summary);
   if (result.error && result.error.code !== 'ENOENT') {
-    console.warn('[Env] dotenv message:', result.error.message);
+    console.warn('[Env] dotenv:', result.error.message);
   }
 }

@@ -1,6 +1,6 @@
 # משתני סביבה – שרת (Supabase בלבד)
 
-המסד הוא **Supabase (PostgreSQL)** דרך `app_users` ו-`app_cases`. אין MongoDB.
+המסד הוא **Supabase (PostgreSQL)** דרך `app_users` ו-`app_cases` בלבד.
 
 ## חובה
 

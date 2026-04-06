@@ -1,6 +1,6 @@
 /**
- * אפליקציית Express משותפת – לשימוש מקומי (server.js) ולפונקציות Serverless ב-Vercel (api/index.js).
- * ללא listen() – אתחול חיבור Supabase ל-serverless (לא חוסם אם נכשל).
+ * Shared Express app — local (server.js) and Vercel serverless (api/index.js).
+ * No listen(). Supabase-only; cold-start ping is best-effort and never falls back to another DB.
  */
 import './loadEnv.js';
 
@@ -53,11 +53,10 @@ app.options('*', cors(corsOptions)); // טיפול בבקשות OPTIONS (Preflig
 // גודל body מוגדר להעלאת תמונות (חתימה וכו') כ-base64
 app.use(express.json({ limit: '10mb' }));
 
-// חיבור למסד (Supabase) ב-serverless – רץ פעם אחת על cold start
-let dbPromise;
-dbPromise = connectToDatabase()
-  .then(() => console.log('[DB] Supabase מוכן (serverless/Vercel)'))
-  .catch((err) => console.error('[DB] שגיאת חיבור ב-serverless –', err?.message || err));
+// Supabase ping once per serverless cold start (non-blocking)
+connectToDatabase()
+  .then(() => console.log('[Supabase] Connection check passed (serverless)'))
+  .catch((err) => console.error('[Supabase] Cold-start connection check failed:', err?.message || err));
 
 // וידוא שתיקיית data קיימת (להרצה מקומית; ב-Vercel אין filesystem מתמשך)
 const dataDir = path.join(__dirname, 'data');

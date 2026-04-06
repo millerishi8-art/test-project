@@ -47,6 +47,40 @@ export function resolveSupabaseServiceRoleKey() {
   return stripEnv(process.env.SUPABASE_SERVICE_ROLE_KEY || '');
 }
 
+/** דחיית מפתח ריק, placeholder או מפתח publishable בטעות בשדה service */
+export function assertSupabaseServiceCredentials() {
+  const url = resolveSupabaseUrl();
+  const key = resolveSupabaseServiceRoleKey();
+  if (!url || !key) {
+    throw new Error(
+      '[Supabase] Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (server env). This project uses Supabase only.'
+    );
+  }
+  const k = key;
+  if (k.length < 32) {
+    throw new Error(
+      '[Supabase] SUPABASE_SERVICE_ROLE_KEY is too short or was trimmed away — paste the full service_role secret from Supabase → Settings → API.'
+    );
+  }
+  const low = k.toLowerCase();
+  if (
+    low.includes('placeholder') ||
+    low.includes('your-service-role') ||
+    low.includes('your_service_role') ||
+    low === 'service_role' ||
+    /^<[^>]+>$/.test(k.trim())
+  ) {
+    throw new Error(
+      '[Supabase] SUPABASE_SERVICE_ROLE_KEY looks like a placeholder. Use the real service_role JWT (eyJ…) or sb_secret_… from the Supabase dashboard.'
+    );
+  }
+  if (k.startsWith('sb_publishable_')) {
+    throw new Error(
+      '[Supabase] Use the service secret in SUPABASE_SERVICE_ROLE_KEY, not sb_publishable_ (that belongs in SUPABASE_ANON_KEY).'
+    );
+  }
+}
+
 /** מפתח anon לשרת (AUTH_PROVIDER=supabase) — SUPABASE_ANON_KEY */
 export function resolveSupabaseAnonKey() {
   return stripEnv(process.env.SUPABASE_ANON_KEY || '');
@@ -68,17 +102,20 @@ function logSupabaseEnvOnce(url, key) {
  */
 export function getSupabaseAdmin() {
   if (adminClient) return adminClient;
+  assertSupabaseServiceCredentials();
   const url = resolveSupabaseUrl();
   const key = resolveSupabaseServiceRoleKey();
-  if (!url || !key) {
+  logSupabaseEnvOnce(url, key);
+  try {
+    adminClient = createClient(url, key, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+  } catch (err) {
+    const msg = err?.message ? String(err.message) : String(err);
     throw new Error(
-      'חסרים Supabase לשרת: הגדר SUPABASE_URL ו-SUPABASE_SERVICE_ROLE_KEY (מ-Supabase → Project Settings → API → service_role).'
+      `[Supabase] Failed to initialize client (check SUPABASE_URL and service key format): ${msg}`
     );
   }
-  logSupabaseEnvOnce(url, key);
-  adminClient = createClient(url, key, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
   return adminClient;
 }
 

@@ -5,6 +5,7 @@ import { getDbUnavailableMessage } from '../components/constants.js';
 import {
   getSupabaseAdmin,
   isSupabaseInvalidApiKeyError,
+  resetSupabaseAdminForTests,
 } from './supabaseClient.js';
 
 let dbReady = false;
@@ -85,19 +86,13 @@ export async function connectToDatabase() {
     );
   }
   dbReady = true;
-  console.log('[DB] Supabase מוכן');
+  console.log('[Supabase] Connection check passed (app_users reachable)');
   return true;
-}
-
-/**
- * הוסר – הנתונים דרך models/User.js ו-models/Case.js בלבד.
- */
-export function getDb() {
-  throw new Error('getDb() אינו נתמך עם Supabase. השתמש במודלים User / Case.');
 }
 
 export function closeDatabaseConnection() {
   dbReady = false;
+  resetSupabaseAdminForTests();
 }
 
-export default { connectToDatabase, getDb, closeDatabaseConnection, dbErrorMessageForClient };
+export default { connectToDatabase, closeDatabaseConnection, dbErrorMessageForClient };

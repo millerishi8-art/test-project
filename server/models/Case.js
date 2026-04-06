@@ -2,17 +2,28 @@ import { getSupabaseAdmin } from '../db/supabaseClient.js';
 
 const TABLE = 'app_cases';
 
+/** JSONB `data` first, then non-null table columns (same idea as app_users). */
 function rowToCase(row) {
   if (!row) return null;
-  const d = typeof row.data === 'object' && row.data !== null && !Array.isArray(row.data) ? row.data : {};
-  const userId = row.user_id || d.userId;
-  return { ...d, id: row.id, userId };
+  const fromData =
+    row.data != null && typeof row.data === 'object' && !Array.isArray(row.data) ? { ...row.data } : {};
+  const fromRow = {};
+  for (const key of Object.keys(row)) {
+    if (key === 'id' || key === 'data') continue;
+    const val = row[key];
+    if (val !== undefined && val !== null) fromRow[key] = val;
+  }
+  const out = { ...fromData, ...fromRow, id: row.id != null ? String(row.id) : '' };
+  const uid = out.user_id ?? out.userId;
+  out.userId = uid != null ? String(uid) : '';
+  delete out.user_id;
+  return out;
 }
 
 export const readCases = async () => {
   try {
     const sb = getSupabaseAdmin();
-    const { data, error } = await sb.from(TABLE).select('id, user_id, data').order('id');
+    const { data, error } = await sb.from(TABLE).select('*').order('id');
     if (error) throw error;
     return (data || []).map(rowToCase);
   } catch (error) {
@@ -24,7 +35,7 @@ export const readCases = async () => {
 export const findCaseById = async (id) => {
   try {
     const sb = getSupabaseAdmin();
-    const { data, error } = await sb.from(TABLE).select('id, user_id, data').eq('id', id).maybeSingle();
+    const { data, error } = await sb.from(TABLE).select('*').eq('id', id).maybeSingle();
     if (error) throw error;
     return rowToCase(data);
   } catch (error) {
@@ -35,7 +46,7 @@ export const findCaseById = async (id) => {
 export const findCasesByUserId = async (userId) => {
   try {
     const sb = getSupabaseAdmin();
-    const { data, error } = await sb.from(TABLE).select('id, user_id, data').eq('user_id', userId);
+    const { data, error } = await sb.from(TABLE).select('*').eq('user_id', userId);
     if (error) throw error;
     return (data || []).map(rowToCase);
   } catch (error) {
@@ -64,7 +75,7 @@ export const updateCase = async (caseId, updates) => {
     .from(TABLE)
     .update({ user_id: userId, data })
     .eq('id', caseId)
-    .select('id, user_id, data')
+    .select('*')
     .single();
   if (error) throw error;
   return rowToCase(out);
@@ -73,7 +84,7 @@ export const updateCase = async (caseId, updates) => {
 export const deleteCase = async (caseId) => {
   const sb = getSupabaseAdmin();
   const existing = await findCaseById(caseId);
-  const { data, error } = await sb.from(TABLE).delete().eq('id', caseId).select('id, user_id, data').maybeSingle();
+  const { data, error } = await sb.from(TABLE).delete().eq('id', caseId).select('*').maybeSingle();
   if (error) throw error;
   return existing || (data ? rowToCase(data) : null);
 };

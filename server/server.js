@@ -1,6 +1,5 @@
 /**
- * כניסה להרצה מקומית – טוען את אפליקציית Express, מתחבר ל-Supabase ומאזין על הפורט.
- * ב-Vercel משתמשים ב-api/index.js (Serverless) ללא קובץ זה.
+ * Local entry: Express + Supabase ping + listen. Vercel uses api/index.js (serverless) instead.
  */
 import app from './app.js';
 import { connectToDatabase, closeDatabaseConnection } from './db/database.js';
@@ -18,14 +17,14 @@ async function start() {
   if (hasSupabaseEnv()) {
     try {
       await connectToDatabase();
-      console.log('Database: Supabase מחובר');
+      console.log('[Supabase] Ready (local server)');
     } catch (err) {
-      console.error('Database: שגיאת חיבור –', err.message);
-      console.log('השרת ממשיך לרוץ – בקשות ל-DB עלולות להיכשל עד שתתקן את ההגדרות או את הטבלאות');
+      console.error('[Supabase] Startup connection check failed:', err?.message || err);
+      console.warn('[Supabase] Server is up; API calls that need the DB may fail until env and schema are fixed.');
     }
   } else {
-    console.log(
-      'Database: חסרים SUPABASE_URL או SUPABASE_SERVICE_ROLE_KEY — הגדר ב-server/.env או ב-Vercel (Settings → Environment Variables).'
+    console.warn(
+      '[Supabase] Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY — set them in server/.env or your host (e.g. Vercel env).'
     );
   }
 
