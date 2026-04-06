@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 
 let adminClient = null;
+let supabaseEnvLogged = false;
 
 /** מרכאות/רווחים מסביב לערך מ-Vercel */
 function stripEnv(val) {
@@ -8,17 +9,43 @@ function stripEnv(val) {
   return String(val).trim().replace(/^['"]|['"]$/g, '');
 }
 
+/** לוג בטוח ל-Vercel: רק 5 תווים ראשונים (לא לחשוף URL/מפתח מלא) */
+function preview5(label, value) {
+  const s = value == null ? '' : String(value);
+  if (!s) return `${label}: (empty)`;
+  return `${label}: ${s.slice(0, 5)}… (len=${s.length})`;
+}
+
 /**
- * כתובת פרויקט Supabase — אותם שמות ש-Vercel/OpenAPI נותנים בדרך כלל.
- * סדר עדיפות: משתנה ספציפי לשרת, ואז ציבורי (אותו ערך מומלץ ב-Vercel).
+ * כתובת ה-API של Supabase: חייבת להתחיל ב-https:// וללא סלאש בסוף.
+ */
+export function normalizeSupabaseProjectUrl(raw) {
+  let u = stripEnv(raw);
+  if (!u) return '';
+  u = u.replace(/\/+$/g, '');
+  if (u.startsWith('http://')) {
+    u = `https://${u.slice('http://'.length)}`;
+  }
+  if (!u.startsWith('https://')) {
+    throw new Error(
+      '[Supabase] כתובת הפרויקט חייבת להתחיל ב-https:// (בדוק SUPABASE_URL / NEXT_PUBLIC_SUPABASE_URL).'
+    );
+  }
+  return u;
+}
+
+/**
+ * כתובת פרויקט Supabase — סדר עדיפות כמו ב-Vercel.
  */
 export function resolveSupabaseUrl() {
-  return stripEnv(
+  const raw = stripEnv(
     process.env.SUPABASE_URL ||
       process.env.NEXT_PUBLIC_SUPABASE_URL ||
       process.env.VITE_SUPABASE_URL ||
       ''
   );
+  if (!raw) return '';
+  return normalizeSupabaseProjectUrl(raw);
 }
 
 /**
@@ -42,9 +69,15 @@ export function resolveSupabaseAnonKey() {
   );
 }
 
+function logSupabaseEnvOnce(url, key) {
+  if (supabaseEnvLogged) return;
+  supabaseEnvLogged = true;
+  console.log('[Supabase]', preview5('SUPABASE_URL (first 5)', url), '|', preview5('SERVICE_ROLE_KEY (first 5)', key));
+}
+
 /**
  * לקוח Supabase עם הרשאות service_role — לשרת בלבד (עוקף RLS).
- * אין תלות ב-MongoDB או ב-MONGODB_URI.
+ * משתמש רק בערכים מ-resolveSupabaseUrl() ו-resolveSupabaseServiceRoleKey() (כולל נירמול URL).
  */
 export function getSupabaseAdmin() {
   if (adminClient) return adminClient;
@@ -56,6 +89,7 @@ export function getSupabaseAdmin() {
         'ו-SUPABASE_SERVICE_ROLE_KEY (או SUPABASE_SECRET_KEY / SERVICE_ROLE_KEY) — ערך service_role מ-Supabase → Project Settings → API.'
     );
   }
+  logSupabaseEnvOnce(url, key);
   adminClient = createClient(url, key, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
@@ -64,6 +98,7 @@ export function getSupabaseAdmin() {
 
 export function resetSupabaseAdminForTests() {
   adminClient = null;
+  supabaseEnvLogged = false;
 }
 
 /** הודעה ידידותית כש-PostgREST מחזיר מפתח שגוי */

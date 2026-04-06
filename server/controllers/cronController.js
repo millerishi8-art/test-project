@@ -1,4 +1,5 @@
 import { runDeferredPaymentReminderJob } from '../jobs/deferredPaymentReminders.js';
+import { secureCompare } from '../utils/auth.js';
 
 /**
  * GET /api/cron/deferred-payment-reminders
@@ -18,7 +19,9 @@ export const triggerDeferredPaymentReminders = async (req, res) => {
     const bearer = auth.startsWith('Bearer ') ? auth.slice(7).trim() : '';
     const q = (req.query.secret || '').trim();
 
-    if (bearer !== secret && q !== secret) {
+    const bearerOk = bearer.length > 0 && secureCompare(bearer, secret);
+    const queryOk = q.length > 0 && secureCompare(q, secret);
+    if (!bearerOk && !queryOk) {
       return res.status(403).json({ error: 'Forbidden' });
     }
 

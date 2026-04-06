@@ -1,13 +1,13 @@
-import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
 import { findUserByEmail, findUserById, createUser, updateUserById, sanitizeUser, serializeUserForClient } from '../models/User.js';
-import { ROLES, ERROR_MESSAGES, SUCCESS_MESSAGES, getDbUnavailableMessage } from '../components/constants.js';
+import { ROLES, ERROR_MESSAGES, SUCCESS_MESSAGES } from '../components/constants.js';
 import { sendVerificationCodeEmail, sendPasswordResetCodeEmail } from '../services/email.js';
 import { sendVerificationSms } from '../services/sms.js';
-import { connectToDatabase } from '../db/database.js';
+import { connectToDatabase, dbErrorMessageForClient } from '../db/database.js';
 import { isSuperAdminEmail } from '../utils/adminEmails.js';
+import { secureCompare } from '../utils/auth.js';
 import {
   isSupabasePasswordAuthEnabled,
   registerAuthUserWithAdminApi,
@@ -41,10 +41,12 @@ function isInfrastructureError(error) {
   const codeStr = errCode != null ? String(errCode).toLowerCase() : '';
   if (codeStr === '42p01' || codeStr === '08006' || codeStr === '08001') return true;
   if (
+    errMsg.includes('[db]') ||
     errMsg.includes('supabase') ||
     errMsg.includes('pgrst') ||
     errMsg.includes('postgrest') ||
     errMsg.includes('טבלאות חסרות') ||
+    errMsg.includes('[supabase]') ||
     errMsg.includes('supabase_schema.sql') ||
     errMsg.includes('relation') ||
     errMsg.includes('schema cache') ||
@@ -140,7 +142,7 @@ export const register = async (req, res) => {
       existingUser = await findUserByEmail(email);
     } catch (err) {
       logAuthError('Registration findUserByEmail', err, { status: 503 });
-      return res.status(503).json({ error: getDbUnavailableMessage() });
+      return res.status(503).json({ error: dbErrorMessageForClient(err) });
     }
     if (existingUser) {
       return res.status(400).json({ error: ERROR_MESSAGES.AUTH.USER_EXISTS });
@@ -162,7 +164,7 @@ export const register = async (req, res) => {
           return res.status(400).json({ error: ERROR_MESSAGES.AUTH.USER_EXISTS });
         }
         if (isInfrastructureError(authErr)) {
-          return res.status(503).json({ error: getDbUnavailableMessage() });
+          return res.status(503).json({ error: dbErrorMessageForClient(authErr) });
         }
         const hint = errorMessageString(authErr);
         return res.status(400).json({
@@ -192,7 +194,7 @@ export const register = async (req, res) => {
         if (isDuplicate) {
           return res.status(400).json({ error: ERROR_MESSAGES.AUTH.USER_EXISTS });
         }
-        return res.status(503).json({ error: getDbUnavailableMessage() });
+        return res.status(503).json({ error: dbErrorMessageForClient(dbErr) });
       }
       const row = await findUserById(authUser.id);
       let userSafe = null;
@@ -247,7 +249,7 @@ export const register = async (req, res) => {
       if (isDuplicate) {
         return res.status(400).json({ error: ERROR_MESSAGES.AUTH.USER_EXISTS });
       }
-      return res.status(503).json({ error: getDbUnavailableMessage() });
+      return res.status(503).json({ error: dbErrorMessageForClient(err) });
     }
     console.log('[Auth] Registration: user created', newUser.id, newUser.email);
 
@@ -287,7 +289,7 @@ export const register = async (req, res) => {
     if (isDev && error?.stack) console.error('[Backend] Registration stack:', error.stack);
     logAuthError('Registration (outer catch)', error, { status, payload: { reason: isDbError ? 'db_unavailable' : 'unexpected' } });
     const genericMessage = (ERROR_MESSAGES?.SERVER?.REGISTRATION) || 'שגיאת שרת בהרשמה';
-    const message = isDbError ? getDbUnavailableMessage() : genericMessage;
+    const message = isDbError ? dbErrorMessageForClient(error) : genericMessage;
     try {
       const payload = { error: message };
       if (isDev && !isDbError) payload.debug = errMsg;
@@ -322,8 +324,7 @@ export const login = async (req, res) => {
       user = await findUserByEmail(rawEmail);
     } catch (dbErr) {
       logAuthError('Login findUserByEmail', dbErr, { status: 503 });
-      const msg = getDbUnavailableMessage();
-      return res.status(503).json({ error: msg });
+      return res.status(503).json({ error: dbErrorMessageForClient(dbErr) });
     }
     if (process.env.NODE_ENV !== 'production') {
       console.log('[Backend] Login: user', user ? 'found' : 'NOT found', '| email:', maskEmail(rawEmail));
@@ -447,7 +448,7 @@ export const login = async (req, res) => {
       payload: { error: error?.message },
     });
     const genericMessage = (ERROR_MESSAGES?.SERVER?.LOGIN) || 'שגיאת שרת בהתחברות';
-    const message = isDbError ? getDbUnavailableMessage() : genericMessage;
+    const message = isDbError ? dbErrorMessageForClient(error) : genericMessage;
     const payload = { error: message };
     if (isDev && !isDbError) payload.debug = errMsg;
     res.status(status).json(payload);
@@ -480,7 +481,7 @@ export const getMe = async (req, res) => {
     console.error('[Backend] getMe – root cause:', errMsg);
     logAuthError('getMe', error, { status });
     const msg = isDbError
-      ? getDbUnavailableMessage()
+      ? dbErrorMessageForClient(error)
       : (ERROR_MESSAGES?.SERVER?.LOGIN || 'שגיאת שרת');
     res.status(status).json({ error: msg });
   }
@@ -509,7 +510,7 @@ export const verifyCode = async (req, res) => {
     const storedCode = (user.emailVerificationCode || '').toString().trim();
     const expires = user.emailVerificationCodeExpires || '';
 
-    if (storedCode !== code) {
+    if (!secureCompare(storedCode, code)) {
       console.log('[Backend] Verify code: code mismatch, returning 400. email:', maskEmail(email));
       return res.status(400).json({ error: ERROR_MESSAGES.AUTH.VERIFICATION_CODE_INVALID });
     }
@@ -534,7 +535,7 @@ export const verifyCode = async (req, res) => {
     const isDbError = isInfrastructureError(error);
     const status = isDbError ? 503 : 500;
     logAuthError('Verify code controller', error, { status });
-    const message = isDbError ? getDbUnavailableMessage() : ERROR_MESSAGES.AUTH.VERIFICATION_CODE_INVALID;
+    const message = isDbError ? dbErrorMessageForClient(error) : ERROR_MESSAGES.AUTH.VERIFICATION_CODE_INVALID;
     return res.status(status).json({ error: message });
   }
 };
@@ -578,7 +579,7 @@ export const resendVerificationEmail = async (req, res) => {
     });
     const isDbError = isInfrastructureError(error);
     const status = isDbError ? 503 : 500;
-    const message = isDbError ? getDbUnavailableMessage() : ERROR_MESSAGES.SERVER.REGISTRATION;
+    const message = isDbError ? dbErrorMessageForClient(error) : ERROR_MESSAGES.SERVER.REGISTRATION;
     res.status(status).json({ error: message });
   }
 };
@@ -620,7 +621,7 @@ export const requestPhoneVerification = async (req, res) => {
     });
     const isDbError = isInfrastructureError(error);
     const status = isDbError ? 503 : 500;
-    const message = isDbError ? getDbUnavailableMessage() : ERROR_MESSAGES.SERVER.REGISTRATION;
+    const message = isDbError ? dbErrorMessageForClient(error) : ERROR_MESSAGES.SERVER.REGISTRATION;
     res.status(status).json({ error: message });
   }
 };
@@ -641,7 +642,12 @@ export const verifyPhone = async (req, res) => {
       return res.status(401).json({ error: ERROR_MESSAGES.AUTH.INVALID_CREDENTIALS });
     }
     const now = new Date().toISOString();
-    if (user.phoneVerificationCode !== code || !user.phoneVerificationCodeExpires || user.phoneVerificationCodeExpires < now) {
+    const storedPhoneCode = (user.phoneVerificationCode || '').toString().trim();
+    const providedPhoneCode = (code || '').toString().trim();
+    const phoneCodeOk = secureCompare(storedPhoneCode, providedPhoneCode);
+    const phoneTimeOk =
+      user.phoneVerificationCodeExpires && user.phoneVerificationCodeExpires >= now;
+    if (!phoneCodeOk || !phoneTimeOk) {
       return res.status(400).json({ error: ERROR_MESSAGES.AUTH.PHONE_CODE_INVALID });
     }
     await updateUserById(user.id, {
@@ -666,7 +672,7 @@ export const verifyPhone = async (req, res) => {
     });
     const isDbError = isInfrastructureError(error);
     const status = isDbError ? 503 : 500;
-    const message = isDbError ? getDbUnavailableMessage() : ERROR_MESSAGES.AUTH.PHONE_CODE_INVALID;
+    const message = isDbError ? dbErrorMessageForClient(error) : ERROR_MESSAGES.AUTH.PHONE_CODE_INVALID;
     res.status(status).json({ error: message });
   }
 };
@@ -729,7 +735,7 @@ export const resetPassword = async (req, res) => {
     const storedCode = (user.passwordResetCode || '').toString().trim();
     const expires = user.passwordResetCodeExpires || '';
 
-    if (storedCode !== code || expires < now) {
+    if (!secureCompare(storedCode, code) || expires < now) {
       return res.status(400).json({ error: ERROR_MESSAGES.AUTH.PASSWORD_RESET_CODE_INVALID });
     }
 

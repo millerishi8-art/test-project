@@ -4,10 +4,15 @@ import { resolveSupabaseUrl, resolveSupabaseServiceRoleKey } from '../db/supabas
 const BUCKET_NAME = 'private-cases';
 
 function getConfig() {
-  return {
-    supabaseUrl: resolveSupabaseUrl(),
-    supabaseServiceRoleKey: resolveSupabaseServiceRoleKey(),
-  };
+  try {
+    return {
+      supabaseUrl: resolveSupabaseUrl(),
+      supabaseServiceRoleKey: resolveSupabaseServiceRoleKey(),
+    };
+  } catch (e) {
+    console.warn('[Supabase] שגיאת נירמול URL:', e?.message || e);
+    return { supabaseUrl: '', supabaseServiceRoleKey: '' };
+  }
 }
 
 /**
