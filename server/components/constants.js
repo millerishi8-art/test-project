@@ -57,7 +57,8 @@ export const ERROR_MESSAGES = {
     LOGIN: 'שגיאת שרת בהתחברות',
     CASE_SUBMIT: 'שגיאת שרת בשליחת תיק',
     CASE_RENEW: 'שגיאת שרת בחידוש תיק',
-    DB_UNAVAILABLE: 'מסד הנתונים לא זמין. וודא שהשרת רץ ו-MongoDB מחובר (MONGODB_URI ב-server/.env).',
+    DB_UNAVAILABLE:
+      'מסד הנתונים לא זמין. וודא ש-Supabase מוגדר (SUPABASE_URL ו-SUPABASE_SERVICE_ROLE_KEY ב-server/.env) והרצת את server/db/supabase_schema.sql.',
   },
 };
 
@@ -65,15 +66,15 @@ export const ERROR_MESSAGES = {
 export function getDbUnavailableMessage() {
   if (process.env.VERCEL) {
     return (
-      'מסד הנתונים לא מחובר. ב-Vercel: Project → Settings → Environment Variables — הוסף MONGODB_URI ' +
-      '(מחרוזת mongodb+srv://... מלאה מ-MongoDB Atlas, כולל משתמש וסיסמה), וגם JWT_SECRET. ' +
-      'סמן לכל סביבות (Production/Preview). שמור ובצע Redeploy. ' +
-      'אפשר גם להשתמש בשם DATABASE_URL אם כך הגדרת ב-Vercel.'
+      'מסד הנתונים לא מחובר. ב-Vercel: Project → Settings → Environment Variables — הוסף SUPABASE_URL, ' +
+      'SUPABASE_SERVICE_ROLE_KEY (מ-Supabase → Project Settings → API), וגם JWT_SECRET. ' +
+      'ב-Supabase הרץ את תוכן הקובץ server/db/supabase_schema.sql ב-SQL Editor. ' +
+      'סמן לכל סביבות (Production/Preview). שמור ובצע Redeploy.'
     );
   }
   return (
     ERROR_MESSAGES.SERVER.DB_UNAVAILABLE ||
-    'מסד הנתונים לא זמין. הגדר MONGODB_URI ב-server/.env והפעל מחדש את השרת (npm run dev).'
+    'מסד הנתונים לא זמין. הגדר Supabase ב-server/.env והפעל מחדש את השרת (npm run dev).'
   );
 }
 

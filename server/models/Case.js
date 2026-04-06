@@ -1,10 +1,20 @@
-// בקובץ זה נישאר רק עם השלד המקורי או שנעדכן אותו לעבוד מול מונגו
-import { getDb } from '../db/mongodb.js';
+import { getSupabaseAdmin } from '../db/supabaseClient.js';
+
+const TABLE = 'app_cases';
+
+function rowToCase(row) {
+  if (!row) return null;
+  const d = typeof row.data === 'object' && row.data !== null && !Array.isArray(row.data) ? row.data : {};
+  const userId = row.user_id || d.userId;
+  return { ...d, id: row.id, userId };
+}
 
 export const readCases = async () => {
   try {
-    const db = getDb();
-    return await db.collection('cases').find({}).toArray();
+    const sb = getSupabaseAdmin();
+    const { data, error } = await sb.from(TABLE).select('id, user_id, data').order('id');
+    if (error) throw error;
+    return (data || []).map(rowToCase);
   } catch (error) {
     console.error('Error reading cases from DB:', error);
     return [];
@@ -13,8 +23,10 @@ export const readCases = async () => {
 
 export const findCaseById = async (id) => {
   try {
-    const db = getDb();
-    return await db.collection('cases').findOne({ id });
+    const sb = getSupabaseAdmin();
+    const { data, error } = await sb.from(TABLE).select('id, user_id, data').eq('id', id).maybeSingle();
+    if (error) throw error;
+    return rowToCase(data);
   } catch (error) {
     return null;
   }
@@ -22,40 +34,54 @@ export const findCaseById = async (id) => {
 
 export const findCasesByUserId = async (userId) => {
   try {
-    const db = getDb();
-    return await db.collection('cases').find({ userId }).toArray();
+    const sb = getSupabaseAdmin();
+    const { data, error } = await sb.from(TABLE).select('id, user_id, data').eq('user_id', userId);
+    if (error) throw error;
+    return (data || []).map(rowToCase);
   } catch (error) {
     return [];
   }
 };
 
 export const createCase = async (caseData) => {
-  const db = getDb();
-  await db.collection('cases').insertOne(caseData);
+  const sb = getSupabaseAdmin();
+  const id = String(caseData.id);
+  const userId = String(caseData.userId || '');
+  const data = { ...caseData, id, userId };
+  const { error } = await sb.from(TABLE).insert({ id, user_id: userId, data });
+  if (error) throw error;
   return caseData;
 };
 
 export const updateCase = async (caseId, updates) => {
-  const db = getDb();
-  const result = await db.collection('cases').findOneAndUpdate(
-    { id: caseId },
-    { $set: updates },
-    { returnDocument: 'after' }
-  );
-  // MongoDB Node driver v6+ מחזיר את המסמך ישירות (לא { value })
-  return result ?? null;
+  const sb = getSupabaseAdmin();
+  const current = await findCaseById(caseId);
+  if (!current) return null;
+  const merged = { ...current, ...updates };
+  const userId = String(merged.userId || '');
+  const data = { ...merged, id: caseId, userId };
+  const { data: out, error } = await sb
+    .from(TABLE)
+    .update({ user_id: userId, data })
+    .eq('id', caseId)
+    .select('id, user_id, data')
+    .single();
+  if (error) throw error;
+  return rowToCase(out);
 };
 
 export const deleteCase = async (caseId) => {
-  const db = getDb();
-  const result = await db.collection('cases').findOneAndDelete({ id: caseId });
-  return result ?? null;
+  const sb = getSupabaseAdmin();
+  const existing = await findCaseById(caseId);
+  const { data, error } = await sb.from(TABLE).delete().eq('id', caseId).select('id, user_id, data').maybeSingle();
+  if (error) throw error;
+  return existing || (data ? rowToCase(data) : null);
 };
 
-/** מחיקה מרובה לפי מזהי תיק (למשל ניקוי יתומים אחרי מחיקת משתמש) */
 export const deleteCasesByIds = async (ids) => {
   if (!Array.isArray(ids) || ids.length === 0) return 0;
-  const db = getDb();
-  const result = await db.collection('cases').deleteMany({ id: { $in: ids } });
-  return result.deletedCount || 0;
+  const sb = getSupabaseAdmin();
+  const { data, error } = await sb.from(TABLE).delete().in('id', ids).select('id');
+  if (error) throw error;
+  return Array.isArray(data) ? data.length : 0;
 };

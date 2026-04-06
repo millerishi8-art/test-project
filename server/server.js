@@ -1,5 +1,5 @@
 /**
- * כניסה להרצה מקומית – טוען את אפליקציית Express, מתחבר ל-MongoDB ומאזין על הפורט.
+ * כניסה להרצה מקומית – טוען את אפליקציית Express, מתחבר ל-Supabase ומאזין על הפורט.
  * ב-Vercel משתמשים ב-api/index.js (Serverless) ללא קובץ זה.
  */
 import app from './app.js';
@@ -9,19 +9,23 @@ import { scheduleDeferredPaymentReminders } from './jobs/deferredPaymentReminder
 const PORT = process.env.PORT || 5000;
 let server;
 
-async function start() {
-  const hasMongoEnv = process.env.MONGODB_PASSWORD || process.env.MONGODB_URI;
+function hasSupabaseEnv() {
+  const url = (process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '').trim();
+  const key = (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY || '').trim();
+  return !!(url && key);
+}
 
-  if (hasMongoEnv) {
+async function start() {
+  if (hasSupabaseEnv()) {
     try {
       await connectToMongoDB();
-      console.log('MongoDB: מחובר בהצלחה');
+      console.log('Database: Supabase מחובר');
     } catch (err) {
-      console.error('MongoDB: שגיאה בחיבור –', err.message);
-      console.log('השרת ממשיך לרוץ בלי MongoDB');
+      console.error('Database: שגיאת חיבור –', err.message);
+      console.log('השרת ממשיך לרוץ – בקשות ל-DB עלולות להיכשל עד שתתקן את ההגדרות או את הטבלאות');
     }
   } else {
-    console.log('MongoDB: לא הוגדר (הוסף MONGODB_PASSWORD או MONGODB_URI ל-.env)');
+    console.log('Database: חסרים SUPABASE_URL ו-SUPABASE_SERVICE_ROLE_KEY (או NEXT_PUBLIC_SUPABASE_URL) ב-server/.env');
   }
 
   server = app.listen(PORT, '0.0.0.0', () => {

@@ -1,6 +1,6 @@
 /**
  * אפליקציית Express משותפת – לשימוש מקומי (server.js) ולפונקציות Serverless ב-Vercel (api/index.js).
- * ללא listen() וחיבור MongoDB – אלה נשארים ב-server.js להרצה מקומית.
+ * ללא listen() – חיבור DB ב-connectToMongoDB (Supabase) עבור serverless.
  */
 import './loadEnv.js';
 
@@ -53,12 +53,11 @@ app.options('*', cors(corsOptions)); // טיפול בבקשות OPTIONS (Preflig
 // גודל body מוגדר להעלאת תמונות (חתימה וכו') כ-base64
 app.use(express.json({ limit: '10mb' }));
 
-// חיבור MongoDB גם בסביבת Serverless (Vercel) – רץ פעם אחת על cold start
-// אנחנו מפעילים את זה רק אם אנחנו רצים ב-Vercel או בסביבת פרודקשן כדי למנוע כפילויות עם server.js
+// חיבור למסד (Supabase) ב-serverless – רץ פעם אחת על cold start
 let dbPromise;
 dbPromise = connectToMongoDB()
-  .then(() => console.log('MongoDB: מחובר בהצלחה (serverless/Vercel)'))
-  .catch(err => console.error('MongoDB: שגיאה בחיבור בסביבת serverless –', err?.message || err));
+  .then(() => console.log('[DB] Supabase מוכן (serverless/Vercel)'))
+  .catch((err) => console.error('[DB] שגיאת חיבור ב-serverless –', err?.message || err));
 
 // וידוא שתיקיית data קיימת (להרצה מקומית; ב-Vercel אין filesystem מתמשך)
 const dataDir = path.join(__dirname, 'data');

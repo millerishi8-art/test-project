@@ -3,6 +3,7 @@ import { findUserById } from '../models/User.js';
 import { ERROR_MESSAGES, ROLES } from '../components/constants.js';
 import { connectToMongoDB } from '../db/mongodb.js';
 import { isAllowedAdminEmail } from '../utils/adminEmails.js';
+import { getSupabaseAdmin } from '../db/supabaseClient.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this';
 
@@ -18,9 +19,26 @@ export const authenticateToken = async (req, res, next) => {
   }
 
   try {
-    // חשוב ב-Vercel לוודא שמונגו מחובר לפני שננסה לקרוא את המשתמש במסנן (Middleware)
     await connectToMongoDB();
-    
+    const sb = getSupabaseAdmin();
+    const { data: got, error: authErr } = await sb.auth.getUser(token);
+    if (!authErr && got?.user) {
+      const authUser = got.user;
+      const user = await findUserById(authUser.id);
+      if (!user) {
+        return res.status(403).json({ error: ERROR_MESSAGES?.AUTH?.TOKEN_INVALID || 'טוקן לא תקין או שפג תוקפו' });
+      }
+      const confirmed = !!authUser.email_confirmed_at;
+      if (!confirmed && user.emailVerified === false) {
+        return res.status(403).json({
+          error: ERROR_MESSAGES?.AUTH?.EMAIL_NOT_VERIFIED || 'נא לאמת את כתובת האימייל',
+          code: 'EMAIL_NOT_VERIFIED',
+        });
+      }
+      req.user = { id: user.id, email: user.email, role: user.role };
+      return next();
+    }
+
     const decoded = jwt.verify(token, JWT_SECRET);
     const user = await findUserById(decoded.id);
     if (!user) {

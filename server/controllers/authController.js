@@ -8,6 +8,15 @@ import { sendVerificationCodeEmail, sendPasswordResetCodeEmail } from '../servic
 import { sendVerificationSms } from '../services/sms.js';
 import { connectToMongoDB } from '../db/mongodb.js';
 import { isSuperAdminEmail } from '../utils/adminEmails.js';
+import {
+  isSupabasePasswordAuthEnabled,
+  registerAuthUserWithAdminApi,
+  signInWithPassword,
+  updateAuthUserPassword,
+  deleteAuthUser,
+  isSupabaseAuthUserExistsError,
+  canSignInWithSupabasePassword,
+} from '../services/supabaseAuth.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this';
 const isDev = process.env.NODE_ENV !== 'production';
@@ -25,12 +34,24 @@ function errorMessageString(err) {
   }
 }
 
-/** שגיאת תשתית (Mongo / רשת / URI) – להחזיר 503 במקום 500 כשהשירות לא זמין */
+/** שגיאת תשתית (DB / רשת) – להחזיר 503 במקום 500 כשהשירות לא זמין */
 function isInfrastructureError(error) {
   const errMsg = errorMessageString(error).toLowerCase();
   const errCode = error?.code;
+  const codeStr = errCode != null ? String(errCode).toLowerCase() : '';
   if (error?.name === 'MongoServerSelectionError' || error?.name === 'MongoNetworkError') return true;
+  if (codeStr === '42p01' || codeStr === '08006' || codeStr === '08001') return true;
   if (
+    errMsg.includes('supabase') ||
+    errMsg.includes('pgrst') ||
+    errMsg.includes('postgrest') ||
+    errMsg.includes('טבלאות חסרות') ||
+    errMsg.includes('supabase_schema.sql') ||
+    errMsg.includes('relation') ||
+    errMsg.includes('does not exist') ||
+    errMsg.includes('service_role') ||
+    errMsg.includes('invalid api key') ||
+    errMsg.includes('fetch failed') ||
     errMsg.includes('mongodb') ||
     errMsg.includes('mongo') ||
     errMsg.includes('mongoserver') ||
@@ -124,6 +145,71 @@ export const register = async (req, res) => {
     }
     if (existingUser) {
       return res.status(400).json({ error: ERROR_MESSAGES.AUTH.USER_EXISTS });
+    }
+
+    if (isSupabasePasswordAuthEnabled()) {
+      const passwordStr0 = typeof password === 'string' ? password : String(password || '');
+      let authUser;
+      try {
+        authUser = await registerAuthUserWithAdminApi({
+          email: (email + '').trim().toLowerCase(),
+          password: passwordStr0,
+          name,
+          phone,
+        });
+      } catch (authErr) {
+        logAuthError('Registration Supabase admin.createUser', authErr, { status: 400 });
+        if (isSupabaseAuthUserExistsError(authErr)) {
+          return res.status(400).json({ error: ERROR_MESSAGES.AUTH.USER_EXISTS });
+        }
+        if (isInfrastructureError(authErr)) {
+          return res.status(503).json({ error: getDbUnavailableMessage() });
+        }
+        const hint = errorMessageString(authErr);
+        return res.status(400).json({
+          error: hint || ERROR_MESSAGES?.SERVER?.REGISTRATION || 'שגיאת שרת בהרשמה',
+        });
+      }
+      try {
+        await createUser({
+          id: authUser.id,
+          name,
+          email: (email + '').trim().toLowerCase(),
+          phone,
+          role: ROLES.USER,
+          emailVerified: true,
+          authProvider: 'supabase',
+          createdAt: new Date().toISOString(),
+        });
+      } catch (dbErr) {
+        try {
+          await deleteAuthUser(authUser.id);
+        } catch (_) {}
+        const msg = errorMessageString(dbErr);
+        const isDuplicate = msg.includes('duplicate key') || dbErr?.code === '23505';
+        logAuthError('Registration createUser (Supabase)', dbErr, {
+          status: isDuplicate ? 400 : 503,
+        });
+        if (isDuplicate) {
+          return res.status(400).json({ error: ERROR_MESSAGES.AUTH.USER_EXISTS });
+        }
+        return res.status(503).json({ error: getDbUnavailableMessage() });
+      }
+      const row = await findUserById(authUser.id);
+      let userSafe = null;
+      try {
+        userSafe = row ? sanitizeUser(row) : null;
+      } catch (sanitizeErr) {
+        console.error('[Backend] Registration sanitizeUser:', sanitizeErr?.message || sanitizeErr);
+        userSafe = row
+          ? { id: row.id, name: row.name, email: row.email, role: row.role }
+          : null;
+      }
+      return res.status(201).json({
+        message: 'ההרשמה בוצעה בהצלחה. ניתן להתחבר עם האימייל והסיסמה.',
+        emailSent: false,
+        user: userSafe,
+      });
     }
 
     const passwordStr = typeof password === 'string' ? password : String(password || '');
@@ -251,6 +337,48 @@ export const login = async (req, res) => {
     }
 
     const plainPassword = typeof password === 'string' ? password : String(password ?? '');
+
+    if (user.authProvider === 'supabase') {
+      if (!canSignInWithSupabasePassword()) {
+        return res.status(503).json({
+          error:
+            'השרת לא מוגדר להתחברות Supabase. הוסף SUPABASE_ANON_KEY (או NEXT_PUBLIC_SUPABASE_ANON_KEY) ל-server/.env.',
+        });
+      }
+      try {
+        const session = await signInWithPassword({ email: rawEmail, password: plainPassword });
+        const u = await findUserById(session.user.id);
+        if (!u) {
+          return res.status(401).json({
+            error: ERROR_MESSAGES?.AUTH?.INVALID_CREDENTIALS || 'פרטי התחברות לא תקינים',
+          });
+        }
+        const confirmed = !!session.user?.email_confirmed_at;
+        if (!confirmed && u.emailVerified === false) {
+          return res.status(403).json({
+            error:
+              ERROR_MESSAGES?.AUTH?.EMAIL_NOT_VERIFIED ||
+              'נא לאמת את כתובת האימייל לפני ההתחברות.',
+            code: 'EMAIL_NOT_VERIFIED',
+          });
+        }
+        const userOut = serializeUserForClient(u);
+        if (!userOut) {
+          return res.status(500).json({ error: ERROR_MESSAGES?.SERVER?.LOGIN || 'שגיאת שרת בהתחברות' });
+        }
+        userOut.isPrimaryAdmin = u.role === ROLES.ADMIN && isSuperAdminEmail(u.email);
+        return res.json({
+          message: (SUCCESS_MESSAGES?.AUTH?.LOGIN) || 'ההתחברות בוצעה בהצלחה',
+          token: session.access_token,
+          user: userOut,
+        });
+      } catch {
+        return res.status(401).json({
+          error: ERROR_MESSAGES?.AUTH?.INVALID_CREDENTIALS || 'פרטי התחברות לא תקינים',
+        });
+      }
+    }
+
     const storedHash = user.password;
     const hasValidHash = storedHash && typeof storedHash === 'string' && storedHash.startsWith('$2');
 
@@ -606,12 +734,31 @@ export const resetPassword = async (req, res) => {
       return res.status(400).json({ error: ERROR_MESSAGES.AUTH.PASSWORD_RESET_CODE_INVALID });
     }
 
-    const hashedPassword = await bcrypt.hash(String(newPassword), 10);
-    await updateUserById(user.id, {
-      password: hashedPassword,
-      passwordResetCode: null,
-      passwordResetCodeExpires: null,
-    });
+    if (user.authProvider === 'supabase') {
+      if (!canSignInWithSupabasePassword()) {
+        return res.status(503).json({
+          error:
+            'השרת לא מוגדר לעדכון סיסמת Supabase. הוסף SUPABASE_ANON_KEY ו-SUPABASE_SERVICE_ROLE_KEY.',
+        });
+      }
+      try {
+        await updateAuthUserPassword(user.id, String(newPassword));
+      } catch (e) {
+        logAuthError('Reset password Supabase updateUserById', e, { status: 500 });
+        return res.status(500).json({ error: ERROR_MESSAGES?.SERVER?.LOGIN || 'שגיאת שרת' });
+      }
+      await updateUserById(user.id, {
+        passwordResetCode: null,
+        passwordResetCodeExpires: null,
+      });
+    } else {
+      const hashedPassword = await bcrypt.hash(String(newPassword), 10);
+      await updateUserById(user.id, {
+        password: hashedPassword,
+        passwordResetCode: null,
+        passwordResetCodeExpires: null,
+      });
+    }
 
     const message = SUCCESS_MESSAGES.AUTH.PASSWORD_RESET_SUCCESS || 'הסיסמה עודכנה בהצלחה. התחבר עם הסיסמה החדשה.';
     return res.json({ message });

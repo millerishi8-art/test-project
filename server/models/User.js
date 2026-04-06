@@ -1,234 +1,240 @@
-import { getDb } from '../db/mongodb.js';
+import { getSupabaseAdmin } from '../db/supabaseClient.js';
 
-const COLLECTION_NAME = 'users';
-function getCollection() {
-  return getDb().collection(COLLECTION_NAME);
+const TABLE = 'app_users';
+
+function rowToUser(row) {
+  if (!row || row.data == null) return null;
+  const d = typeof row.data === 'object' && !Array.isArray(row.data) ? row.data : {};
+  return { ...d, id: row.id };
+}
+
+function normalizeUserPayload(userData) {
+  const copy = { ...userData };
+  if (copy.email != null) copy.email = String(copy.email).trim().toLowerCase();
+  return copy;
 }
 
 /**
- * מבנה משתמש (User)
- * @typedef {Object} User
- * @property {string} id
- * @property {string} name
- * @property {string} email
- * @property {string} phone
- * @property {string} password - מוצפן (hash)
- * @property {'user'|'admin'} role
- * @property {string} createdAt - ISO date
- * @property {boolean} [emailVerified]
- * @property {string} [emailVerificationCode] - קוד 6 ספרות לאימות אימייל
- * @property {string} [emailVerificationCodeExpires] - ISO date
- * @property {string} [phoneVerificationCode] - קוד 6 ספרות
- * @property {string} [phoneVerificationCodeExpires] - ISO date
- * @property {string} [passwordResetCode] - קוד 6 ספרות לאיפוס סיסמה
- * @property {string} [passwordResetCodeExpires] - ISO date
- */
-
-/**
- * מחזיר את כל המשתמשים (MongoDB)
+ * מבנה משתמש – זהה לשהיה ב-MongoDB (אובייקט שטוח בתוך data JSONB)
  */
 export async function readUsers() {
   try {
-    const collection = getCollection();
-    const users = await collection.find({}).toArray();
-    return users;
+    const sb = getSupabaseAdmin();
+    const { data, error } = await sb.from(TABLE).select('id, data').order('id');
+    if (error) throw error;
+    return (data || []).map(rowToUser);
   } catch (error) {
     console.error('User readUsers error:', error);
     return [];
   }
 }
 
-/**
- * מחזיר משתמש לפי id
- */
 export async function findUserById(id) {
   try {
-    const collection = getCollection();
-    return await collection.findOne({ id });
+    const sb = getSupabaseAdmin();
+    const { data, error } = await sb.from(TABLE).select('id, data').eq('id', id).maybeSingle();
+    if (error) throw error;
+    return rowToUser(data);
   } catch (error) {
     console.error('User findUserById error:', error);
     return null;
   }
 }
 
-/** חיפוש אימייל לא רגיש לאותיות גדולות/קטנות */
 function emailRegex(email) {
   const e = (email || '').trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   return e ? new RegExp(`^${e}$`, 'i') : null;
 }
 
-/**
- * מחזיר משתמש לפי אימייל (חיפוש לא רגיש לאותיות גדולות/קטנות)
- */
 export async function findUserByEmail(email) {
+  const normalized = (email || '').trim().toLowerCase();
+  if (!normalized) return null;
+  const sb = getSupabaseAdmin();
   try {
-    const collection = getCollection();
+    const { data, error } = await sb.rpc('find_app_users_by_email_normalized', { e: normalized });
+    if (!error) {
+      const rows = Array.isArray(data) ? data : [];
+      if (rows.length === 0) return null;
+      const re = emailRegex(email);
+      const match = rows.find((r) => re && re.test(String((r.data && r.data.email) || '').trim()));
+      return rowToUser(match || rows[0]);
+    }
+  } catch (_) {
+    /* RPC חסר – נופל לסריקה */
+  }
+  try {
+    const { data: all, error } = await sb.from(TABLE).select('id, data');
+    if (error) throw error;
     const re = emailRegex(email);
-    if (!re) return null;
-    return await collection.findOne({ email: re });
-  } catch (error) {
-    console.error('User findUserByEmail error:', error);
-    throw error;
+    const u = (all || []).map(rowToUser).find((x) => x && re && re.test(String(x.email || '').trim()));
+    return u || null;
+  } catch (err) {
+    console.error('User findUserByEmail error:', err);
+    throw err;
   }
 }
 
-/**
- * יוצר משתמש חדש ב-MongoDB
- */
 export async function createUser(userData) {
-  try {
-    const collection = getCollection();
-    await collection.insertOne(userData);
-    return userData;
-  } catch (error) {
+  const sb = getSupabaseAdmin();
+  const normalized = normalizeUserPayload(userData);
+  const id = String(normalized.id || '');
+  const data = { ...normalized, id };
+  if (data.authProvider === 'supabase') {
+    delete data.password;
+  }
+  const { error } = await sb.from(TABLE).insert({ id, data });
+  if (error) {
     console.error('User createUser error:', error?.message || error);
     throw error;
   }
+  return normalized;
 }
 
-/**
- * מעדכן משתמש לפי id (למשל הורדת מנהל ל-user)
- */
 export async function updateUserById(id, updateFields) {
   try {
-    const collection = getCollection();
+    const sb = getSupabaseAdmin();
+    const current = await findUserById(id);
+    if (!current) return null;
     const { id: _id, ...allowed } = updateFields;
-    const set = {};
-    if (allowed.role !== undefined) set.role = allowed.role;
-    if (allowed.password !== undefined) set.password = allowed.password;
-    if (allowed.name !== undefined) set.name = allowed.name;
-    if (allowed.phone !== undefined) set.phone = allowed.phone;
-    if (allowed.email !== undefined) set.email = (allowed.email + '').trim().toLowerCase();
-    if (allowed.emailVerified !== undefined) set.emailVerified = !!allowed.emailVerified;
-    if (allowed.emailVerificationCode !== undefined) set.emailVerificationCode = allowed.emailVerificationCode;
-    if (allowed.emailVerificationCodeExpires !== undefined) set.emailVerificationCodeExpires = allowed.emailVerificationCodeExpires;
-    if (allowed.phoneVerificationCode !== undefined) set.phoneVerificationCode = allowed.phoneVerificationCode;
-    if (allowed.phoneVerificationCodeExpires !== undefined) set.phoneVerificationCodeExpires = allowed.phoneVerificationCodeExpires;
-    if (allowed.passwordResetCode !== undefined) set.passwordResetCode = allowed.passwordResetCode;
-    if (allowed.passwordResetCodeExpires !== undefined) set.passwordResetCodeExpires = allowed.passwordResetCodeExpires;
-    if (allowed.deferredPaymentRequestPending !== undefined)
-      set.deferredPaymentRequestPending = !!allowed.deferredPaymentRequestPending;
-    if (allowed.deferredPaymentRequestedAt !== undefined) set.deferredPaymentRequestedAt = allowed.deferredPaymentRequestedAt;
-    if (allowed.deferredPaymentApproved !== undefined) set.deferredPaymentApproved = !!allowed.deferredPaymentApproved;
-    if (allowed.deferredPaymentApprovedAt !== undefined) set.deferredPaymentApprovedAt = allowed.deferredPaymentApprovedAt;
-    if (allowed.deferredPaymentDeadline !== undefined) set.deferredPaymentDeadline = allowed.deferredPaymentDeadline;
-    if (allowed.deferredPaymentAwaitingClientDate !== undefined)
-      set.deferredPaymentAwaitingClientDate = !!allowed.deferredPaymentAwaitingClientDate;
-    if (allowed.deferredPaymentRequestApprovedAt !== undefined)
-      set.deferredPaymentRequestApprovedAt = allowed.deferredPaymentRequestApprovedAt;
-    if (allowed.deferredPaymentProposedDeadline !== undefined)
-      set.deferredPaymentProposedDeadline = allowed.deferredPaymentProposedDeadline;
-    if (allowed.deferredPaymentProposalPending !== undefined)
-      set.deferredPaymentProposalPending = !!allowed.deferredPaymentProposalPending;
-    if (allowed.deferredPaymentProposalSubmittedAt !== undefined)
-      set.deferredPaymentProposalSubmittedAt = allowed.deferredPaymentProposalSubmittedAt;
-    if (allowed.deferredPaymentWeeklyReminderLastAt !== undefined)
-      set.deferredPaymentWeeklyReminderLastAt = allowed.deferredPaymentWeeklyReminderLastAt;
-    if (allowed.deferredPaymentDueDateWarningSentAt !== undefined)
-      set.deferredPaymentDueDateWarningSentAt = allowed.deferredPaymentDueDateWarningSentAt;
-    if (allowed.deferredPaymentDeadlineMustBeBeforeYmd !== undefined)
-      set.deferredPaymentDeadlineMustBeBeforeYmd = allowed.deferredPaymentDeadlineMustBeBeforeYmd;
-    if (Object.keys(set).length === 0) return await findUserById(id);
-    const result = await collection.findOneAndUpdate(
-      { id },
-      { $set: set },
-      { returnDocument: 'after' }
-    );
-    return result || null;
+    const next = { ...current };
+    const apply = (key, val) => {
+      if (val !== undefined) next[key] = val;
+    };
+    apply('role', allowed.role);
+    apply('password', allowed.password);
+    apply('authProvider', allowed.authProvider);
+    apply('name', allowed.name);
+    apply('phone', allowed.phone);
+    if (allowed.email !== undefined) next.email = String(allowed.email).trim().toLowerCase();
+    apply('emailVerified', allowed.emailVerified);
+    apply('emailVerificationCode', allowed.emailVerificationCode);
+    apply('emailVerificationCodeExpires', allowed.emailVerificationCodeExpires);
+    apply('phoneVerificationCode', allowed.phoneVerificationCode);
+    apply('phoneVerificationCodeExpires', allowed.phoneVerificationCodeExpires);
+    apply('passwordResetCode', allowed.passwordResetCode);
+    apply('passwordResetCodeExpires', allowed.passwordResetCodeExpires);
+    apply('deferredPaymentRequestPending', allowed.deferredPaymentRequestPending);
+    apply('deferredPaymentRequestedAt', allowed.deferredPaymentRequestedAt);
+    apply('deferredPaymentApproved', allowed.deferredPaymentApproved);
+    apply('deferredPaymentApprovedAt', allowed.deferredPaymentApprovedAt);
+    apply('deferredPaymentDeadline', allowed.deferredPaymentDeadline);
+    apply('deferredPaymentAwaitingClientDate', allowed.deferredPaymentAwaitingClientDate);
+    apply('deferredPaymentRequestApprovedAt', allowed.deferredPaymentRequestApprovedAt);
+    apply('deferredPaymentProposedDeadline', allowed.deferredPaymentProposedDeadline);
+    apply('deferredPaymentProposalPending', allowed.deferredPaymentProposalPending);
+    apply('deferredPaymentProposalSubmittedAt', allowed.deferredPaymentProposalSubmittedAt);
+    apply('deferredPaymentWeeklyReminderLastAt', allowed.deferredPaymentWeeklyReminderLastAt);
+    apply('deferredPaymentDueDateWarningSentAt', allowed.deferredPaymentDueDateWarningSentAt);
+    apply('deferredPaymentDeadlineMustBeBeforeYmd', allowed.deferredPaymentDeadlineMustBeBeforeYmd);
+
+    const data = normalizeUserPayload(next);
+    if (Object.keys(allowed).length === 0) return current;
+    const { data: out, error } = await sb
+      .from(TABLE)
+      .update({ data })
+      .eq('id', id)
+      .select('id, data')
+      .single();
+    if (error) throw error;
+    return rowToUser(out);
   } catch (error) {
     console.error('User updateUserById error:', error);
     return null;
   }
 }
 
-/**
- * מעדכן כל המשתמשים עם אימייל תואם (לא רגיש לאותיות) – role, password, email
- * חשוב: מעדכן את כל הרשומות עם אותו אימייל כדי שההתחברות תעבוד תמיד
- */
 export async function updateUserByEmail(email, updateFields) {
   try {
-    const collection = getCollection();
-    const re = emailRegex(email);
-    if (!re) return null;
-    const users = await collection.find({ email: re }).toArray();
-    if (users.length === 0) return null;
+    const sb = getSupabaseAdmin();
+    const normalized = (email || '').trim().toLowerCase();
+    if (!normalized) return null;
+    let rows;
+    const { data, error } = await sb.rpc('find_app_users_by_email_normalized', { e: normalized });
+    if (error) throw error;
+    rows = Array.isArray(data) ? data : [];
+    if (rows.length === 0) {
+      const re = emailRegex(email);
+      const { data: all, error: e2 } = await sb.from(TABLE).select('id, data');
+      if (e2) throw e2;
+      rows = (all || []).filter((r) => re && re.test((r.data?.email || '').trim()));
+    }
+    if (rows.length === 0) return null;
     const { id, ...allowed } = updateFields;
-    const set = {};
-    if (allowed.role !== undefined) set.role = allowed.role;
-    if (allowed.password !== undefined) set.password = allowed.password;
-    if (allowed.name !== undefined) set.name = allowed.name;
-    if (allowed.phone !== undefined) set.phone = allowed.phone;
-    if (allowed.email !== undefined) set.email = (allowed.email + '').trim().toLowerCase();
-    if (allowed.emailVerified !== undefined) set.emailVerified = !!allowed.emailVerified;
-    if (allowed.emailVerificationCode !== undefined) set.emailVerificationCode = allowed.emailVerificationCode;
-    if (allowed.emailVerificationCodeExpires !== undefined) set.emailVerificationCodeExpires = allowed.emailVerificationCodeExpires;
-    if (allowed.phoneVerificationCode !== undefined) set.phoneVerificationCode = allowed.phoneVerificationCode;
-    if (allowed.phoneVerificationCodeExpires !== undefined) set.phoneVerificationCodeExpires = allowed.phoneVerificationCodeExpires;
-    if (Object.keys(set).length === 0) return users[0];
-    const ids = users.map((u) => u.id);
-    await collection.updateMany({ id: { $in: ids } }, { $set: set });
-    return await findUserById(users[0].id);
+    if (Object.keys(allowed).length === 0) return rowToUser(rows[0]);
+    for (const row of rows) {
+      await updateUserById(row.id, allowed);
+    }
+    return findUserById(rows[0].id);
   } catch (error) {
     console.error('User updateUserByEmail error:', error);
     return null;
   }
 }
 
-/**
- * מחזיר משתמש לפי טוקן אימות אימייל (ותוקף לא פג)
- */
 export async function findUserByVerificationToken(token) {
   if (!token || typeof token !== 'string') return null;
   try {
-    const collection = getCollection();
-    const expires = new Date().toISOString();
-    return await collection.findOne({
-      emailVerificationToken: token,
-      emailVerificationTokenExpires: { $gt: expires },
-    });
+    const sb = getSupabaseAdmin();
+    const now = new Date().toISOString();
+    const { data, error } = await sb
+      .from(TABLE)
+      .select('id, data')
+      .eq('data->>emailVerificationToken', token.trim())
+      .gt('data->>emailVerificationTokenExpires', now)
+      .maybeSingle();
+    if (error) throw error;
+    return rowToUser(data);
   } catch (error) {
     console.error('User findUserByVerificationToken error:', error);
     return null;
   }
 }
 
-/**
- * מוחק משתמש לפי id. מחזיר true אם נמחקה רשומה אחת.
- */
 export async function deleteUserById(id) {
   if (!id || typeof id !== 'string') return false;
   try {
-    const collection = getCollection();
-    const result = await collection.deleteOne({ id });
-    return (result.deletedCount || 0) === 1;
+    const sb = getSupabaseAdmin();
+    const { data: deleted, error } = await sb.from(TABLE).delete().eq('id', id).select('id');
+    if (error) throw error;
+    return Array.isArray(deleted) && deleted.length === 1;
   } catch (error) {
     console.error('User deleteUserById error:', error);
     return false;
   }
 }
 
-/**
- * מוחק משתמש/ים לפי אימייל (לא רגיש לאותיות) – מחזיר מספר רשומות שנמחקו
- */
 export async function deleteUserByEmail(email) {
   try {
-    const collection = getCollection();
-    const re = emailRegex(email);
-    if (!re) return 0;
-    const result = await collection.deleteMany({ email: re });
-    return result.deletedCount || 0;
+    const sb = getSupabaseAdmin();
+    const normalized = (email || '').trim().toLowerCase();
+    if (!normalized) return 0;
+    const { data, error } = await sb.rpc('find_app_users_by_email_normalized', { e: normalized });
+    if (error) throw error;
+    const rows = Array.isArray(data) ? data : [];
+    let n = 0;
+    for (const row of rows) {
+      const ok = await deleteUserById(row.id);
+      if (ok) n += 1;
+    }
+    return n;
   } catch (error) {
     console.error('User deleteUserByEmail error:', error);
     return 0;
   }
 }
 
-/**
- * מסיר שדות רגישים (password, tokens) מהמשתמש
- */
 export function sanitizeUser(user) {
   if (!user) return null;
-  const { password, emailVerificationToken, emailVerificationTokenExpires, emailVerificationCode, emailVerificationCodeExpires, phoneVerificationCode, phoneVerificationCodeExpires, ...rest } = user;
+  const {
+    password,
+    emailVerificationToken,
+    emailVerificationTokenExpires,
+    emailVerificationCode,
+    emailVerificationCodeExpires,
+    phoneVerificationCode,
+    phoneVerificationCodeExpires,
+    ...rest
+  } = user;
   return rest;
 }
 
@@ -244,7 +250,6 @@ function safeCreatedAtIso(user) {
   }
 }
 
-/** אובייקט משתמש בטוח ל-res.json – רק שדות ללקוח, בלי BSON / מבנים לא צפויים */
 export function serializeUserForClient(user) {
   if (!user || typeof user !== 'object') return null;
   const emailRaw = user.email;
@@ -262,7 +267,8 @@ export function serializeUserForClient(user) {
   const createdIso = safeCreatedAtIso(user);
   if (createdIso !== undefined) out.createdAt = createdIso;
   if (user.emailVerified !== undefined) out.emailVerified = !!user.emailVerified;
-  if (user.deferredPaymentRequestPending !== undefined) out.deferredPaymentRequestPending = !!user.deferredPaymentRequestPending;
+  if (user.deferredPaymentRequestPending !== undefined)
+    out.deferredPaymentRequestPending = !!user.deferredPaymentRequestPending;
   if (user.deferredPaymentRequestedAt != null) out.deferredPaymentRequestedAt = String(user.deferredPaymentRequestedAt);
   if (user.deferredPaymentApproved !== undefined) out.deferredPaymentApproved = !!user.deferredPaymentApproved;
   if (user.deferredPaymentApprovedAt != null) out.deferredPaymentApprovedAt = String(user.deferredPaymentApprovedAt);

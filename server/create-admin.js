@@ -4,12 +4,17 @@ import { v4 as uuidv4 } from 'uuid';
 import { connectToMongoDB } from './db/mongodb.js';
 import { createUser, findUserByEmail, updateUserByEmail } from './models/User.js';
 import { ROLES } from './components/constants.js';
+import {
+  isSupabasePasswordAuthEnabled,
+  registerAuthUserWithAdminApi,
+  updateAuthUserPassword,
+} from './services/supabaseAuth.js';
 
 async function run() {
   try {
     await connectToMongoDB();
   } catch (err) {
-    console.error('שגיאה בחיבור ל-MongoDB:', err.message);
+    console.error('שגיאה בחיבור למסד הנתונים:', err.message);
     process.exit(1);
   }
 
@@ -37,7 +42,11 @@ async function run() {
       emailVerified: true,
     };
     if (cliPassword) {
-      updates.password = await bcrypt.hash(cliPassword, 10);
+      if (existingByEmail.authProvider === 'supabase') {
+        await updateAuthUserPassword(existingByEmail.id, cliPassword);
+      } else {
+        updates.password = await bcrypt.hash(cliPassword, 10);
+      }
     }
     await updateUserByEmail(adminEmail, updates);
     console.log('✅ חשבון קיים עודכן למנהל בהצלחה!');
@@ -53,20 +62,38 @@ async function run() {
   }
 
   const adminPassword = cliPassword || process.env.ADMIN_PASSWORD || 'admin123';
-  const hashedPassword = await bcrypt.hash(adminPassword, 10);
 
-  const admin = {
-    id: uuidv4(),
-    name: 'מנהל מערכת',
-    email: adminEmail,
-    phone: '0500000000',
-    password: hashedPassword,
-    role: ROLES.ADMIN,
-    emailVerified: true,
-    createdAt: new Date().toISOString(),
-  };
-
-  await createUser(admin);
+  if (isSupabasePasswordAuthEnabled()) {
+    const authUser = await registerAuthUserWithAdminApi({
+      email: adminEmail,
+      password: adminPassword,
+      name: 'מנהל מערכת',
+      phone: '0500000000',
+    });
+    await createUser({
+      id: authUser.id,
+      name: 'מנהל מערכת',
+      email: adminEmail,
+      phone: '0500000000',
+      role: ROLES.ADMIN,
+      emailVerified: true,
+      authProvider: 'supabase',
+      createdAt: new Date().toISOString(),
+    });
+  } else {
+    const hashedPassword = await bcrypt.hash(adminPassword, 10);
+    const admin = {
+      id: uuidv4(),
+      name: 'מנהל מערכת',
+      email: adminEmail,
+      phone: '0500000000',
+      password: hashedPassword,
+      role: ROLES.ADMIN,
+      emailVerified: true,
+      createdAt: new Date().toISOString(),
+    };
+    await createUser(admin);
+  }
 
   console.log('✅ משתמש מנהל נוצר בהצלחה!');
   console.log('אימייל:', adminEmail);
