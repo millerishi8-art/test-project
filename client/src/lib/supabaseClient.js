@@ -1,7 +1,7 @@
 /**
  * לקוח ציבורי ל-Supabase (אופציונלי).
- * זרמת ברירת המחדל: הרשמה/התחברות דרך ה-API של השרת (/register, /login) — אותו Bearer מתקבל כאן.
- * אם תעבור ל-signIn ישיר מהדפדפן, הגדר VITE_SUPABASE_URL + VITE_SUPABASE_ANON_KEY.
+ * אופציונלי: signIn ישיר מהדפדפן — VITE_SUPABASE_URL + VITE_SUPABASE_ANON_KEY.
+ * השרת משתמש ב-SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY (לא ב-VITE_).
  */
 import { createClient } from '@supabase/supabase-js';
 

@@ -1,18 +1,12 @@
 /**
  * כניסת Serverless ב-Vercel – כל הבקשות ל-/api/* מנותבות לכאן.
- * טוען את אפליקציית Express מהשרת (server/app.js) ומעביר אליה את הבקשה.
- * CORS מטופל בתוך האפליקציה.
  *
- * משתני סביבה חובה ב-Vercel (Settings → Environment Variables) — לסמן Production + Preview:
- * - כתובת פרויקט: SUPABASE_URL / NEXT_PUBLIC_SUPABASE_URL / VITE_SUPABASE_URL (אחד עם אותו ערך)
- * - service_role: SUPABASE_SERVICE_ROLE_KEY / SUPABASE_SECRET_KEY / SERVICE_ROLE_KEY (לא anon)
+ * משתני סביבה לשרת (חובה):
+ * - SUPABASE_URL — https://….supabase.co (בלי סלאש בסוף)
+ * - SUPABASE_SERVICE_ROLE_KEY — service_role מ-Supabase → Settings → API
  * - JWT_SECRET
- * - אם AUTH_PROVIDER=supabase: גם SUPABASE_ANON_KEY (להתחברות signInWithPassword מהשרת).
- * הרץ ב-Supabase SQL Editor את server/db/supabase_schema.sql (app_users, app_cases).
- * - ADMIN_EMAIL (ובהתאם ADMIN_PASSWORD)
- * - EMAIL_USER, EMAIL_PASS (או SMTP/שירות מייל אחר)
- * - CRON_SECRET – מחרוזת אקראית; Vercel Cron שולח Authorization: Bearer <CRON_SECRET> לנתיב
- *   GET /api/cron/deferred-payment-reminders (תזכורות תשלום מאוחר). ללא שרת שרץ 24/7 נדרש Cron ב-Vercel או שירות חיצוני.
+ * אם AUTH_PROVIDER=supabase: גם SUPABASE_ANON_KEY
+ * הרץ server/db/supabase_schema.sql ב-Supabase.
  */
 import app from '../server/app.js';
 

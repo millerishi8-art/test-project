@@ -30,7 +30,11 @@ function logAuthError(location, error, opts = {}) {
   console.error(`[Frontend] ${location}:`, error?.message || String(error));
   if (status != null) console.error(`[Frontend] ${location} HTTP status:`, status);
   if (data && typeof data === 'object') {
-    console.error(`[Frontend] ${location} server payload:`, { error: data.error, code: data.code, message: data.message });
+    try {
+      console.error(`[Frontend] ${location} server JSON:`, JSON.stringify(data));
+    } catch (_) {
+      console.error(`[Frontend] ${location} server payload:`, data);
+    }
   }
   if (isDev && error?.stack) console.error(`[Frontend] ${location} stack:`, error.stack);
 }

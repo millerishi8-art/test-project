@@ -341,8 +341,7 @@ export const login = async (req, res) => {
     if (user.authProvider === 'supabase') {
       if (!canSignInWithSupabasePassword()) {
         return res.status(503).json({
-          error:
-            'השרת לא מוגדר להתחברות Supabase. הוסף SUPABASE_ANON_KEY (או NEXT_PUBLIC_SUPABASE_ANON_KEY) ל-server/.env.',
+          error: 'השרת לא מוגדר להתחברות Supabase Auth. הוסף SUPABASE_ANON_KEY ל-server/.env (ו-AUTH_PROVIDER=supabase).',
         });
       }
       try {
@@ -743,7 +742,7 @@ export const resetPassword = async (req, res) => {
       if (!canSignInWithSupabasePassword()) {
         return res.status(503).json({
           error:
-            'השרת לא מוגדר לעדכון סיסמת Supabase. הוסף SUPABASE_ANON_KEY ו-SUPABASE_SERVICE_ROLE_KEY.',
+            'השרת לא מוגדר לעדכון סיסמת Supabase. וודא SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY ו-SUPABASE_ANON_KEY.',
         });
       }
       try {

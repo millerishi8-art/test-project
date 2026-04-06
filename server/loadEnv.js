@@ -13,29 +13,13 @@ const result = dotenv.config({ path: envPath });
 const isNonProd = process.env.NODE_ENV !== 'production';
 
 if (isNonProd) {
-  const supabaseUrl = Boolean(
-    (
-      process.env.SUPABASE_URL ||
-      process.env.NEXT_PUBLIC_SUPABASE_URL ||
-      process.env.VITE_SUPABASE_URL ||
-      ''
-    ).trim()
-  );
-  const supabaseService = Boolean(
-    (
-      process.env.SUPABASE_SERVICE_ROLE_KEY ||
-      process.env.SUPABASE_SECRET_KEY ||
-      process.env.SERVICE_ROLE_KEY ||
-      ''
-    ).trim()
-  );
   const summary = {
     envPath,
     dotenvOk: !result.error,
     JWT_SECRET: Boolean(process.env.JWT_SECRET?.trim()),
     ADMIN_EMAIL: Boolean(process.env.ADMIN_EMAIL?.trim()),
-    SUPABASE_URL_SET: supabaseUrl,
-    SUPABASE_SERVICE_ROLE_SET: supabaseService,
+    SUPABASE_URL_SET: Boolean(process.env.SUPABASE_URL?.trim()),
+    SUPABASE_SERVICE_ROLE_SET: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY?.trim()),
     EMAIL_USER: Boolean(process.env.EMAIL_USER?.trim()),
   };
   console.log('[Env] Loaded server environment (secrets not printed):', summary);

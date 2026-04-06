@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS public.app_cases (
 
 CREATE INDEX IF NOT EXISTS app_cases_user_id_idx ON public.app_cases (user_id);
 
--- חיפוש אימייל לא רגיש לאותיות (כמו ב-Mongo)
+-- חיפוש אימייל לא רגיש לאותיות
 CREATE OR REPLACE FUNCTION public.find_app_users_by_email_normalized(e TEXT)
 RETURNS SETOF public.app_users
 LANGUAGE sql
@@ -30,5 +30,5 @@ $$;
 
 GRANT EXECUTE ON FUNCTION public.find_app_users_by_email_normalized(TEXT) TO anon, authenticated, service_role;
 
-COMMENT ON TABLE public.app_users IS 'משתמשי האפליקציה (מבנה JSON כמו ב-Mongo לשם תאימות)';
+COMMENT ON TABLE public.app_users IS 'משתמשי האפליקציה (מסמך JSON בשדה data)';
 COMMENT ON TABLE public.app_cases IS 'תיקים – user_id לשאילתות, data מסמך מלא';

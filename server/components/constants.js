@@ -58,7 +58,7 @@ export const ERROR_MESSAGES = {
     CASE_SUBMIT: 'שגיאת שרת בשליחת תיק',
     CASE_RENEW: 'שגיאת שרת בחידוש תיק',
     DB_UNAVAILABLE:
-      'מסד הנתונים לא זמין. וודא ש-Supabase מוגדר (SUPABASE_URL ו-SUPABASE_SERVICE_ROLE_KEY ב-server/.env) והרצת את server/db/supabase_schema.sql.',
+      'לא ניתן להתחבר ל-Supabase. וודא ש-SUPABASE_URL ו-SUPABASE_SERVICE_ROLE_KEY מוגדרים בשרת ושהרצת את server/db/supabase_schema.sql.',
   },
 };
 
@@ -66,16 +66,15 @@ export const ERROR_MESSAGES = {
 export function getDbUnavailableMessage() {
   if (process.env.VERCEL) {
     return (
-      'מסד הנתונים לא מחובר. ב-Vercel: Project → Settings → Environment Variables — הוסף ' +
-      'SUPABASE_URL (או NEXT_PUBLIC_SUPABASE_URL עם אותו ערך), SUPABASE_SERVICE_ROLE_KEY (מ-Supabase → Project Settings → API → service_role), ' +
-      'ו-JWT_SECRET. אם AUTH_PROVIDER=supabase — הוסף גם SUPABASE_ANON_KEY. ' +
-      'ב-Supabase הרץ את server/db/supabase_schema.sql ב-SQL Editor (טבלאות app_users, app_cases). ' +
-      'סמן את המשתנים ל-Production וגם ל-Preview, שמור, ואז Deployments → Redeploy.'
+      'לא ניתן להשלים את הפעולה מול Supabase. ב-Vercel: Settings → Environment Variables — ' +
+      'SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY (service_role), JWT_SECRET. אם AUTH_PROVIDER=supabase: גם SUPABASE_ANON_KEY. ' +
+      'ב-Supabase SQL Editor הרץ את server/db/supabase_schema.sql (app_users, app_cases). ' +
+      'סמן Production + Preview, שמור, Redeploy.'
     );
   }
   return (
     ERROR_MESSAGES.SERVER.DB_UNAVAILABLE ||
-    'מסד הנתונים לא זמין. הגדר Supabase ב-server/.env והפעל מחדש את השרת (npm run dev).'
+    'לא ניתן להתחבר ל-Supabase. הגדר ב-server/.env: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY — והפעל מחדש (npm run dev).'
   );
 }
 

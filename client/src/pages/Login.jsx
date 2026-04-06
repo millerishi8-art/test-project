@@ -26,6 +26,20 @@ function apiErrorToString(val, fallback = '') {
   }
 }
 
+/** כש-VITE_SUPABASE_URL מוגדר בלקוח — הימנע מהודעת "מסד לא מחובר" המרתיעה אם הבעיה בשרת/Vercel */
+function displayLoginError(errorState) {
+  const t = apiErrorToString(errorState, '');
+  if (!t) return '';
+  const looksSupabaseInfra =
+    /מסד הנתונים לא מחובר|מסד הנתונים לא זמין|לא ניתן להתחבר ל-Supabase|לא ניתן להשלים את הפעולה מול Supabase|חסרים Supabase|חסרים משתני Supabase|\[DB\]|\[Supabase\]/i.test(
+      t
+    );
+  if (looksSupabaseInfra && import.meta.env.VITE_SUPABASE_URL?.trim()) {
+    return 'ההתחברות נכשלה בצד השרת (API). בלקוח כבר יש Supabase — וודא שב-Vercel מוגדרים SUPABASE_URL ו-SUPABASE_SERVICE_ROLE_KEY, שהרצת את supabase_schema.sql, וביצעת Redeploy.';
+  }
+  return t;
+}
+
 const Login = () => {
   const [formData, setFormData] = useState({
     email: '',
@@ -59,6 +73,7 @@ const Login = () => {
   const location = useLocation();
 
   const errorStr = apiErrorToString(error);
+  const errorDisplay = displayLoginError(error);
   const showVerificationOptions =
     requireEmailVerification || errorStr.includes('לאמת') || loginErrorCode === 'EMAIL_NOT_VERIFIED';
   const showEmailVerifyBlock = showVerificationOptions;
@@ -404,9 +419,9 @@ const Login = () => {
           )}
           {phoneMessage && <div className="success-message">{phoneMessage}</div>}
           {emailVerifySuccess && <div className="success-message">{emailVerifySuccess}</div>}
-          {errorStr && (
+          {errorDisplay && (
             <div className={loginErrorCode === 'EMAIL_NOT_VERIFIED' ? 'error-message error-message-verify' : 'error-message'}>
-              {errorStr}
+              {errorDisplay}
               {(errorStr === 'פרטי התחברות לא תקינים' ||
                 errorStr === 'Invalid credentials' ||
                 errorStr.includes('Login failed')) && (

@@ -9,7 +9,7 @@ function stripEnv(val) {
   return String(val).trim().replace(/^['"]|['"]$/g, '');
 }
 
-/** לוג בטוח ל-Vercel: רק 5 תווים ראשונים (לא לחשוף URL/מפתח מלא) */
+/** לוג בטוח ל-Vercel: רק 5 תווים ראשונים */
 function preview5(label, value) {
   const s = value == null ? '' : String(value);
   if (!s) return `${label}: (empty)`;
@@ -17,7 +17,8 @@ function preview5(label, value) {
 }
 
 /**
- * כתובת ה-API של Supabase: חייבת להתחיל ב-https:// וללא סלאש בסוף.
+ * נירמול כתובת Supabase: trim, בלי סלאש בסוף, רק https.
+ * השרת משתמש ב-SUPABASE_URL בלבד (ראה resolveSupabaseUrl).
  */
 export function normalizeSupabaseProjectUrl(raw) {
   let u = stripEnv(raw);
@@ -28,56 +29,42 @@ export function normalizeSupabaseProjectUrl(raw) {
   }
   if (!u.startsWith('https://')) {
     throw new Error(
-      '[Supabase] כתובת הפרויקט חייבת להתחיל ב-https:// (בדוק SUPABASE_URL / NEXT_PUBLIC_SUPABASE_URL).'
+      '[Supabase] SUPABASE_URL חייב להתחיל ב-https:// (לדוגמה https://xxxxx.supabase.co).'
     );
   }
   return u;
 }
 
-/**
- * כתובת פרויקט Supabase — סדר עדיפות כמו ב-Vercel.
- */
+/** כתובת API לשרת — רק משתנה SUPABASE_URL */
 export function resolveSupabaseUrl() {
-  const raw = stripEnv(
-    process.env.SUPABASE_URL ||
-      process.env.NEXT_PUBLIC_SUPABASE_URL ||
-      process.env.VITE_SUPABASE_URL ||
-      ''
-  );
+  const raw = stripEnv(process.env.SUPABASE_URL || '');
   if (!raw) return '';
   return normalizeSupabaseProjectUrl(raw);
 }
 
-/**
- * מפתח service_role בלבד (לא anon/publishable) — PostgREST דורש אותו לשרת.
- */
+/** מפתח service_role לשרת — רק SUPABASE_SERVICE_ROLE_KEY */
 export function resolveSupabaseServiceRoleKey() {
-  return stripEnv(
-    process.env.SUPABASE_SERVICE_ROLE_KEY ||
-      process.env.SUPABASE_SECRET_KEY ||
-      process.env.SERVICE_ROLE_KEY ||
-      ''
-  );
+  return stripEnv(process.env.SUPABASE_SERVICE_ROLE_KEY || '');
 }
 
+/** מפתח anon לשרת (AUTH_PROVIDER=supabase) — SUPABASE_ANON_KEY */
 export function resolveSupabaseAnonKey() {
-  return stripEnv(
-    process.env.SUPABASE_ANON_KEY ||
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-      process.env.VITE_SUPABASE_ANON_KEY ||
-      ''
-  );
+  return stripEnv(process.env.SUPABASE_ANON_KEY || '');
 }
 
 function logSupabaseEnvOnce(url, key) {
   if (supabaseEnvLogged) return;
   supabaseEnvLogged = true;
-  console.log('[Supabase]', preview5('SUPABASE_URL (first 5)', url), '|', preview5('SERVICE_ROLE_KEY (first 5)', key));
+  console.log(
+    '[Supabase]',
+    preview5('SUPABASE_URL', url),
+    '|',
+    preview5('SUPABASE_SERVICE_ROLE_KEY', key)
+  );
 }
 
 /**
- * לקוח Supabase עם הרשאות service_role — לשרת בלבד (עוקף RLS).
- * משתמש רק בערכים מ-resolveSupabaseUrl() ו-resolveSupabaseServiceRoleKey() (כולל נירמול URL).
+ * לקוח Supabase service_role — משתמש ב-SUPABASE_URL וב-SUPABASE_SERVICE_ROLE_KEY בלבד.
  */
 export function getSupabaseAdmin() {
   if (adminClient) return adminClient;
@@ -85,8 +72,7 @@ export function getSupabaseAdmin() {
   const key = resolveSupabaseServiceRoleKey();
   if (!url || !key) {
     throw new Error(
-      'חסרים משתני Supabase לשרת: הגדר SUPABASE_URL (או NEXT_PUBLIC_SUPABASE_URL / VITE_SUPABASE_URL) ' +
-        'ו-SUPABASE_SERVICE_ROLE_KEY (או SUPABASE_SECRET_KEY / SERVICE_ROLE_KEY) — ערך service_role מ-Supabase → Project Settings → API.'
+      'חסרים Supabase לשרת: הגדר SUPABASE_URL ו-SUPABASE_SERVICE_ROLE_KEY (מ-Supabase → Project Settings → API → service_role).'
     );
   }
   logSupabaseEnvOnce(url, key);
@@ -101,7 +87,6 @@ export function resetSupabaseAdminForTests() {
   supabaseEnvLogged = false;
 }
 
-/** הודעה ידידותית כש-PostgREST מחזיר מפתח שגוי */
 export function isSupabaseInvalidApiKeyError(error) {
   const msg = String(error?.message || error || '').toLowerCase();
   const code = error?.code;

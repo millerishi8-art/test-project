@@ -25,7 +25,7 @@ async function start() {
     }
   } else {
     console.log(
-      'Database: חסרים משתני Supabase (URL + service role). ראה SUPABASE_URL / NEXT_PUBLIC_SUPABASE_URL / VITE_SUPABASE_URL ו-SUPABASE_SERVICE_ROLE_KEY ב-server/.env או ב-Vercel.'
+      'Database: חסרים SUPABASE_URL או SUPABASE_SERVICE_ROLE_KEY — הגדר ב-server/.env או ב-Vercel (Settings → Environment Variables).'
     );
   }
 

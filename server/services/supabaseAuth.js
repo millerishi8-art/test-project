@@ -28,9 +28,7 @@ export function getSupabaseAnon() {
   const url = resolveSupabaseUrl();
   const anon = resolveSupabaseAnonKey();
   if (!url || !anon) {
-    throw new Error(
-      'חסרים כתובת פרויקט Supabase ו-SUPABASE_ANON_KEY (או NEXT_PUBLIC_SUPABASE_ANON_KEY / VITE_SUPABASE_ANON_KEY) כש-AUTH_PROVIDER=supabase'
-    );
+    throw new Error('חסרים SUPABASE_URL ו-SUPABASE_ANON_KEY בשרת כש-AUTH_PROVIDER=supabase');
   }
   anonClient = createClient(url, anon, {
     auth: { persistSession: false, autoRefreshToken: false },
