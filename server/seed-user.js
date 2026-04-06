@@ -1,8 +1,7 @@
 /**
- * Seed (or fix) test user: millerbitoach@gmail.com / Noam5770
- * Run from project root: node server/seed-user.js
- * Creates the user with a correctly bcrypt-hashed password if missing,
- * or updates password and emailVerified if the user already exists.
+ * משתמש מנהל ראשי: ברירת מחדל millerbitoach@gmail.com + סיסמה מ-ADMIN_PASSWORD (או admin123).
+ * הרצה מתוך server: node seed-user.js
+ * - מעדכן role=admin, emailVerified, וסיסמה (ב-app_users וב-Supabase Auth כש-relevant).
  */
 import bcrypt from 'bcryptjs';
 import dotenv from 'dotenv';
@@ -13,12 +12,17 @@ import { connectToDatabase } from './db/database.js';
 import { createUser, findUserByEmail, updateUserById } from './models/User.js';
 import { ROLES } from './components/constants.js';
 import { DEFAULT_PRIMARY_ADMIN_EMAIL } from './utils/adminEmails.js';
+import {
+  isSupabasePasswordAuthEnabled,
+  registerAuthUserWithAdminApi,
+  updateAuthUserPassword,
+} from './services/supabaseAuth.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.join(__dirname, '.env') });
 
 const SEED_EMAIL = DEFAULT_PRIMARY_ADMIN_EMAIL;
-const SEED_PASSWORD = 'Noam5770';
+const SEED_PASSWORD = String(process.env.ADMIN_PASSWORD || 'admin123').trim() || 'admin123';
 
 async function run() {
   try {
@@ -28,7 +32,6 @@ async function run() {
     process.exit(1);
   }
 
-  const hashedPassword = await bcrypt.hash(SEED_PASSWORD, 10);
   let existing;
   try {
     existing = await findUserByEmail(SEED_EMAIL);
@@ -38,36 +41,73 @@ async function run() {
   }
 
   if (existing) {
-    const updated = await updateUserById(existing.id, {
-      password: hashedPassword,
-      emailVerified: true,
-      role: ROLES.ADMIN,
-    });
-    if (updated) {
-      console.log('✅ Seed user updated successfully.');
-      console.log('   Email:', SEED_EMAIL);
-      console.log('   Password:', SEED_PASSWORD);
-      console.log('   role: admin (מנהל ראשי + פאנל ניהול). emailVerified: true. You can log in now.');
-    } else {
-      console.error('❌ Failed to update user (updateUserById returned null).');
+    try {
+      if (existing.authProvider === 'supabase' && isSupabasePasswordAuthEnabled()) {
+        await updateAuthUserPassword(existing.id, SEED_PASSWORD);
+        const updated = await updateUserById(existing.id, {
+          emailVerified: true,
+          role: ROLES.ADMIN,
+        });
+        if (!updated) throw new Error('updateUserById returned null');
+      } else {
+        const hashedPassword = await bcrypt.hash(SEED_PASSWORD, 10);
+        const updated = await updateUserById(existing.id, {
+          password: hashedPassword,
+          emailVerified: true,
+          role: ROLES.ADMIN,
+        });
+        if (!updated) throw new Error('updateUserById returned null');
+      }
+      console.log('✅ משתמש מנהל עודכן.');
+      console.log('   אימייל:', SEED_EMAIL);
+      console.log('   סיסמה:', SEED_PASSWORD);
+      console.log('   role: admin — גישה לפאנל הניהולי ולפעולות מנהל באתר.');
+    } catch (e) {
+      console.error('❌ עדכון נכשל:', e?.message || e);
       process.exit(1);
     }
-  } else {
-    const newUser = {
-      id: uuidv4(),
-      name: 'מנהל מערכת',
-      email: SEED_EMAIL.toLowerCase(),
-      phone: '0500000000',
-      password: hashedPassword,
-      role: ROLES.ADMIN,
-      emailVerified: true,
-      createdAt: new Date().toISOString(),
-    };
-    await createUser(newUser);
-    console.log('✅ Seed user created successfully.');
-    console.log('   Email:', SEED_EMAIL);
-    console.log('   Password:', SEED_PASSWORD);
-    console.log('   You can log in now.');
+    process.exit(0);
+    return;
+  }
+
+  try {
+    if (isSupabasePasswordAuthEnabled()) {
+      const authUser = await registerAuthUserWithAdminApi({
+        email: SEED_EMAIL.toLowerCase(),
+        password: SEED_PASSWORD,
+        name: 'מנהל מערכת',
+        phone: '0500000000',
+      });
+      await createUser({
+        id: authUser.id,
+        name: 'מנהל מערכת',
+        email: SEED_EMAIL.toLowerCase(),
+        phone: '0500000000',
+        role: ROLES.ADMIN,
+        emailVerified: true,
+        authProvider: 'supabase',
+        createdAt: new Date().toISOString(),
+      });
+    } else {
+      const hashedPassword = await bcrypt.hash(SEED_PASSWORD, 10);
+      await createUser({
+        id: uuidv4(),
+        name: 'מנהל מערכת',
+        email: SEED_EMAIL.toLowerCase(),
+        phone: '0500000000',
+        password: hashedPassword,
+        role: ROLES.ADMIN,
+        emailVerified: true,
+        createdAt: new Date().toISOString(),
+      });
+    }
+    console.log('✅ משתמש מנהל נוצר.');
+    console.log('   אימייל:', SEED_EMAIL);
+    console.log('   סיסמה:', SEED_PASSWORD);
+    console.log('   role: admin — גישה לפאנל הניהולי ולפעולות מנהל באתר.');
+  } catch (err) {
+    console.error('❌ יצירת משתמש נכשלה:', err?.message || err);
+    process.exit(1);
   }
 
   process.exit(0);
