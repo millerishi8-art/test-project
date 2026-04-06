@@ -3,13 +3,12 @@
  * טוען את אפליקציית Express מהשרת (server/app.js) ומעביר אליה את הבקשה.
  * CORS מטופל בתוך האפליקציה.
  *
- * משתני סביבה חובה ב-Vercel Dashboard (Settings → Environment Variables):
+ * משתני סביבה חובה ב-Vercel (Settings → Environment Variables) — לסמן Production + Preview:
  * - SUPABASE_URL (או NEXT_PUBLIC_SUPABASE_URL לאותו ערך)
- * - SUPABASE_SERVICE_ROLE_KEY — מפתח service_role מ-Supabase → Settings → API (JWT/secret).
- *   לא להשתמש ב-publishable / sb_publishable_* לשרת — אלה לא יעבדו להעלאה וחתימת private-cases.
- * - MONGODB_URI (מחרוזת מלאה; או DATABASE_URL / MONGO_URI – אותו ערך)
- * - MONGODB_DB_NAME (אופציונלי; ברירת מחדל insurance-agent — חייב להתאים למסד שבו נמצאת collection users)
+ * - SUPABASE_SERVICE_ROLE_KEY — service_role מ-Supabase → Settings → API (לא anon/publishable).
  * - JWT_SECRET
+ * - אם AUTH_PROVIDER=supabase: גם SUPABASE_ANON_KEY (להתחברות signInWithPassword מהשרת).
+ * הרץ ב-Supabase SQL Editor את server/db/supabase_schema.sql (app_users, app_cases).
  * - ADMIN_EMAIL (ובהתאם ADMIN_PASSWORD)
  * - EMAIL_USER, EMAIL_PASS (או SMTP/שירות מייל אחר)
  * - CRON_SECRET – מחרוזת אקראית; Vercel Cron שולח Authorization: Bearer <CRON_SECRET> לנתיב

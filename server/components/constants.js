@@ -66,10 +66,11 @@ export const ERROR_MESSAGES = {
 export function getDbUnavailableMessage() {
   if (process.env.VERCEL) {
     return (
-      'מסד הנתונים לא מחובר. ב-Vercel: Project → Settings → Environment Variables — הוסף SUPABASE_URL, ' +
-      'SUPABASE_SERVICE_ROLE_KEY (מ-Supabase → Project Settings → API), וגם JWT_SECRET. ' +
-      'ב-Supabase הרץ את תוכן הקובץ server/db/supabase_schema.sql ב-SQL Editor. ' +
-      'סמן לכל סביבות (Production/Preview). שמור ובצע Redeploy.'
+      'מסד הנתונים לא מחובר. ב-Vercel: Project → Settings → Environment Variables — הוסף ' +
+      'SUPABASE_URL (או NEXT_PUBLIC_SUPABASE_URL עם אותו ערך), SUPABASE_SERVICE_ROLE_KEY (מ-Supabase → Project Settings → API → service_role), ' +
+      'ו-JWT_SECRET. אם AUTH_PROVIDER=supabase — הוסף גם SUPABASE_ANON_KEY. ' +
+      'ב-Supabase הרץ את server/db/supabase_schema.sql ב-SQL Editor (טבלאות app_users, app_cases). ' +
+      'סמן את המשתנים ל-Production וגם ל-Preview, שמור, ואז Deployments → Redeploy.'
     );
   }
   return (
