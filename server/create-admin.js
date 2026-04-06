@@ -9,7 +9,7 @@ import {
   registerAuthUserWithAdminApi,
   updateAuthUserPassword,
 } from './services/supabaseAuth.js';
-import { DEFAULT_PRIMARY_ADMIN_EMAIL } from './utils/adminEmails.js';
+import { getSuperAdminEmail, DEFAULT_PRIMARY_ADMIN_EMAIL } from './utils/adminEmails.js';
 
 async function run() {
   try {
@@ -21,6 +21,13 @@ async function run() {
 
   const adminEmailRaw = process.argv[2] || process.env.ADMIN_EMAIL || process.env.SUPER_ADMIN_EMAIL;
   const adminEmail = String(adminEmailRaw || DEFAULT_PRIMARY_ADMIN_EMAIL).trim().toLowerCase();
+  const soleAdmin = getSuperAdminEmail();
+  if (adminEmail !== soleAdmin) {
+    console.error(
+      `ניתן לנהל רק את מנהל המערכת היחיד (${soleAdmin}). עדכן SUPER_ADMIN_EMAIL / ADMIN_EMAIL. ניסית: ${adminEmail}`
+    );
+    process.exit(1);
+  }
   const cliPassword = process.argv[3];
 
   let existingByEmail;

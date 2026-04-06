@@ -1,7 +1,6 @@
 import { useState, useEffect, Fragment } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { useAuth } from '../context/AuthContext';
 import './AdminPanel.css';
 
 const RENEWAL_NEEDS_NOW = 'needs_renewal';
@@ -28,24 +27,16 @@ function getRenewalStatus(c) {
 const AdminPanel = () => {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user: currentUser } = useAuth();
-  const canManageAdmins = !!currentUser?.isPrimaryAdmin;
   const stateTab = location.state?.tab;
   const stateFilter = location.state?.filter;
 
   const [users, setUsers] = useState([]);
   const [cases, setCases] = useState([]);
-  const [mainSection, setMainSection] = useState(
-    stateTab === 'admins' || stateTab === 'users' ? 'users' : 'cases'
-  );
-  const [userSubTab, setUserSubTab] = useState(
-    stateTab === 'admins' ? 'admins' : 'clients'
-  );
+  const [mainSection, setMainSection] = useState(stateTab === 'users' ? 'users' : 'cases');
   const [casesFilter, setCasesFilter] = useState(
     (stateFilter === 'needs_renewal' || stateFilter === 'renewal_in_6_months') ? stateFilter : 'all'
   );
   const [loading, setLoading] = useState(true);
-  const [demotingId, setDemotingId] = useState(null);
   const [deferUpdatingId, setDeferUpdatingId] = useState(null);
   const [deletingCaseId, setDeletingCaseId] = useState(null);
   const [statusUpdatingId, setStatusUpdatingId] = useState(null);
@@ -57,23 +48,11 @@ const AdminPanel = () => {
   }, []);
 
   useEffect(() => {
-    setCasesPanelUserId(null);
-  }, [userSubTab]);
-
-  useEffect(() => {
     if (stateTab === 'cases') setMainSection('cases');
-    if (stateTab === 'users') {
-      setMainSection('users');
-      setUserSubTab('clients');
-    }
-    if (stateTab === 'admins') {
-      setMainSection('users');
-      setUserSubTab('admins');
-    }
+    if (stateTab === 'users') setMainSection('users');
     if (stateFilter === 'needs_renewal' || stateFilter === 'renewal_in_6_months') setCasesFilter(stateFilter);
   }, [stateTab, stateFilter]);
 
-  const adminUsers = users.filter((u) => (u.role || '').toLowerCase() === 'admin');
   const clientUsers = users.filter((u) => (u.role || '').toLowerCase() !== 'admin');
   const deferNewRequests = clientUsers.filter((u) => u.deferredPaymentRequestPending);
   const deferAwaitingDateFromClient = clientUsers.filter(
@@ -236,24 +215,6 @@ const AdminPanel = () => {
     }
   };
 
-  const handleDemoteAdmin = async (userId) => {
-    if (!window.confirm('האם להוריד את המשתמש מגישת מנהל?')) return;
-    setDemotingId(userId);
-    setSuccessMessage('');
-    try {
-      await axios.patch(`/admin/users/${userId}/demote`);
-      await fetchData();
-      setSuccessMessage('המשתמש הורד מגישת מנהל בהצלחה.');
-      setTimeout(() => setSuccessMessage(''), 4000);
-    } catch (err) {
-      console.error('Failed to demote admin:', err);
-      const msg = err.response?.data?.error || 'שגיאה בהורדת המנהל';
-      alert(msg);
-    } finally {
-      setDemotingId(null);
-    }
-  };
-
   const handleRemoveCase = async (caseItem) => {
     if (
       !window.confirm(
@@ -355,7 +316,7 @@ const AdminPanel = () => {
           כניסה כמנהל. כאן מופיעים <strong>כל הטפסים שאושרו ונשלחו</strong> וכן
           <strong>טפסים לחידוש עתידי (חצי שנה)</strong> — מסודרים במצב חידוש.
         </p>
-        <p className="admin-sub">משתמשים וקייסים במערכת. גישה רק עם המייל המורשה למנהל.</p>
+        <p className="admin-sub">משתמשים ותיקים במערכת. גישה למנהל המערכת היחיד בלבד.</p>
         <div className="admin-header-actions">
           <button
             type="button"
@@ -368,17 +329,15 @@ const AdminPanel = () => {
       </div>
 
       <div className="admin-tabs">
-        {canManageAdmins && (
-          <div className="admin-tabs-superadmin">
-            <button
-              type="button"
-              className={mainSection === 'superadmin' ? 'active' : ''}
-              onClick={() => setMainSection('superadmin')}
-            >
-              מנהל ראשי — אישורים מיוחדים ({superAdminDeferCount})
-            </button>
-          </div>
-        )}
+        <div className="admin-tabs-superadmin">
+          <button
+            type="button"
+            className={mainSection === 'superadmin' ? 'active' : ''}
+            onClick={() => setMainSection('superadmin')}
+          >
+            אישורים מיוחדים ({superAdminDeferCount})
+          </button>
+        </div>
         <div className="admin-tabs-main">
           <button
             className={mainSection === 'cases' ? 'active' : ''}
@@ -418,27 +377,9 @@ const AdminPanel = () => {
             </button>
           </div>
         )}
-        {mainSection === 'users' && (
-          <div className="admin-users-subtabs">
-            <button
-              type="button"
-              className={userSubTab === 'admins' ? 'active' : ''}
-              onClick={() => setUserSubTab('admins')}
-            >
-              מנהלים ({adminUsers.length})
-            </button>
-            <button
-              type="button"
-              className={userSubTab === 'clients' ? 'active' : ''}
-              onClick={() => setUserSubTab('clients')}
-            >
-              משתמשים רגילים ({clientUsers.length})
-            </button>
-          </div>
-        )}
       </div>
 
-      {mainSection === 'superadmin' && canManageAdmins && (
+      {mainSection === 'superadmin' && (
         <div className="admin-table-container admin-superadmin-section">
           {successMessage && (
             <div className="admin-success-message" role="alert">
@@ -630,16 +571,14 @@ const AdminPanel = () => {
               </tr>
             </thead>
             <tbody>
-              {(userSubTab === 'admins' ? adminUsers : clientUsers).length === 0 ? (
+              {users.length === 0 ? (
                 <tr>
                   <td colSpan="8" className="empty-state">
-                    {userSubTab === 'admins'
-                      ? 'אין מנהלים במערכת.'
-                      : 'אין משתמשים במערכת.'}
+                    אין משתמשים במערכת.
                   </td>
                 </tr>
               ) : (
-                (userSubTab === 'admins' ? adminUsers : clientUsers).map((user) => (
+                users.map((user) => (
                   <Fragment key={user.id}>
                     <tr>
                       <td>{user.name}</td>
@@ -666,25 +605,12 @@ const AdminPanel = () => {
                       </td>
                       <td>
                         <span className={`status-badge ${user.role}`}>
-                          {user.role === 'admin' ? 'מנהל' : 'משתמש'}
+                          {(user.role || '').toLowerCase() === 'admin' ? 'מנהל מערכת' : 'משתמש'}
                         </span>
                       </td>
                       <td>
                         <div className="admin-user-actions-stack">
-                          {(user.role === 'admin' || user.role === 'Admin') &&
-                          user.id !== currentUser?.id &&
-                          canManageAdmins ? (
-                            <button
-                              type="button"
-                              className="admin-demote-btn"
-                              onClick={() => handleDemoteAdmin(user.id)}
-                              disabled={demotingId === user.id}
-                            >
-                              {demotingId === user.id ? 'מוריד...' : 'הורד ממנהל'}
-                            </button>
-                          ) : null}
-                          {canManageAdmins &&
-                          (user.role || '').toLowerCase() !== 'admin' &&
+                          {(user.role || '').toLowerCase() !== 'admin' &&
                           Array.isArray(user.cases) &&
                           user.cases.length > 0 ? (
                             <button
@@ -698,18 +624,9 @@ const AdminPanel = () => {
                                 ? 'סגור תיקים'
                                 : `ניהול תיקים (${user.cases.length})`}
                             </button>
-                          ) : null}
-                          {!(
-                            ((user.role === 'admin' || user.role === 'Admin') &&
-                              user.id !== currentUser?.id &&
-                              canManageAdmins) ||
-                            (canManageAdmins &&
-                              (user.role || '').toLowerCase() !== 'admin' &&
-                              Array.isArray(user.cases) &&
-                              user.cases.length > 0)
-                          ) ? (
+                          ) : (
                             <span className="admin-actions-empty">—</span>
-                          ) : null}
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -831,16 +748,14 @@ const AdminPanel = () => {
                           >
                             צפה בטופס
                           </button>
-                          {canManageAdmins ? (
-                            <button
-                              type="button"
-                              className="admin-remove-btn"
-                              onClick={() => handleRemoveCase(caseItem)}
-                              disabled={deletingCaseId !== null}
-                            >
-                              {deletingCaseId === caseItem.id ? 'מוחק...' : 'הסר'}
-                            </button>
-                          ) : null}
+                          <button
+                            type="button"
+                            className="admin-remove-btn"
+                            onClick={() => handleRemoveCase(caseItem)}
+                            disabled={deletingCaseId !== null}
+                          >
+                            {deletingCaseId === caseItem.id ? 'מוחק...' : 'הסר'}
+                          </button>
                         </div>
                       </td>
                     </tr>

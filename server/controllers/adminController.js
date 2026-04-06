@@ -1,7 +1,7 @@
 import { readUsers, findUserById, updateUserById, deleteUserById } from '../models/User.js';
 import { readCases, findCaseById, findCasesByUserId, updateCase, deleteCase, deleteCasesByIds } from '../models/Case.js';
-import { DEFAULT_UNKNOWN, ROLES, CASE_STATUS, isUserRoleAdmin } from '../components/constants.js';
-import { isSuperAdminEmail, getSuperAdminEmail } from '../utils/adminEmails.js';
+import { DEFAULT_UNKNOWN, CASE_STATUS } from '../components/constants.js';
+import { isSuperAdminEmail } from '../utils/adminEmails.js';
 import {
   sendDeferredPaymentApprovedToClient,
   sendDeferredPaymentRequestApprovedAwaitingDate,
@@ -103,43 +103,6 @@ export const getAllUsers = async (req, res) => {
     res.json(enrichedUsers);
   } catch (error) {
     res.status(500).json({ error: 'שגיאה בשליפת המשתמשים' });
-  }
-};
-
-/**
- * מנהל-על מוריד משתמש אחר מגישת מנהל (משנה role ל-user).
- * רק מייל SUPER_ADMIN_EMAIL / ADMIN_EMAIL (ברירת millerbitoach). אסור להוריד את מנהל-העל לפי מייל.
- */
-export const demoteAdmin = async (req, res) => {
-  try {
-    const { id: targetUserId } = req.params;
-    const currentUserId = req.user?.id;
-    const currentEmail = (req.user?.email || '').trim().toLowerCase();
-    if (!isSuperAdminEmail(currentEmail)) {
-      return res.status(403).json({ error: 'רק מנהל המערכת הראשי יכול להוריד מנהלים אחרים' });
-    }
-    if (currentUserId === targetUserId) {
-      return res.status(400).json({ error: 'לא ניתן להוריד את עצמך מגישת מנהל' });
-    }
-    const user = await findUserById(targetUserId);
-    if (!user) {
-      return res.status(404).json({ error: 'משתמש לא נמצא' });
-    }
-    if (!isUserRoleAdmin(user.role)) {
-      return res.status(400).json({ error: 'למשתמש זה אין גישת מנהל' });
-    }
-    const targetEmail = (user.email || '').trim().toLowerCase();
-    if (targetEmail === getSuperAdminEmail()) {
-      return res.status(403).json({ error: 'לא ניתן להוריד את מנהל המערכת הראשי' });
-    }
-    const updated = await updateUserById(targetUserId, { role: ROLES.USER });
-    if (!updated) {
-      return res.status(500).json({ error: 'שגיאה בעדכון המשתמש' });
-    }
-    return res.json({ message: 'המשתמש הורד מגישת מנהל בהצלחה', user: { id: updated.id, email: updated.email, role: updated.role } });
-  } catch (error) {
-    console.error('demoteAdmin error:', error);
-    return res.status(500).json({ error: 'שגיאה בהורדת המנהל' });
   }
 };
 

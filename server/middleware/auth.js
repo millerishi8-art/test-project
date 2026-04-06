@@ -2,7 +2,7 @@ import jwt from 'jsonwebtoken';
 import { findUserById } from '../models/User.js';
 import { ERROR_MESSAGES, ROLES, isUserRoleAdmin } from '../components/constants.js';
 import { connectToDatabase } from '../db/database.js';
-import { isAllowedAdminEmail } from '../utils/adminEmails.js';
+import { isSuperAdminEmail } from '../utils/adminEmails.js';
 import { getSupabaseAdmin } from '../db/supabaseClient.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this';
@@ -35,7 +35,13 @@ export const authenticateToken = async (req, res, next) => {
           code: 'EMAIL_NOT_VERIFIED',
         });
       }
-      req.user = { id: user.id, email: user.email, role: user.role };
+      const profileEmail = String(user.email || '').trim().toLowerCase();
+      const authEmail = String(authUser.email || '').trim().toLowerCase();
+      req.user = {
+        id: user.id,
+        email: authEmail || profileEmail,
+        role: user.role,
+      };
       return next();
     }
 
@@ -58,15 +64,15 @@ export const authenticateToken = async (req, res, next) => {
 };
 
 /**
- * Middleware - בדיקה שהמשתמש הוא admin והאימייל ברשימת המורשים (ADMIN_ALLOWED_EMAILS / ADMIN_EMAIL)
+ * Middleware — גישה ל־/admin רק למנהל־העל (מייל יחיד מ־SUPER_ADMIN_EMAIL / ADMIN_EMAIL).
  */
 export const isAdmin = (req, res, next) => {
   if (!isUserRoleAdmin(req.user?.role)) {
-    return res.status(403).json({ error: ERROR_MESSAGES?.AUTH?.ADMIN_REQUIRED || 'נדרשת הרשאת מנהל' });
+    return res.status(403).json({ error: ERROR_MESSAGES?.AUTH?.ADMIN_REQUIRED || 'נדרשת הרשאת מנהל מערכת' });
   }
   const userEmail = (req.user?.email || '').trim().toLowerCase();
-  if (!isAllowedAdminEmail(userEmail)) {
-    return res.status(403).json({ error: ERROR_MESSAGES?.AUTH?.ADMIN_REQUIRED || 'נדרשת הרשאת מנהל' });
+  if (!isSuperAdminEmail(userEmail)) {
+    return res.status(403).json({ error: ERROR_MESSAGES?.AUTH?.ADMIN_REQUIRED || 'נדרשת הרשאת מנהל מערכת' });
   }
   next();
 };
