@@ -12,11 +12,12 @@ import { v4 as uuidv4 } from 'uuid';
 import { connectToDatabase } from './db/database.js';
 import { createUser, findUserByEmail, updateUserById } from './models/User.js';
 import { ROLES } from './components/constants.js';
+import { DEFAULT_PRIMARY_ADMIN_EMAIL } from './utils/adminEmails.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.join(__dirname, '.env') });
 
-const SEED_EMAIL = 'millerbitoach@gmail.com';
+const SEED_EMAIL = DEFAULT_PRIMARY_ADMIN_EMAIL;
 const SEED_PASSWORD = 'Noam5770';
 
 async function run() {
@@ -40,12 +41,13 @@ async function run() {
     const updated = await updateUserById(existing.id, {
       password: hashedPassword,
       emailVerified: true,
+      role: ROLES.ADMIN,
     });
     if (updated) {
       console.log('✅ Seed user updated successfully.');
       console.log('   Email:', SEED_EMAIL);
       console.log('   Password:', SEED_PASSWORD);
-      console.log('   emailVerified set to true. You can log in now.');
+      console.log('   role: admin (מנהל ראשי + פאנל ניהול). emailVerified: true. You can log in now.');
     } else {
       console.error('❌ Failed to update user (updateUserById returned null).');
       process.exit(1);

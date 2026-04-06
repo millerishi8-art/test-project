@@ -9,6 +9,7 @@ import {
   registerAuthUserWithAdminApi,
   updateAuthUserPassword,
 } from './services/supabaseAuth.js';
+import { DEFAULT_PRIMARY_ADMIN_EMAIL } from './utils/adminEmails.js';
 
 async function run() {
   try {
@@ -18,8 +19,8 @@ async function run() {
     process.exit(1);
   }
 
-  const adminEmailRaw = process.argv[2] || process.env.ADMIN_EMAIL || 'millerbitoach@gmail.com';
-  const adminEmail = adminEmailRaw.trim().toLowerCase();
+  const adminEmailRaw = process.argv[2] || process.env.ADMIN_EMAIL || process.env.SUPER_ADMIN_EMAIL;
+  const adminEmail = String(adminEmailRaw || DEFAULT_PRIMARY_ADMIN_EMAIL).trim().toLowerCase();
   const cliPassword = process.argv[3];
 
   let existingByEmail;
