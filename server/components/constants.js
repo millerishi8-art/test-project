@@ -8,6 +8,17 @@ export const ROLES = {
   ADMIN: 'admin',
 };
 
+/** נירמול role ללקוח / JWT (רישיות וכו') */
+export function normalizeUserRole(role) {
+  if (role == null || role === '') return ROLES.USER;
+  const s = String(role).trim().toLowerCase();
+  return s === ROLES.ADMIN ? ROLES.ADMIN : s;
+}
+
+export function isUserRoleAdmin(role) {
+  return String(role ?? '').trim().toLowerCase() === ROLES.ADMIN;
+}
+
 /** סטטוסי תיק */
 export const CASE_STATUS = {
   SUBMITTED: 'submitted',

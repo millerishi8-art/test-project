@@ -1,4 +1,5 @@
 import { getSupabaseAdmin } from '../db/supabaseClient.js';
+import { normalizeUserRole } from '../components/constants.js';
 
 const TABLE = 'app_users';
 
@@ -341,7 +342,7 @@ export function serializeUserForClient(user) {
     name: user.name != null ? String(user.name) : '',
     email,
     phone: user.phone != null ? String(user.phone) : '',
-    role: user.role != null ? String(user.role) : 'user',
+    role: normalizeUserRole(user.role),
   };
   const createdIso = safeCreatedAtIso(user);
   if (createdIso !== undefined) out.createdAt = createdIso;

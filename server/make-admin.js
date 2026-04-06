@@ -8,7 +8,7 @@
 import './loadEnv.js';
 import { connectToDatabase } from './db/database.js';
 import { findUserByEmail, updateUserByEmail } from './models/User.js';
-import { ROLES } from './components/constants.js';
+import { ROLES, isUserRoleAdmin } from './components/constants.js';
 
 const EMAIL = (process.argv[2] || 'millerbitoach@gmail.com').trim().toLowerCase();
 
@@ -28,7 +28,7 @@ async function main() {
     }
 
     const updated = await updateUserByEmail(EMAIL, { role: ROLES.ADMIN });
-    if (!updated || updated.role !== ROLES.ADMIN) {
+    if (!updated || !isUserRoleAdmin(updated.role)) {
       console.error('Update failed: could not set role to admin.');
       process.exit(1);
     }

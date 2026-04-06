@@ -195,7 +195,9 @@ export const AuthProvider = ({ children }) => {
     refreshUser,
     applySession,
     isAuthenticated: !!user,
-    isAdmin: user?.role === 'admin',
+    isAdmin: String(user?.role ?? '')
+      .trim()
+      .toLowerCase() === 'admin',
     requireEmailVerification,
   };
 

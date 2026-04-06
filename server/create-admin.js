@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
 import { connectToDatabase } from './db/database.js';
 import { createUser, findUserByEmail, updateUserByEmail } from './models/User.js';
-import { ROLES } from './components/constants.js';
+import { ROLES, isUserRoleAdmin } from './components/constants.js';
 import {
   isSupabasePasswordAuthEnabled,
   registerAuthUserWithAdminApi,
@@ -31,7 +31,7 @@ async function run() {
     process.exit(1);
   }
   if (existingByEmail) {
-    if (existingByEmail.role === ROLES.ADMIN) {
+    if (isUserRoleAdmin(existingByEmail.role)) {
       console.log('משתמש מנהל כבר קיים עם אימייל זה:', existingByEmail.email);
       console.log('אימייל:', adminEmail);
       process.exit(0);

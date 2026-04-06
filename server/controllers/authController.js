@@ -2,7 +2,7 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
 import { findUserByEmail, findUserById, createUser, updateUserById, sanitizeUser, serializeUserForClient } from '../models/User.js';
-import { ROLES, ERROR_MESSAGES, SUCCESS_MESSAGES } from '../components/constants.js';
+import { ROLES, ERROR_MESSAGES, SUCCESS_MESSAGES, isUserRoleAdmin, normalizeUserRole } from '../components/constants.js';
 import { sendVerificationCodeEmail, sendPasswordResetCodeEmail } from '../services/email.js';
 import { sendVerificationSms } from '../services/sms.js';
 import { connectToDatabase, dbErrorMessageForClient } from '../db/database.js';
@@ -20,6 +20,18 @@ import {
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this';
 const isDev = process.env.NODE_ENV !== 'production';
+
+/** מנהל-על לפי env: אם רשום ב-DB כ-user, מקפצים ל-admin אחרי אימות סיסמה (פותר פריסה בלי seed). */
+async function ensurePrimaryAdminRoleInDb(user) {
+  if (!user?.id || !isSuperAdminEmail(user.email)) return user;
+  if (isUserRoleAdmin(user.role)) return user;
+  try {
+    const updated = await updateUserById(user.id, { role: ROLES.ADMIN });
+    return updated || user;
+  } catch {
+    return user;
+  }
+}
 
 /** הודעת שגיאה כמחרוזת – למניעת .includes על ערך לא-מחרוזתי */
 function errorMessageString(err) {
@@ -346,7 +358,7 @@ export const login = async (req, res) => {
       }
       try {
         const session = await signInWithPassword({ email: rawEmail, password: plainPassword });
-        const u = await findUserById(session.user.id);
+        let u = await findUserById(session.user.id);
         if (!u) {
           return res.status(401).json({
             error: ERROR_MESSAGES?.AUTH?.INVALID_CREDENTIALS || 'פרטי התחברות לא תקינים',
@@ -361,11 +373,12 @@ export const login = async (req, res) => {
             code: 'EMAIL_NOT_VERIFIED',
           });
         }
+        u = await ensurePrimaryAdminRoleInDb(u);
         const userOut = serializeUserForClient(u);
         if (!userOut) {
           return res.status(500).json({ error: ERROR_MESSAGES?.SERVER?.LOGIN || 'שגיאת שרת בהתחברות' });
         }
-        userOut.isPrimaryAdmin = u.role === ROLES.ADMIN && isSuperAdminEmail(u.email);
+        userOut.isPrimaryAdmin = isUserRoleAdmin(u.role) && isSuperAdminEmail(u.email);
         return res.json({
           message: (SUCCESS_MESSAGES?.AUTH?.LOGIN) || 'ההתחברות בוצעה בהצלחה',
           token: session.access_token,
@@ -412,6 +425,8 @@ export const login = async (req, res) => {
       });
     }
 
+    user = await ensurePrimaryAdminRoleInDb(user);
+
     console.log('[Backend] Login success for', maskEmail(rawEmail));
     let token;
     let userOut;
@@ -421,7 +436,7 @@ export const login = async (req, res) => {
       token = signToken({
         id: user.id != null ? String(user.id) : '',
         email: emailForJwt,
-        role: user.role != null ? String(user.role) : 'user',
+        role: normalizeUserRole(user.role),
       });
       userOut = serializeUserForClient(user);
     } catch (signErr) {
@@ -431,7 +446,7 @@ export const login = async (req, res) => {
     if (!userOut) {
       return res.status(500).json({ error: ERROR_MESSAGES?.SERVER?.LOGIN || 'שגיאת שרת בהתחברות' });
     }
-    userOut.isPrimaryAdmin = user.role === ROLES.ADMIN && isSuperAdminEmail(user.email);
+    userOut.isPrimaryAdmin = isUserRoleAdmin(user.role) && isSuperAdminEmail(user.email);
     res.json({
       message: (SUCCESS_MESSAGES?.AUTH?.LOGIN) || 'ההתחברות בוצעה בהצלחה',
       token,
@@ -463,15 +478,21 @@ export const getMe = async (req, res) => {
     if (!req.user?.id) {
       return res.status(401).json({ error: ERROR_MESSAGES?.AUTH?.TOKEN_INVALID || 'טוקן לא תקין' });
     }
-    const user = await findUserById(req.user.id);
+    let user = await findUserById(req.user.id);
     if (!user) {
       return res.status(404).json({ error: ERROR_MESSAGES?.AUTH?.USER_NOT_FOUND || 'משתמש לא נמצא' });
     }
+    user = await ensurePrimaryAdminRoleInDb(user);
     let out = serializeUserForClient(user);
     if (!out) {
-      out = { id: String(user.id), name: String(user.name || ''), email: String(user.email || ''), role: String(user.role || 'user') };
+      out = {
+        id: String(user.id),
+        name: String(user.name || ''),
+        email: String(user.email || ''),
+        role: normalizeUserRole(user.role),
+      };
     }
-    out.isPrimaryAdmin = user.role === ROLES.ADMIN && isSuperAdminEmail(user.email);
+    out.isPrimaryAdmin = isUserRoleAdmin(user.role) && isSuperAdminEmail(user.email);
     res.json(out);
   } catch (error) {
     const errMsg = errorMessageString(error);
@@ -654,12 +675,21 @@ export const verifyPhone = async (req, res) => {
       phoneVerificationCode: null,
       phoneVerificationCodeExpires: null,
     });
-    const token = signToken({ id: user.id, email: user.email, role: user.role });
-    const userOut = serializeUserForClient({ ...user, emailVerified: true });
+    let refreshed = await findUserById(user.id);
+    if (!refreshed) {
+      return res.status(500).json({ error: ERROR_MESSAGES?.SERVER?.LOGIN || 'שגיאת שרת בהתחברות' });
+    }
+    refreshed = await ensurePrimaryAdminRoleInDb(refreshed);
+    const token = signToken({
+      id: refreshed.id,
+      email: refreshed.email,
+      role: normalizeUserRole(refreshed.role),
+    });
+    const userOut = serializeUserForClient({ ...refreshed, emailVerified: true });
     if (!userOut) {
       return res.status(500).json({ error: ERROR_MESSAGES?.SERVER?.LOGIN || 'שגיאת שרת בהתחברות' });
     }
-    userOut.isPrimaryAdmin = user.role === ROLES.ADMIN && isSuperAdminEmail(user.email);
+    userOut.isPrimaryAdmin = isUserRoleAdmin(refreshed.role) && isSuperAdminEmail(refreshed.email);
     res.json({
       message: SUCCESS_MESSAGES.AUTH.PHONE_VERIFIED,
       token,

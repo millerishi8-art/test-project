@@ -1,6 +1,6 @@
 import { readUsers, findUserById, updateUserById, deleteUserById } from '../models/User.js';
 import { readCases, findCaseById, findCasesByUserId, updateCase, deleteCase, deleteCasesByIds } from '../models/Case.js';
-import { DEFAULT_UNKNOWN, ROLES, CASE_STATUS } from '../components/constants.js';
+import { DEFAULT_UNKNOWN, ROLES, CASE_STATUS, isUserRoleAdmin } from '../components/constants.js';
 import { isSuperAdminEmail, getSuperAdminEmail } from '../utils/adminEmails.js';
 import {
   sendDeferredPaymentApprovedToClient,
@@ -125,7 +125,7 @@ export const demoteAdmin = async (req, res) => {
     if (!user) {
       return res.status(404).json({ error: 'משתמש לא נמצא' });
     }
-    if (user.role !== ROLES.ADMIN) {
+    if (!isUserRoleAdmin(user.role)) {
       return res.status(400).json({ error: 'למשתמש זה אין גישת מנהל' });
     }
     const targetEmail = (user.email || '').trim().toLowerCase();

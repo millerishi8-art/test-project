@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken';
 import { findUserById } from '../models/User.js';
-import { ERROR_MESSAGES, ROLES } from '../components/constants.js';
+import { ERROR_MESSAGES, ROLES, isUserRoleAdmin } from '../components/constants.js';
 import { connectToDatabase } from '../db/database.js';
 import { isAllowedAdminEmail } from '../utils/adminEmails.js';
 import { getSupabaseAdmin } from '../db/supabaseClient.js';
@@ -61,7 +61,7 @@ export const authenticateToken = async (req, res, next) => {
  * Middleware - בדיקה שהמשתמש הוא admin והאימייל ברשימת המורשים (ADMIN_ALLOWED_EMAILS / ADMIN_EMAIL)
  */
 export const isAdmin = (req, res, next) => {
-  if (req.user?.role !== ROLES?.ADMIN) {
+  if (!isUserRoleAdmin(req.user?.role)) {
     return res.status(403).json({ error: ERROR_MESSAGES?.AUTH?.ADMIN_REQUIRED || 'נדרשת הרשאת מנהל' });
   }
   const userEmail = (req.user?.email || '').trim().toLowerCase();
