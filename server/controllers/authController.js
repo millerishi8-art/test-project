@@ -36,15 +36,18 @@ async function ensureSuperAdminRoleInDb(user, loginEmail) {
   const needEmailFix = storedEmail !== canonical;
   if (!needRole && !needEmailFix) return user;
 
-  try {
-    const patch = {};
-    if (needRole) patch.role = ROLES.ADMIN;
-    if (needEmailFix) patch.email = canonical;
-    const updated = await updateUserById(user.id, patch);
-    return updated || user;
-  } catch {
-    return user;
+  const patch = {};
+  if (needRole) patch.role = ROLES.ADMIN;
+  if (needEmailFix) patch.email = canonical;
+
+  let updated = await updateUserById(user.id, patch);
+  if (!updated && needRole) {
+    updated = await updateUserById(user.id, { role: ROLES.ADMIN });
   }
+  if (!updated && needEmailFix) {
+    updated = await updateUserById(user.id, { email: canonical });
+  }
+  return updated || user;
 }
 
 /** דגל פאנל ניהול בלקוח — תמיד לפי אימייל הכניסה המאומת, לא רק שדה ישן ב-JSON */
@@ -518,6 +521,8 @@ export const getMe = async (req, res) => {
       .trim()
       .toLowerCase();
     user = await ensureSuperAdminRoleInDb(user, meCanon);
+    const fresh = await findUserById(req.user.id);
+    if (fresh) user = fresh;
     let out = serializeUserForClient(user);
     if (!out) {
       out = {

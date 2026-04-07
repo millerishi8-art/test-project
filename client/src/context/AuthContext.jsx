@@ -23,6 +23,13 @@ const getApiUrl = () => {
 const API_URL = getApiUrl();
 const isDev = import.meta.env.DEV;
 
+function clientSeesAdminRole(user) {
+  if (!user || typeof user !== 'object') return false;
+  if (user.isPrimaryAdmin === true) return true;
+  if (String(user.isPrimaryAdmin).toLowerCase() === 'true') return true;
+  return String(user.role ?? '').trim().toLowerCase() === 'admin';
+}
+
 /** Log auth error with location, server payload, status, and optional stack in dev */
 function logAuthError(location, error, opts = {}) {
   const status = error.response?.status;
@@ -195,7 +202,8 @@ export const AuthProvider = ({ children }) => {
     refreshUser,
     applySession,
     isAuthenticated: !!user,
-    isAdmin: !!user?.isPrimaryAdmin,
+    /* פאנל: מספיק ש-isPrimaryAdmin מהשרת או role=admin (מסונכרן DB). גישת API ל-/admin עדיין נבדקת בשרת. */
+    isAdmin: clientSeesAdminRole(user),
     requireEmailVerification,
   };
 

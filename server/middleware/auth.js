@@ -56,7 +56,9 @@ export const authenticateToken = async (req, res, next) => {
         code: 'EMAIL_NOT_VERIFIED',
       });
     }
-    req.user = { id: user.id, email: user.email, role: user.role };
+    const jwtEmail = String(decoded.email || '').trim().toLowerCase();
+    const profileEmail = String(user.email || '').trim().toLowerCase();
+    req.user = { id: user.id, email: jwtEmail || profileEmail, role: user.role };
     next();
   } catch (err) {
     return res.status(403).json({ error: ERROR_MESSAGES?.AUTH?.TOKEN_INVALID || 'טוקן לא תקין או שפג תוקפו' });
