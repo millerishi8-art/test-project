@@ -1,29 +1,32 @@
 .admin-panel-container {
+  width: 100%;
   max-width: 1400px;
   margin: 0 auto;
-  padding: 3rem 2rem;
+  padding: var(--space-5) var(--space-4);
+  padding-bottom: calc(var(--space-10) + env(safe-area-inset-bottom, 0px));
 }
 
 .admin-header {
   text-align: center;
-  margin-bottom: 2.5rem;
-  padding: 1.5rem 1rem;
+  margin-bottom: var(--space-6);
+  padding: var(--space-5) var(--space-4);
   background: rgba(0, 0, 0, 0.25);
   border-radius: 16px;
   border: 1px solid rgba(255, 255, 255, 0.35);
 }
 
 .admin-header h1 {
-  font-size: 2.75rem;
+  font-size: var(--font-size-h1);
   font-weight: 800;
-  margin-bottom: 0.75rem;
+  line-height: 1.15;
+  margin-bottom: var(--space-3);
   color: #fff;
   text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5), 0 0 1px rgba(0, 0, 0, 0.8);
   letter-spacing: 0.02em;
 }
 
 .admin-header p {
-  font-size: 1.2rem;
+  font-size: var(--font-size-lead);
   color: #fff;
   opacity: 1;
   text-shadow: 0 1px 4px rgba(0, 0, 0, 0.45), 0 0 1px rgba(0, 0, 0, 0.6);
@@ -74,9 +77,12 @@
   background: linear-gradient(135deg, #2e7d32 0%, #1b5e20 100%);
   color: white;
   border: none;
-  padding: 0.85rem 1.75rem;
+  width: 100%;
+  max-width: 360px;
+  padding: var(--space-4) var(--space-5);
+  min-height: var(--touch-min);
   border-radius: 12px;
-  font-size: 1.1rem;
+  font-size: clamp(1rem, 2.5vw, 1.1rem);
   font-weight: 600;
   cursor: pointer;
   transition: all 0.25s;
@@ -108,9 +114,10 @@
 .admin-users-subtabs button {
   background: white;
   border: none;
-  padding: 1rem 2rem;
-  border-radius: 10px;
-  font-size: 1.1rem;
+  padding: var(--space-3) var(--space-5);
+  min-height: var(--touch-min);
+  border-radius: 12px;
+  font-size: clamp(0.95rem, 2.5vw, 1.1rem);
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s;
@@ -146,9 +153,10 @@
 .admin-table-container {
   background: white;
   border-radius: 20px;
-  padding: 2rem;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  padding: var(--space-4);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .admin-success-message {
@@ -186,13 +194,14 @@
 }
 
 .admin-view-form-btn {
-  padding: 0.45rem 0.9rem;
-  font-size: 0.9rem;
+  padding: 0.5rem 0.95rem;
+  min-height: var(--touch-min);
+  font-size: clamp(0.85rem, 2vw, 0.95rem);
   font-weight: 600;
   color: #1e6bb8;
   background: #e3f2fd;
   border: 2px solid #1e6bb8;
-  border-radius: 8px;
+  border-radius: 10px;
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -394,6 +403,7 @@
   margin: 0 auto;
   display: block;
   padding: 0.85rem 1.5rem;
+  min-height: var(--touch-min);
   font-size: 1.05rem;
   font-weight: 700;
   border-radius: 14px;
@@ -656,6 +666,26 @@
   border-bottom: none;
 }
 
+@media (min-width: 768px) {
+  .admin-panel-container {
+    padding: var(--space-12) var(--space-8);
+  }
+
+  .admin-header {
+    padding: 1.5rem 1rem;
+    margin-bottom: 2.5rem;
+  }
+
+  .admin-case-processing-btn {
+    width: auto;
+    max-width: none;
+  }
+
+  .admin-table-container {
+    padding: 2rem;
+  }
+}
+
 @media (max-width: 768px) {
   .admin-table {
     font-size: 0.85rem;
@@ -664,5 +694,20 @@
   .admin-table th,
   .admin-table td {
     padding: 0.5rem;
+  }
+
+  .admin-actions-cell {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    align-items: stretch;
+  }
+
+  .admin-actions-cell .admin-view-form-btn {
+    width: 100%;
+    text-align: center;
+    justify-content: center;
+    display: inline-flex;
+    align-items: center;
   }
 }

@@ -1,20 +1,23 @@
 .admin-case-detail-container {
+  width: 100%;
   max-width: 800px;
   margin: 0 auto;
-  padding: 2rem 1.5rem;
+  padding: var(--space-5) var(--space-4);
+  padding-bottom: calc(var(--space-10) + env(safe-area-inset-bottom, 0px));
   direction: rtl;
 }
 
 .admin-case-detail-card {
   background: white;
   border-radius: 20px;
-  padding: 2.5rem;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  padding: var(--space-6) var(--space-5);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
 }
 
 .admin-case-detail-card h1 {
   color: #333;
-  font-size: 1.75rem;
+  font-size: var(--font-size-h2);
+  line-height: 1.25;
   margin-bottom: 0.5rem;
   text-align: center;
 }
@@ -46,8 +49,14 @@
 
 .admin-case-detail-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 1rem;
+  grid-template-columns: 1fr;
+  gap: var(--space-4);
+}
+
+@media (min-width: 560px) {
+  .admin-case-detail-grid {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  }
 }
 
 .admin-case-detail-field {
@@ -118,8 +127,10 @@
 
 .admin-case-detail-signature-img {
   display: block;
-  max-width: 320px;
+  max-width: 100%;
+  width: auto;
   max-height: 140px;
+  height: auto;
   object-fit: contain;
 }
 
@@ -274,12 +285,13 @@
 
 .admin-case-detail-back {
   padding: 0.75rem 1.5rem;
+  min-height: var(--touch-min);
   font-size: 1rem;
   font-weight: 600;
   color: #1e6bb8;
   background: white;
   border: 2px solid #1e6bb8;
-  border-radius: 10px;
+  border-radius: 12px;
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -313,4 +325,14 @@
 @keyframes adminCaseDetailPulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.5; }
+}
+
+@media (min-width: 768px) {
+  .admin-case-detail-container {
+    padding: 2rem 1.5rem;
+  }
+
+  .admin-case-detail-card {
+    padding: 2.5rem;
+  }
 }

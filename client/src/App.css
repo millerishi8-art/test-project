@@ -2,6 +2,10 @@
   min-height: 100vh;
   min-height: 100dvh;
   padding-bottom: env(safe-area-inset-bottom, 0px);
+  width: 100%;
+  overflow-x: clip;
+  display: flex;
+  flex-direction: column;
 }
 
 /* מקום לבאנר אזרחות אמריקאית + כפתור וואטסאפ צף במובייל */
@@ -10,3 +14,4 @@
     padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
   }
 }
+

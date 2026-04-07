@@ -1,30 +1,35 @@
+/* Mobile-first: עמודה אחת וטיפוגרפיה נוזלית; מתרחב מ־768px */
+
 .home-container {
+  width: 100%;
   max-width: 1200px;
   margin: 0 auto;
-  padding: 3rem 2rem;
+  padding: var(--space-5) var(--space-4);
+  padding-bottom: calc(6rem + env(safe-area-inset-bottom, 0px));
   position: relative;
 }
 
 .home-translate-btn {
   position: fixed;
-  top: 5.5rem;
-  right: 1.5rem;
+  top: calc(4.25rem + env(safe-area-inset-top, 0px));
+  right: var(--space-3);
   z-index: 1100;
-  padding: 0.65rem 1.3rem;
-  font-size: 1.05rem;
+  padding: var(--space-3) var(--space-4);
+  min-height: var(--touch-min);
+  font-size: clamp(0.875rem, 2.5vw, 1.05rem);
   font-weight: 600;
   color: #1e6bb8;
   background: rgba(255, 255, 255, 0.95);
   border: 2px solid #90caf9;
-  border-radius: 12px;
+  border-radius: 999px;
   cursor: pointer;
-  box-shadow: 0 4px 15px rgba(30, 107, 184, 0.15);
+  box-shadow: 0 4px 16px rgba(30, 107, 184, 0.2);
   transition: all 0.25s ease;
 }
 
-[dir="rtl"] .home-translate-btn {
+[dir='rtl'] .home-translate-btn {
   right: auto;
-  left: 1.5rem;
+  left: var(--space-3);
 }
 
 .home-translate-btn:hover {
@@ -38,31 +43,40 @@
 .home-header {
   text-align: center;
   color: #1a3a52;
-  margin-bottom: 3rem;
+  margin-bottom: var(--space-8);
 }
 
 .home-header h1 {
-  font-size: 2.5rem;
-  margin-bottom: 1rem;
+  font-size: var(--font-size-h1);
+  line-height: 1.2;
+  margin-bottom: var(--space-4);
   text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
 }
 
 .home-header p {
-  font-size: 1.2rem;
+  font-size: var(--font-size-lead);
   color: #2c5282;
   opacity: 0.95;
+  line-height: 1.65;
+  max-width: 42rem;
+  margin-inline: auto;
 }
 
 .home-case-status-btn {
-  display: inline-block;
-  margin-top: 1.25rem;
-  padding: 0.85rem 2rem;
-  font-size: 1.1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: var(--space-5);
+  width: 100%;
+  max-width: 100%;
+  padding: var(--space-4) var(--space-5);
+  min-height: var(--touch-min);
+  font-size: clamp(1rem, 2.8vw, 1.1rem);
   font-weight: 600;
   color: white;
   background: #1e6bb8;
   border: none;
-  border-radius: 12px;
+  border-radius: 14px;
   cursor: pointer;
   box-shadow: 0 4px 15px rgba(30, 107, 184, 0.35);
   transition: all 0.25s ease;
@@ -76,15 +90,15 @@
 
 .benefits-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 2rem;
-  margin-top: 2rem;
+  grid-template-columns: 1fr;
+  gap: var(--space-5);
+  margin-top: var(--space-6);
 }
 
 .benefit-cube {
   background: white;
-  border-radius: 20px;
-  padding: 2.5rem;
+  border-radius: 18px;
+  padding: var(--space-6) var(--space-5);
   text-align: center;
   cursor: pointer;
   transition: all 0.3s ease;
@@ -116,39 +130,41 @@
 }
 
 .benefit-cube:hover {
-  transform: translateY(-10px);
-  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+  transform: translateY(-6px);
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.18);
 }
 
 .cube-icon {
-  font-size: 4rem;
-  margin-bottom: 1rem;
+  font-size: clamp(2.5rem, 10vw, 4rem);
+  margin-bottom: var(--space-4);
 }
 
 .benefit-cube h2 {
   color: #333;
-  margin-bottom: 1rem;
-  font-size: 1.8rem;
+  margin-bottom: var(--space-4);
+  font-size: var(--font-size-h2);
+  line-height: 1.25;
 }
 
 .cube-description {
   color: #666;
-  margin-bottom: 1.5rem;
-  font-size: 1rem;
-  line-height: 1.6;
+  margin-bottom: var(--space-5);
+  font-size: clamp(0.95rem, 2.5vw, 1.05rem);
+  line-height: 1.65;
 }
 
 .cube-price {
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
-  gap: 1rem;
-  margin-top: 1.5rem;
-  padding-top: 1.5rem;
+  gap: var(--space-4);
+  margin-top: var(--space-5);
+  padding-top: var(--space-5);
   border-top: 2px solid #f0f0f0;
 }
 
 .cube-price span {
-  font-size: 1.3rem;
+  font-size: clamp(1.1rem, 3vw, 1.3rem);
   font-weight: bold;
   color: #1e6bb8;
 }
@@ -158,9 +174,11 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 60vh;
+  min-height: 50vh;
+  padding: var(--space-8) var(--space-4);
   color: #1a3a52;
-  font-size: 1.5rem;
+  font-size: clamp(1.1rem, 3vw, 1.5rem);
+  text-align: center;
 }
 
 .loading-spinner {
@@ -168,7 +186,8 @@
 }
 
 @keyframes pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {
@@ -176,66 +195,42 @@
   }
 }
 
-/* —— מובייל: קריאות, מגע, רשת —— */
-@media (max-width: 768px) {
+@media (min-width: 768px) {
   .home-container {
-    padding: 1.25rem 1rem;
-    padding-bottom: calc(6rem + env(safe-area-inset-bottom, 0px));
+    padding: var(--space-12) var(--space-8);
+    padding-bottom: var(--space-8);
   }
 
   .home-translate-btn {
-    top: calc(4.25rem + env(safe-area-inset-top, 0px));
-    right: 0.75rem;
-    padding: 0.55rem 1rem;
-    font-size: 0.95rem;
-    border-radius: 999px;
-    box-shadow: 0 4px 16px rgba(30, 107, 184, 0.2);
+    top: 5.5rem;
+    right: 1.5rem;
+    border-radius: 12px;
+    padding: 0.65rem 1.3rem;
   }
 
   [dir='rtl'] .home-translate-btn {
+    left: 1.5rem;
     right: auto;
-    left: 0.75rem;
-  }
-
-  .home-header h1 {
-    font-size: clamp(1.5rem, 6vw, 2rem);
-    line-height: 1.25;
-  }
-
-  .home-header p {
-    font-size: 1.05rem;
-    line-height: 1.65;
   }
 
   .home-case-status-btn {
-    width: 100%;
-    max-width: 100%;
-    padding: 1rem 1.25rem;
-    font-size: 1.05rem;
-    min-height: 52px;
-    border-radius: 14px;
+    width: auto;
+    max-width: none;
+    padding: 0.85rem 2rem;
   }
 
   .benefits-grid {
-    grid-template-columns: 1fr;
-    gap: 1.25rem;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: var(--space-8);
+    margin-top: var(--space-8);
   }
 
   .benefit-cube {
-    padding: 1.75rem 1.25rem;
-    border-radius: 18px;
+    padding: var(--space-10) var(--space-8);
+    border-radius: 20px;
   }
 
-  .benefit-cube h2 {
-    font-size: 1.45rem;
-  }
-
-  .cube-icon {
-    font-size: 3rem;
-  }
-
-  .cube-description {
-    font-size: 1.02rem;
-    line-height: 1.65;
+  .benefit-cube:hover {
+    transform: translateY(-10px);
   }
 }

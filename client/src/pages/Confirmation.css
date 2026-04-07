@@ -1,18 +1,22 @@
 .confirmation-container {
+  width: 100%;
   max-width: 700px;
   margin: 0 auto;
-  padding: 3rem 2rem;
+  padding: var(--space-5) var(--space-4);
+  padding-bottom: calc(var(--space-10) + env(safe-area-inset-bottom, 0px));
   position: relative;
 }
 
 .confirmation-translate-btn {
   position: fixed;
-  top: 5.5rem;
-  right: 1.5rem;
+  top: calc(4.5rem + env(safe-area-inset-top, 0px));
+  right: 0.65rem;
   z-index: 1100;
-  padding: 0.65rem 1.3rem;
-  font-size: 1.05rem;
+  padding: 0.5rem 1rem;
+  min-height: var(--touch-min);
+  font-size: clamp(0.875rem, 2.5vw, 1.05rem);
   font-weight: 600;
+  border-radius: 999px;
   color: #1e6bb8;
   background: white;
   border: 2px solid #1e6bb8;
@@ -22,9 +26,9 @@
   transition: all 0.25s ease;
 }
 
-[dir="rtl"] .confirmation-translate-btn {
+[dir='rtl'] .confirmation-translate-btn {
   right: auto;
-  left: 1.5rem;
+  left: 0.65rem;
 }
 
 .confirmation-translate-btn:hover {
@@ -37,14 +41,14 @@
 .confirmation-card {
   background: white;
   border-radius: 20px;
-  padding: 3rem;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  padding: var(--space-6) var(--space-5);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
   text-align: center;
 }
 
 .success-icon {
-  font-size: 5rem;
-  margin-bottom: 1rem;
+  font-size: clamp(3rem, 12vw, 5rem);
+  margin-bottom: var(--space-4);
   animation: scaleIn 0.5s ease-out;
 }
 
@@ -59,15 +63,16 @@
 
 .confirmation-card h1 {
   color: #333;
-  margin-bottom: 1rem;
-  font-size: 2.5rem;
+  margin-bottom: var(--space-4);
+  font-size: var(--font-size-h1);
+  line-height: 1.2;
 }
 
 .confirmation-message {
   color: #666;
-  font-size: 1.2rem;
-  margin-bottom: 2rem;
-  line-height: 1.8;
+  font-size: var(--font-size-lead);
+  margin-bottom: var(--space-6);
+  line-height: 1.75;
 }
 
 .case-summary {
@@ -155,9 +160,12 @@
   background: linear-gradient(135deg, #1e6bb8 0%, #1565c0 100%);
   color: white;
   border: none;
-  padding: 1rem 2.5rem;
-  border-radius: 10px;
-  font-size: 1.1rem;
+  width: 100%;
+  max-width: 320px;
+  padding: var(--space-4) var(--space-6);
+  min-height: var(--touch-min);
+  border-radius: 12px;
+  font-size: clamp(1rem, 2.5vw, 1.1rem);
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s;
@@ -166,4 +174,30 @@
 .home-button:hover {
   transform: translateY(-2px);
   box-shadow: 0 5px 20px rgba(30, 107, 184, 0.4);
+}
+
+@media (min-width: 768px) {
+  .confirmation-container {
+    padding: var(--space-12) var(--space-8);
+  }
+
+  .confirmation-translate-btn {
+    top: 5.5rem;
+    right: 1.5rem;
+    border-radius: 12px;
+    padding: 0.65rem 1.3rem;
+  }
+
+  [dir='rtl'] .confirmation-translate-btn {
+    left: 1.5rem;
+    right: auto;
+  }
+
+  .confirmation-card {
+    padding: 3rem;
+  }
+
+  .home-button {
+    width: auto;
+  }
 }

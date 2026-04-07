@@ -26,15 +26,24 @@
 }
 
 .renewal-reminder-banner-btn {
-  padding: 0.6rem 1.2rem;
+  padding: 0.65rem 1.25rem;
+  min-height: var(--touch-min);
   font-size: 1rem;
   font-weight: 600;
   color: #1e6bb8;
   background: #e3f2fd;
   border: 2px solid #1e6bb8;
-  border-radius: 10px;
+  border-radius: 12px;
   cursor: pointer;
   transition: all 0.2s;
+  width: 100%;
+  max-width: 280px;
+}
+
+@media (min-width: 480px) {
+  .renewal-reminder-banner-btn {
+    width: auto;
+  }
 }
 
 .renewal-reminder-banner-btn:hover {

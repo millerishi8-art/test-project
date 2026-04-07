@@ -1,18 +1,22 @@
 .case-status-container {
+  width: 100%;
   max-width: 720px;
   margin: 0 auto;
-  padding: 3rem 2rem;
+  padding: var(--space-5) var(--space-4);
+  padding-bottom: calc(var(--space-10) + env(safe-area-inset-bottom, 0px));
   position: relative;
 }
 
 .case-status-translate-btn {
   position: fixed;
-  top: 5.5rem;
-  right: 1.5rem;
+  top: calc(4.5rem + env(safe-area-inset-top, 0px));
+  right: 0.65rem;
   z-index: 1100;
-  padding: 0.65rem 1.3rem;
-  font-size: 1.05rem;
+  padding: 0.5rem 1rem;
+  min-height: var(--touch-min);
+  font-size: clamp(0.875rem, 2.5vw, 1.05rem);
   font-weight: 600;
+  border-radius: 999px;
   color: #1e6bb8;
   background: white;
   border: 2px solid #1e6bb8;
@@ -22,9 +26,9 @@
   transition: all 0.25s ease;
 }
 
-[dir="rtl"] .case-status-translate-btn {
+[dir='rtl'] .case-status-translate-btn {
   right: auto;
-  left: 1.5rem;
+  left: 0.65rem;
 }
 
 .case-status-translate-btn:hover {
@@ -37,13 +41,14 @@
 .case-status-card {
   background: white;
   border-radius: 20px;
-  padding: 2.5rem 3rem;
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+  padding: var(--space-6) var(--space-5);
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
 }
 
 .case-status-card h1 {
   color: #333;
-  font-size: 2rem;
+  font-size: var(--font-size-h1);
+  line-height: 1.2;
   margin-bottom: 0.5rem;
   text-align: center;
 }
@@ -51,8 +56,8 @@
 .case-status-subtitle {
   text-align: center;
   color: #2c5282;
-  font-size: 1.1rem;
-  margin-bottom: 2rem;
+  font-size: var(--font-size-lead);
+  margin-bottom: var(--space-6);
 }
 
 .case-status-list-section h2 {
@@ -135,7 +140,15 @@
 .case-status-item-label {
   color: #555;
   font-weight: 600;
-  min-width: 120px;
+  min-width: 0;
+  flex: 0 0 100%;
+}
+
+@media (min-width: 480px) {
+  .case-status-item-label {
+    flex: 0 0 auto;
+    min-width: 120px;
+  }
 }
 
 .case-status-item-value {
@@ -363,14 +376,17 @@
 
 .case-status-back-btn {
   padding: 0.75rem 1.5rem;
+  min-height: var(--touch-min);
   font-size: 1rem;
   font-weight: 600;
   color: #1e6bb8;
   background: white;
   border: 2px solid #1e6bb8;
-  border-radius: 10px;
+  border-radius: 12px;
   cursor: pointer;
   transition: all 0.2s;
+  width: 100%;
+  max-width: 280px;
 }
 
 .case-status-back-btn:hover {
@@ -378,4 +394,31 @@
   color: white;
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(30, 107, 184, 0.35);
+}
+
+@media (min-width: 768px) {
+  .case-status-container {
+    padding: var(--space-12) var(--space-8);
+  }
+
+  .case-status-translate-btn {
+    top: 5.5rem;
+    right: 1.5rem;
+    border-radius: 12px;
+    padding: 0.65rem 1.3rem;
+  }
+
+  [dir='rtl'] .case-status-translate-btn {
+    left: 1.5rem;
+    right: auto;
+  }
+
+  .case-status-card {
+    padding: 2.5rem 3rem;
+  }
+
+  .case-status-back-btn {
+    width: auto;
+    max-width: none;
+  }
 }

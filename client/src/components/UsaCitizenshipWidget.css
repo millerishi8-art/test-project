@@ -191,7 +191,8 @@
   color: var(--usa-widget-blue-dark);
   font-weight: 600;
   font-size: 0.8rem;
-  padding: 0.4rem 0.65rem;
+  padding: 0.45rem 0.75rem;
+  min-height: var(--touch-min);
   border-radius: 8px;
   cursor: pointer;
   font-family: inherit;
