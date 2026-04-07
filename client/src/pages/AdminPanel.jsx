@@ -1,6 +1,7 @@
 import { useState, useEffect, Fragment } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { useAuth } from '../context/AuthContext.jsx';
 import './AdminPanel.css';
 
 const RENEWAL_NEEDS_NOW = 'needs_renewal';
@@ -25,6 +26,8 @@ function getRenewalStatus(c) {
 }
 
 const AdminPanel = () => {
+  const { user: sessionUser } = useAuth();
+  const canDeleteCases = sessionUser?.canDeleteCases === true;
   const location = useLocation();
   const navigate = useNavigate();
   const stateTab = location.state?.tab;

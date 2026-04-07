@@ -14,7 +14,7 @@ import { ROLES, ERROR_MESSAGES, SUCCESS_MESSAGES, isUserRoleAdmin, normalizeUser
 import { sendVerificationCodeEmail, sendPasswordResetCodeEmail } from '../services/email.js';
 import { sendVerificationSms } from '../services/sms.js';
 import { connectToDatabase, dbErrorMessageForClient } from '../db/database.js';
-import { isSuperAdminEmail } from '../utils/adminEmails.js';
+import { isSuperAdminEmail, isSecondaryAdminEmail } from '../utils/adminEmails.js';
 import { secureCompare } from '../utils/auth.js';
 import {
   isSupabasePasswordAuthEnabled,
@@ -30,14 +30,14 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this';
 const isDev = process.env.NODE_ENV !== 'production';
 
 /**
- * מנהל־העל: מסנכרן role + אימייל ב-app_users לפי האימייל מהטוקן/טופס (חשוב כש-data.email ב-DB לא תואם ל-Supabase Auth).
+ * מנהל ראשי / משנה: מסנכרן role=admin + אימייל ב-app_users לפי האימייל מהטוקן/טופס.
  */
-async function ensureSuperAdminRoleInDb(user, loginEmail) {
+async function ensurePrivilegedAdminRoleInDb(user, loginEmail) {
   if (!user?.id) return user;
   const canonical = String(loginEmail || user.email || '')
     .trim()
     .toLowerCase();
-  if (!canonical || !isSuperAdminEmail(canonical)) return user;
+  if (!canonical || (!isSuperAdminEmail(canonical) && !isSecondaryAdminEmail(canonical))) return user;
 
   const needRole = !isUserRoleAdmin(user.role);
   const storedEmail = String(user.email || '').trim().toLowerCase();
@@ -63,10 +63,29 @@ async function ensureSuperAdminRoleInDb(user, loginEmail) {
   return merged;
 }
 
-/** דגל פאנל ניהול בלקוח — תמיד לפי אימייל הכניסה המאומת, לא רק שדה ישן ב-JSON */
+/** דגל מנהל ראשי בלקוח */
 function computeIsPrimaryAdmin(role, canonicalEmail) {
   const e = String(canonicalEmail ?? '').trim().toLowerCase();
   return isUserRoleAdmin(role) && isSuperAdminEmail(e);
+}
+
+function computeIsSecondaryAdmin(role, canonicalEmail) {
+  const e = String(canonicalEmail ?? '').trim().toLowerCase();
+  return isUserRoleAdmin(role) && isSecondaryAdminEmail(e);
+}
+
+/** שדות דגלים לתשובות login /me / verifyPhone */
+function applyAdminClientFlags(userOut, role, canonEmail) {
+  if (!userOut) return;
+  const e = String(canonEmail ?? '').trim().toLowerCase();
+  const primary = computeIsPrimaryAdmin(role, e);
+  const secondary = computeIsSecondaryAdmin(role, e);
+  if (e && (primary || secondary)) {
+    userOut.email = e;
+  }
+  userOut.isPrimaryAdmin = primary;
+  userOut.isSecondaryAdmin = secondary;
+  userOut.canDeleteCases = isUserRoleAdmin(role) && isSuperAdminEmail(e);
 }
 
 /** הודעת שגיאה כמחרוזת – למניעת .includes על ערך לא-מחרוזתי */
@@ -412,15 +431,12 @@ export const login = async (req, res) => {
         const loginCanon = String(session.user?.email || rawEmail || u.email || '')
           .trim()
           .toLowerCase();
-        u = await ensureSuperAdminRoleInDb(u, loginCanon);
+        u = await ensurePrivilegedAdminRoleInDb(u, loginCanon);
         const userOut = serializeUserForClient(u);
         if (!userOut) {
           return res.status(500).json({ error: ERROR_MESSAGES?.SERVER?.LOGIN || 'שגיאת שרת בהתחברות' });
         }
-        if (loginCanon && computeIsPrimaryAdmin(u.role, loginCanon)) {
-          userOut.email = loginCanon;
-        }
-        userOut.isPrimaryAdmin = computeIsPrimaryAdmin(u.role, loginCanon);
+        applyAdminClientFlags(userOut, u.role, loginCanon);
         return res.json({
           message: (SUCCESS_MESSAGES?.AUTH?.LOGIN) || 'ההתחברות בוצעה בהצלחה',
           token: session.access_token,
@@ -467,7 +483,7 @@ export const login = async (req, res) => {
       });
     }
 
-    user = await ensureSuperAdminRoleInDb(user, rawEmail);
+    user = await ensurePrivilegedAdminRoleInDb(user, rawEmail);
 
     console.log('[Backend] Login success for', maskEmail(rawEmail));
     let token;
@@ -491,10 +507,7 @@ export const login = async (req, res) => {
     const loginCanonBcrypt = String(rawEmail || user.email || '')
       .trim()
       .toLowerCase();
-    if (loginCanonBcrypt && computeIsPrimaryAdmin(user.role, loginCanonBcrypt)) {
-      userOut.email = loginCanonBcrypt;
-    }
-    userOut.isPrimaryAdmin = computeIsPrimaryAdmin(user.role, loginCanonBcrypt);
+    applyAdminClientFlags(userOut, user.role, loginCanonBcrypt);
     res.json({
       message: (SUCCESS_MESSAGES?.AUTH?.LOGIN) || 'ההתחברות בוצעה בהצלחה',
       token,
@@ -533,7 +546,7 @@ export const getMe = async (req, res) => {
     const meCanon = String(req.user?.email || user.email || '')
       .trim()
       .toLowerCase();
-    user = await ensureSuperAdminRoleInDb(user, meCanon);
+    user = await ensurePrivilegedAdminRoleInDb(user, meCanon);
     const fresh = await findUserById(req.user.id);
     if (fresh) user = fresh;
     let out = serializeUserForClient(user);
@@ -545,10 +558,7 @@ export const getMe = async (req, res) => {
         role: normalizeUserRole(user.role),
       };
     }
-    if (meCanon && computeIsPrimaryAdmin(user.role, meCanon)) {
-      out.email = meCanon;
-    }
-    out.isPrimaryAdmin = computeIsPrimaryAdmin(user.role, meCanon);
+    applyAdminClientFlags(out, user.role, meCanon);
     res.json(out);
   } catch (error) {
     const errMsg = errorMessageString(error);
@@ -735,7 +745,7 @@ export const verifyPhone = async (req, res) => {
     if (!refreshed) {
       return res.status(500).json({ error: ERROR_MESSAGES?.SERVER?.LOGIN || 'שגיאת שרת בהתחברות' });
     }
-    refreshed = await ensureSuperAdminRoleInDb(refreshed, email);
+    refreshed = await ensurePrivilegedAdminRoleInDb(refreshed, email);
     const token = signToken({
       id: refreshed.id,
       email: refreshed.email,
@@ -745,10 +755,7 @@ export const verifyPhone = async (req, res) => {
     if (!userOut) {
       return res.status(500).json({ error: ERROR_MESSAGES?.SERVER?.LOGIN || 'שגיאת שרת בהתחברות' });
     }
-    if (email && computeIsPrimaryAdmin(refreshed.role, email)) {
-      userOut.email = email;
-    }
-    userOut.isPrimaryAdmin = computeIsPrimaryAdmin(refreshed.role, email);
+    applyAdminClientFlags(userOut, refreshed.role, email);
     res.json({
       message: SUCCESS_MESSAGES.AUTH.PHONE_VERIFIED,
       token,

@@ -1,7 +1,7 @@
 import { readUsers, findUserById, updateUserById, deleteUserById } from '../models/User.js';
 import { readCases, findCaseById, findCasesByUserId, updateCase, deleteCase, deleteCasesByIds } from '../models/Case.js';
 import { DEFAULT_UNKNOWN, CASE_STATUS } from '../components/constants.js';
-import { isSuperAdminEmail } from '../utils/adminEmails.js';
+import { isAnyAdminPanelEmail, isSuperAdminEmail } from '../utils/adminEmails.js';
 import {
   sendDeferredPaymentApprovedToClient,
   sendDeferredPaymentRequestApprovedAwaitingDate,
@@ -47,7 +47,8 @@ export const getAllCases = async (req, res) => {
     const users = await readUsers();
     const userIdSet = new Set(users.map((u) => u.id));
     const orphanCaseIds = cases.filter((c) => c.userId && !userIdSet.has(c.userId)).map((c) => c.id);
-    if (orphanCaseIds.length > 0) {
+    const actorEmail = (req.user?.email || '').trim().toLowerCase();
+    if (orphanCaseIds.length > 0 && isSuperAdminEmail(actorEmail)) {
       await deleteCasesByIds(orphanCaseIds);
       cases = await readCases();
     }
@@ -113,8 +114,8 @@ export const getAllUsers = async (req, res) => {
 export const patchUserDeferredPayment = async (req, res) => {
   try {
     const actorEmail = (req.user?.email || '').trim().toLowerCase();
-    if (!isSuperAdminEmail(actorEmail)) {
-      return res.status(403).json({ error: 'רק מנהל המערכת הראשי יכול לנהל אישורים מיוחדים' });
+    if (!isAnyAdminPanelEmail(actorEmail)) {
+      return res.status(403).json({ error: 'נדרשת הרשאת מנהל' });
     }
     const { id } = req.params;
     const body = req.body || {};

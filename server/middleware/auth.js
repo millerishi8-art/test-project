@@ -2,7 +2,7 @@ import jwt from 'jsonwebtoken';
 import { findUserById } from '../models/User.js';
 import { ERROR_MESSAGES, ROLES, isUserRoleAdmin } from '../components/constants.js';
 import { connectToDatabase } from '../db/database.js';
-import { isSuperAdminEmail } from '../utils/adminEmails.js';
+import { isAnyAdminPanelEmail } from '../utils/adminEmails.js';
 import { getSupabaseAdmin } from '../db/supabaseClient.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this';
@@ -73,7 +73,7 @@ export const isAdmin = (req, res, next) => {
     return res.status(403).json({ error: ERROR_MESSAGES?.AUTH?.ADMIN_REQUIRED || 'נדרשת הרשאת מנהל מערכת' });
   }
   const userEmail = (req.user?.email || '').trim().toLowerCase();
-  if (!isSuperAdminEmail(userEmail)) {
+  if (!isAnyAdminPanelEmail(userEmail)) {
     return res.status(403).json({ error: ERROR_MESSAGES?.AUTH?.ADMIN_REQUIRED || 'נדרשת הרשאת מנהל מערכת' });
   }
   next();

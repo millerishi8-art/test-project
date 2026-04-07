@@ -25,8 +25,9 @@ const isDev = import.meta.env.DEV;
 
 function clientSeesAdminRole(user) {
   if (!user || typeof user !== 'object') return false;
-  if (user.isPrimaryAdmin === true) return true;
+  if (user.isPrimaryAdmin === true || user.isSecondaryAdmin === true) return true;
   if (String(user.isPrimaryAdmin).toLowerCase() === 'true') return true;
+  if (String(user.isSecondaryAdmin).toLowerCase() === 'true') return true;
   return String(user.role ?? '').trim().toLowerCase() === 'admin';
 }
 
