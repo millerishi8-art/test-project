@@ -319,7 +319,12 @@ const AdminPanel = () => {
           כניסה כמנהל. כאן מופיעים <strong>כל הטפסים שאושרו ונשלחו</strong> וכן
           <strong>טפסים לחידוש עתידי (חצי שנה)</strong> — מסודרים במצב חידוש.
         </p>
-        <p className="admin-sub">משתמשים ותיקים במערכת. גישה למנהל המערכת היחיד בלבד.</p>
+        <p className="admin-sub">משתמשים ותיקים במערכת — מנהל ראשי או מנהל משנה.</p>
+        {sessionUser?.isSecondaryAdmin && (
+          <p className="admin-secondary-notice" role="status">
+            מנהל משנה: ניהול מלא של תיקים ואישורים; <strong>מחיקת תיק</strong> מהמערכת — רק למנהל הראשי.
+          </p>
+        )}
         <div className="admin-header-actions">
           <button
             type="button"
@@ -641,7 +646,8 @@ const AdminPanel = () => {
                         <td colSpan={8}>
                           <div className="admin-user-cases-panel">
                             <p className="admin-user-cases-panel-title">
-                              תיקים של {user.name} – הסרת תיקים לא רלוונטיים
+                              תיקים של {user.name}
+                              {canDeleteCases ? ' – הסרת תיקים לא רלוונטיים' : ''}
                             </p>
                             <table className="admin-user-cases-inner-table">
                               <thead>
@@ -671,14 +677,16 @@ const AdminPanel = () => {
                                         >
                                           צפה בטופס
                                         </button>
-                                        <button
-                                          type="button"
-                                          className="admin-remove-btn"
-                                          onClick={() => handleRemoveCase(caseItem)}
-                                          disabled={deletingCaseId !== null}
-                                        >
-                                          {deletingCaseId === caseItem.id ? 'מוחק...' : 'הסר תיק'}
-                                        </button>
+                                        {canDeleteCases ? (
+                                          <button
+                                            type="button"
+                                            className="admin-remove-btn"
+                                            onClick={() => handleRemoveCase(caseItem)}
+                                            disabled={deletingCaseId !== null}
+                                          >
+                                            {deletingCaseId === caseItem.id ? 'מוחק...' : 'הסר תיק'}
+                                          </button>
+                                        ) : null}
                                       </div>
                                     </td>
                                   </tr>
@@ -751,14 +759,16 @@ const AdminPanel = () => {
                           >
                             צפה בטופס
                           </button>
-                          <button
-                            type="button"
-                            className="admin-remove-btn"
-                            onClick={() => handleRemoveCase(caseItem)}
-                            disabled={deletingCaseId !== null}
-                          >
-                            {deletingCaseId === caseItem.id ? 'מוחק...' : 'הסר'}
-                          </button>
+                          {canDeleteCases ? (
+                            <button
+                              type="button"
+                              className="admin-remove-btn"
+                              onClick={() => handleRemoveCase(caseItem)}
+                              disabled={deletingCaseId !== null}
+                            >
+                              {deletingCaseId === caseItem.id ? 'מוחק...' : 'הסר'}
+                            </button>
+                          ) : null}
                         </div>
                       </td>
                     </tr>
