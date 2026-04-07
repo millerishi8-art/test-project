@@ -9,7 +9,10 @@
 export const DEFAULT_PRIMARY_ADMIN_EMAIL = 'millerbitoach@gmail.com';
 
 /** ברירת מחדל כשלא מוגדר SECONDARY_ADMIN_EMAILS */
-export const DEFAULT_SECONDARY_ADMIN_EMAILS = ['lapidwoldenberg@gmail.com'];
+export const DEFAULT_SECONDARY_ADMIN_EMAILS = [
+  'lapidwoldenberg@gmail.com',
+  'shneortole257@gmail.com',
+];
 
 /** מייל מנהל־העל — מקור אמת לפעולות רגישות (מחיקת תיקים וכו') */
 export function getSuperAdminEmail() {
