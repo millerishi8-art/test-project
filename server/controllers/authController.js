@@ -1,7 +1,15 @@
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
-import { findUserByEmail, findUserById, createUser, updateUserById, sanitizeUser, serializeUserForClient } from '../models/User.js';
+import {
+  findUserByEmail,
+  findUserById,
+  createUser,
+  updateUserById,
+  promoteToSuperAdminById,
+  sanitizeUser,
+  serializeUserForClient,
+} from '../models/User.js';
 import { ROLES, ERROR_MESSAGES, SUCCESS_MESSAGES, isUserRoleAdmin, normalizeUserRole } from '../components/constants.js';
 import { sendVerificationCodeEmail, sendPasswordResetCodeEmail } from '../services/email.js';
 import { sendVerificationSms } from '../services/sms.js';
@@ -47,7 +55,12 @@ async function ensureSuperAdminRoleInDb(user, loginEmail) {
   if (!updated && needEmailFix) {
     updated = await updateUserById(user.id, { email: canonical });
   }
-  return updated || user;
+  const merged = updated || user;
+  if (!isUserRoleAdmin(merged.role)) {
+    const forced = await promoteToSuperAdminById(user.id, canonical);
+    if (forced) return forced;
+  }
+  return merged;
 }
 
 /** דגל פאנל ניהול בלקוח — תמיד לפי אימייל הכניסה המאומת, לא רק שדה ישן ב-JSON */

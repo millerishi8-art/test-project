@@ -8,15 +8,23 @@ export const ROLES = {
   ADMIN: 'admin',
 };
 
-/** נירמול role ללקוח / JWT (רישיות וכו') */
+/** נירמול role ללקוח / JWT (רישיות וכו') — רק user | admin נתמכים באפליקציה */
 export function normalizeUserRole(role) {
   if (role == null || role === '') return ROLES.USER;
   const s = String(role).trim().toLowerCase();
-  return s === ROLES.ADMIN ? ROLES.ADMIN : s;
+  if (
+    s === ROLES.ADMIN ||
+    s === 'administrator' ||
+    s === 'superadmin' ||
+    s === 'super_admin'
+  ) {
+    return ROLES.ADMIN;
+  }
+  return ROLES.USER;
 }
 
 export function isUserRoleAdmin(role) {
-  return String(role ?? '').trim().toLowerCase() === ROLES.ADMIN;
+  return normalizeUserRole(role) === ROLES.ADMIN;
 }
 
 /** סטטוסי תיק */

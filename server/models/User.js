@@ -1,5 +1,5 @@
 import { getSupabaseAdmin } from '../db/supabaseClient.js';
-import { normalizeUserRole } from '../components/constants.js';
+import { normalizeUserRole, ROLES } from '../components/constants.js';
 
 const TABLE = 'app_users';
 
@@ -37,7 +37,14 @@ function rowToUser(row) {
     }
   }
   const mappedFlat = mapFlatColumnToAppFields(fromRow);
-  return { ...fromData, ...mappedFlat, id: row.id != null ? String(row.id) : '' };
+  const merged = { ...fromData, ...mappedFlat, id: row.id != null ? String(row.id) : '' };
+  /* role נשמר ב־JSON; אם יש עמודת role ישנה — לא לדרוס admin ב־data */
+  const roleFromJson = fromData.role;
+  const roleFromCol = mappedFlat.role;
+  if (normalizeUserRole(roleFromJson) === ROLES.ADMIN || normalizeUserRole(roleFromCol) === ROLES.ADMIN) {
+    merged.role = ROLES.ADMIN;
+  }
+  return merged;
 }
 
 function normalizeUserPayload(userData) {
@@ -145,6 +152,38 @@ export async function createUser(userData) {
     }
   }
   return normalized;
+}
+
+/**
+ * קידום סופר־אדמין כש־updateUserById נכשל — ממזג לתוך data + מעדכן עמודת email.
+ */
+export async function promoteToSuperAdminById(id, canonicalEmail) {
+  const canonical = String(canonicalEmail || '').trim().toLowerCase();
+  if (!id || !canonical) return null;
+  try {
+    const sb = getSupabaseAdmin();
+    const { data: row, error: fetchErr } = await sb.from(TABLE).select('*').eq('id', id).maybeSingle();
+    if (fetchErr || !row) return null;
+    const prev =
+      row.data != null && typeof row.data === 'object' && !Array.isArray(row.data) ? { ...row.data } : {};
+    const merged = normalizeUserPayload({
+      ...prev,
+      role: ROLES.ADMIN,
+      email: canonical,
+    });
+    const patch = { data: merged, email: canonical };
+    let { data: out, error } = await sb.from(TABLE).update(patch).eq('id', id).select('*').maybeSingle();
+    if (error) {
+      const r2 = await sb.from(TABLE).update({ data: merged }).eq('id', id).select('*').maybeSingle();
+      out = r2.data;
+      error = r2.error;
+    }
+    if (error) throw error;
+    return rowToUser(out);
+  } catch (error) {
+    console.error('User promoteToSuperAdminById error:', error?.message || error);
+    return null;
+  }
 }
 
 export async function updateUserById(id, updateFields) {
