@@ -100,106 +100,62 @@ export default function UsaCitizenshipWidget() {
     setMobileOpen(true);
   }, []);
 
-  if (dismissed) {
-    return (
-      <button
-        type="button"
-        className="usa-widget-fab"
-        onClick={handleReopen}
-        aria-label={t.reopen}
-        title={t.reopen}
-      >
-        <img
-          src="/us-flag.svg"
-          alt=""
-          className="usa-widget-fab-flag"
-          width="26"
-          height="14"
-          decoding="async"
-        />
-      </button>
-    );
-  }
-
   return (
     <>
-      <aside
-        className="usa-widget usa-widget--desktop usa-widget--with-flag"
-        dir={dir}
-        style={{ textAlign }}
-        aria-label={t.title}
-      >
-        <div className="usa-widget-inner">
-          <button
-            type="button"
-            className="usa-widget-close"
-            onClick={handleClose}
-            aria-label={t.close}
-          >
-            ×
-          </button>
-          <TitleWithFlag>{t.title}</TitleWithFlag>
-          {isHebrew ? <HebrewServiceList /> : <EnglishServiceList />}
-          <a
-            href={WA_CITIZENSHIP_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="usa-widget-wa"
-          >
-            {t.cta}
-          </a>
-        </div>
-      </aside>
-
-      <div className="usa-widget-mobile-wrap">
-        {!mobileOpen ? (
-          <div
-            className="usa-widget usa-widget--mobile-bar usa-widget--with-flag"
-            dir={dir}
-            style={{ textAlign }}
-          >
-            <div className="usa-widget-inner">
-              <div className="usa-widget-mobile-top">
-                <p className="usa-widget-mobile-teaser">
-                  <img
-                    src="/us-flag.svg"
-                    alt=""
-                    className="usa-widget-teaser-flag"
-                    width="22"
-                    height="12"
-                    decoding="async"
-                  />
-                  {t.title}
-                </p>
-                <button
-                  type="button"
-                  className="usa-widget-close usa-widget-close--inline"
-                  onClick={handleClose}
-                  aria-label={t.close}
-                >
-                  ×
-                </button>
-              </div>
-              <div className="usa-widget-mobile-actions">
-                <button
-                  type="button"
-                  className="usa-widget-expand"
-                  onClick={() => setMobileOpen(true)}
-                >
-                  {isHebrew ? 'פרטים' : 'Details'}
-                </button>
-                <a
-                  href={WA_CITIZENSHIP_URL}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="usa-widget-wa usa-widget-wa--compact"
-                >
-                  {t.cta}
-                </a>
-              </div>
-            </div>
+      {/* Desktop Widget (hidden on mobile via CSS) */}
+      {!dismissed && (
+        <aside
+          className="usa-widget usa-widget--desktop usa-widget--with-flag"
+          dir={dir}
+          style={{ textAlign }}
+          aria-label={t.title}
+        >
+          <div className="usa-widget-inner">
+            <button
+              type="button"
+              className="usa-widget-close"
+              onClick={handleClose}
+              aria-label={t.close}
+            >
+              ×
+            </button>
+            <TitleWithFlag>{t.title}</TitleWithFlag>
+            {isHebrew ? <HebrewServiceList /> : <EnglishServiceList />}
+            <a
+              href={WA_CITIZENSHIP_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="usa-widget-wa"
+            >
+              {t.cta}
+            </a>
           </div>
-        ) : (
+        </aside>
+      )}
+
+      {/* FAB (Floating Button) - Shows on desktop if dismissed, shows on mobile if not open */}
+      {(dismissed || !mobileOpen) && (
+        <button
+          type="button"
+          className={`usa-widget-fab ${!dismissed ? 'usa-widget-fab--mobile-only' : ''}`}
+          onClick={handleReopen}
+          aria-label={t.reopen}
+          title={t.reopen}
+        >
+          <img
+            src="/us-flag.svg"
+            alt=""
+            className="usa-widget-fab-flag"
+            width="26"
+            height="14"
+            decoding="async"
+          />
+        </button>
+      )}
+
+      {/* Mobile Sheet - Shows only on mobile when opened */}
+      <div className="usa-widget-mobile-wrap">
+        {mobileOpen && !dismissed && (
           <div
             className="usa-widget usa-widget--mobile-sheet usa-widget--with-flag"
             dir={dir}
