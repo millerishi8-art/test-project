@@ -35,7 +35,7 @@ function displayLoginError(errorState) {
       t
     );
   if (looksSupabaseInfra && import.meta.env.VITE_SUPABASE_URL?.trim()) {
-    return 'ההתחברות נכשלה בצד השרת (API). בלקוח כבר יש Supabase — וודא שב-Vercel מוגדרים SUPABASE_URL ו-SUPABASE_SERVICE_ROLE_KEY, שהרצת את supabase_schema.sql, וביצעת Redeploy.';
+    return 'ההתחברות נכשלה בצד השרת (API). בלקוח כבר יש Supabase — וודא שב-Vercel מוגדרים SUPABASE_URL ו-SUPABASE_SERVICE_ROLE_KEY, שהרצת את , וביצעת Redeploy.';
   }
   return t;
 }

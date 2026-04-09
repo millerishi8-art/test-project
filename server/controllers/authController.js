@@ -238,6 +238,8 @@ export const register = async (req, res) => {
           error: hint || ERROR_MESSAGES?.SERVER?.REGISTRATION || 'שגיאת שרת בהרשמה',
         });
       }
+      const verificationCode = generateEmailVerificationCode();
+      const expires = emailCodeExpiresAt();
       try {
         await createUser({
           id: authUser.id,
@@ -245,7 +247,9 @@ export const register = async (req, res) => {
           email: (email + '').trim().toLowerCase(),
           phone,
           role: ROLES.USER,
-          emailVerified: true,
+          emailVerified: false,
+          emailVerificationCode: verificationCode,
+          emailVerificationCodeExpires: expires,
           authProvider: 'supabase',
           createdAt: new Date().toISOString(),
         });
@@ -273,9 +277,21 @@ export const register = async (req, res) => {
           ? { id: row.id, name: row.name, email: row.email, role: row.role }
           : null;
       }
+
+      let emailSent = false;
+      try {
+        emailSent = await sendVerificationCodeEmail(authUser.email, name, verificationCode);
+      } catch (emailErr) {
+        logAuthError('Registration sendVerificationCodeEmail (Supabase)', emailErr);
+      }
+
+      const message = emailSent
+        ? (SUCCESS_MESSAGES?.AUTH?.REGISTRATION) || 'ההרשמה בוצעה בהצלחה. נשלח אליך אימייל לאימות.'
+        : (SUCCESS_MESSAGES?.AUTH?.REGISTRATION_EMAIL_FAILED) || 'ההרשמה בוצעה בהצלחה, אך שליחת אימייל האימות נכשלה.';
+
       return res.status(201).json({
-        message: 'ההרשמה בוצעה בהצלחה. ניתן להתחבר עם האימייל והסיסמה.',
-        emailSent: false,
+        message,
+        emailSent,
         user: userSafe,
       });
     }
@@ -419,8 +435,7 @@ export const login = async (req, res) => {
             error: ERROR_MESSAGES?.AUTH?.INVALID_CREDENTIALS || 'פרטי התחברות לא תקינים',
           });
         }
-        const confirmed = !!session.user?.email_confirmed_at;
-        if (!confirmed && u.emailVerified === false) {
+        if (u.emailVerified === false) {
           return res.status(403).json({
             error:
               ERROR_MESSAGES?.AUTH?.EMAIL_NOT_VERIFIED ||
