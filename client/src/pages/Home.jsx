@@ -91,6 +91,9 @@ const Home = () => {
             <span>${benefits.family.price.usd}</span>
             <span>₪{benefits.family.price.ils}</span>
           </div>
+          <div style={{ fontSize: '0.75rem', color: '#666', marginTop: '0.5rem', textAlign: 'center' }}>
+            * משוער ותלוי כמה שהמשרד החליט לתקצב
+          </div>
         </div>
 
         <div
@@ -104,6 +107,9 @@ const Home = () => {
             <span>${benefits.individual.price.usd}</span>
             <span>₪{benefits.individual.price.ils}</span>
           </div>
+          <div style={{ fontSize: '0.75rem', color: '#666', marginTop: '0.5rem', textAlign: 'center' }}>
+            * משוער ותלוי כמה שהמשרד החליט לתקצב
+          </div>
         </div>
 
         <div
@@ -116,6 +122,9 @@ const Home = () => {
           <div className="cube-price">
             <span>${benefits.minor.price.usd}</span>
             <span>₪{benefits.minor.price.ils}</span>
+          </div>
+          <div style={{ fontSize: '0.75rem', color: '#666', marginTop: '0.5rem', textAlign: 'center' }}>
+            * משוער ותלוי כמה שהמשרד החליט לתקצב
           </div>
         </div>
 
