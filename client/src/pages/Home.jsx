@@ -124,7 +124,7 @@ const Home = () => {
             <span>₪{benefits.minor.price.ils}</span>
           </div>
           <div style={{ fontSize: '0.75rem', color: '#666', marginTop: '0.5rem', textAlign: 'center' }}>
-            * משוער ותלוי כמה שהמשרד החליט לתקצב
+            *   משוער ותלוי כמה שהמשרד החליט לתקצב ויכול להשתנות לפי סטטוס ההטבה
           </div>
         </div>
 
