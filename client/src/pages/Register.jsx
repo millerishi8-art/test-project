@@ -162,11 +162,14 @@ const Register = () => {
                 style={{ width: '90px', padding: '0.75rem', borderRadius: '8px', border: '2px solid #e0e0e0', fontSize: '1rem' }}
               >
                 <option value="050">050</option>
+                <option value="051">051</option>
                 <option value="052">052</option>
                 <option value="053">053</option>
                 <option value="054">054</option>
                 <option value="055">055</option>
+                <option value="057">057</option>
                 <option value="058">058</option>
+                <option value="059">059</option>
               </select>
               <input
                 type="tel"

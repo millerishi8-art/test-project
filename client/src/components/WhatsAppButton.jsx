@@ -1,7 +1,7 @@
 import { buildWhatsAppUrl } from '../constants/whatsappPrefill';
 import './WhatsAppButton.css';
 
-const WHATSAPP_URL = buildWhatsAppUrl('19296518827');
+const WHATSAPP_URL = buildWhatsAppUrl('NOAM');
 
 /** Inline WhatsApp logo SVG */
 function WhatsAppIcon({ size = 28 }) {

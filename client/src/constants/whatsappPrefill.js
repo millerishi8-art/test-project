@@ -1,12 +1,17 @@
-/** הודעה שממלאת אוטומטית בפתיחת צ'אט וואטסאפ מהאתר */
-export const WHATSAPP_PREFILL_HE =
-  'היי שלום הגעתי מהאתר פוד סטאמפס של נועם מילר אשמח לדעת אם אוכל לקבל עזרה בבירוקרטיה האמריקאית: של אזרחות / סושיאל / דרכון.';
 
-/**
- * @param {string} phoneDigits מספר בלי + (למשל 19296518827 או 972586303063)
- * @param {string} [text]
- */
-export function buildWhatsAppUrl(phoneDigits, text = WHATSAPP_PREFILL_HE) {
-  const q = encodeURIComponent(text);
-  return `https://wa.me/${phoneDigits}?text=${q}`;
+export const WHATSAPP_CONFIG = {
+  NOAM: {
+      phone: "972586303063",
+      message: "Hi Noam, I reached out from the website and would like some general help regarding..."
+  },
+  AGENT: {
+      phone: "19296518827",
+      message: "Hello, I am interested in getting more details about professional assistance with American Citizenship..."
+  }
+};
+
+export function buildWhatsAppUrl(target) {
+  const { phone, message } = WHATSAPP_CONFIG[target];
+  const q = encodeURIComponent(message);
+  return `https://wa.me/${phone}?text=${q}`;
 }

@@ -3,7 +3,7 @@ import { useLanguage } from '../context/LanguageContext';
 import { buildWhatsAppUrl } from '../constants/whatsappPrefill';
 import './UsaCitizenshipWidget.css';
 
-const WA_CITIZENSHIP_URL = buildWhatsAppUrl('972586303063');
+const WA_CITIZENSHIP_URL = buildWhatsAppUrl('AGENT');
 const SESSION_KEY = 'usaCitizenshipWidgetDismissed';
 
 const copy = {
