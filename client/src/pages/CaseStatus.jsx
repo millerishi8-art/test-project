@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useLanguage } from '../context/LanguageContext';
 import { caseStatusTranslations } from '../translations/caseStatus';
-import { getProcessingStageNumber } from '../utils/caseProcessingStages';
+import { getProcessingStageNumber, isCaseProcessingSuccessfulEnd } from '../utils/caseProcessingStages';
+import AgentSupportInline from '../components/AgentSupportInline';
 import './CaseStatus.css';
 
 /**
@@ -213,6 +214,9 @@ const CaseStatus = () => {
                           {new Date(c.renewalDate).toLocaleDateString(locale)}
                         </span>
                       </div>
+                    )}
+                    {isCaseProcessingSuccessfulEnd(c) && (
+                      <AgentSupportInline context="case-complete" />
                     )}
                   </div>
                 );

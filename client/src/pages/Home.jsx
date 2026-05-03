@@ -4,6 +4,7 @@ import axios from 'axios';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { homeTranslations } from '../translations/home';
+import AgentSupportInline from '../components/AgentSupportInline';
 import './Home.css';
 
 const Home = () => {
@@ -139,6 +140,8 @@ const Home = () => {
           </div>
         )}
       </div>
+
+      <AgentSupportInline context="home" />
     </div>
   );
 };

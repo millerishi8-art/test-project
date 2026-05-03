@@ -1,0 +1,22 @@
+.agent-support-inline {
+  margin-top: var(--space-8, 2.5rem);
+}
+
+.agent-support-inline-lead {
+  font-size: clamp(0.85rem, 2.4vw, 0.95rem);
+  color: #475569;
+  text-align: center;
+  margin: 0 0 1rem;
+  line-height: 1.55;
+  max-width: 42rem;
+  margin-inline: auto;
+}
+
+.agent-support-inline--case-complete {
+  margin-top: 0;
+}
+
+.agent-support-inline--case-complete .agent-support-inline-lead {
+  text-align: inherit;
+  margin-bottom: 0.85rem;
+}

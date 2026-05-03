@@ -31,3 +31,10 @@ export function getProcessingStageNumber(c) {
   if (s === 'pending') return 1;
   return 0;
 }
+
+/** תיק שהגיע לאישור סופי או סומן כמוכן לחידוש — מתאים להצגת שירות משלים בסוף התהליך */
+export function isCaseProcessingSuccessfulEnd(c) {
+  if (!c) return false;
+  if (c.adminConfirmedCompleted) return true;
+  return getProcessingStageNumber(c) === 5;
+}

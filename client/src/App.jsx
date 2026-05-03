@@ -5,7 +5,6 @@ import { LanguageProvider } from './context/LanguageContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Navbar from './components/Navbar';
 import WhatsAppButton from './components/WhatsAppButton';
-import UsaCitizenshipWidget from './components/UsaCitizenshipWidget';
 import TestimonialTicker from './components/TestimonialTicker';
 import './App.css';
 
@@ -34,7 +33,6 @@ function App() {
       <AuthProvider>
         <div className="app">
           <Navbar />
-          <UsaCitizenshipWidget />
           <WhatsAppButton />
           <TestimonialTicker />
           <Suspense fallback={<LoadingFallback />}>
