@@ -1,7 +1,23 @@
 import { buildWhatsAppUrl } from '../constants/whatsappPrefill';
+import { useLanguage } from '../context/LanguageContext';
 import './WhatsAppButton.css';
 
 const WHATSAPP_URL = buildWhatsAppUrl('NOAM');
+
+const copy = {
+  he: {
+    shortLabel: 'צור קשר עם המנהל',
+    ariaLabel: 'צור קשר עם מנהל האתר בוואטסאפ — שאלות לגבי האתר',
+    bubble:
+      'לשאלות לגבי האתר אפשר לפנות בוואטסאפ (גם צילום מסך). בין השעות 16:00–22:00 שעון ישראל.',
+  },
+  en: {
+    shortLabel: 'Contact the manager',
+    ariaLabel: 'Contact the site manager on WhatsApp — questions about this website',
+    bubble:
+      'Questions about this site? Message on WhatsApp (screenshots welcome). Replies roughly 4pm–10pm Israel time.',
+  },
+};
 
 /** Inline WhatsApp logo SVG */
 function WhatsAppIcon({ size = 28 }) {
@@ -19,19 +35,25 @@ function WhatsAppIcon({ size = 28 }) {
 }
 
 export default function WhatsAppButton() {
+  const { language } = useLanguage();
+  const t = copy[language] || copy.he;
+
   return (
     <div className="whatsapp-float-wrap">
       <span className="whatsapp-float-bubble" role="tooltip">
-        לשאלות והתייעצות אפשר לפנות בוואטסאפ בין השעות 16:00 ל-22:00 שעון ישראל. מענה לוקח בין יום לשנה.
+        {t.bubble}
       </span>
       <a
         href={WHATSAPP_URL}
         target="_blank"
         rel="noopener noreferrer"
-        className="whatsapp-float"
-        aria-label="צור קשר בוואטסאפ"
+        className="whatsapp-float-hit"
+        aria-label={t.ariaLabel}
       >
-        <WhatsAppIcon />
+        <span className="whatsapp-float-label">{t.shortLabel}</span>
+        <span className="whatsapp-float">
+          <WhatsAppIcon />
+        </span>
       </a>
     </div>
   );
