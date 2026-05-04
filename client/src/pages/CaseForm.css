@@ -827,32 +827,174 @@
   color: #5c4a1a;
 }
 
-.case-form-defer-payment-btn {
-  display: inline-flex;
+/* Payment options + minimum fee (CaseForm) */
+.case-form-payment-panel {
+  margin-bottom: 1.25rem;
+  padding: 0;
+}
+
+.case-form-payment-minimum {
+  background: linear-gradient(145deg, #e3f2fd 0%, #f5f9ff 100%);
+  border: 1px solid #90caf9;
+  border-radius: 16px;
+  padding: 1.15rem 1.25rem 1.25rem;
+  margin-bottom: 1.1rem;
+}
+
+.case-form-payment-panel-title {
+  margin: 0 0 0.5rem;
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #0d47a1;
+  text-align: start;
+}
+
+.case-form-payment-minimum-lead {
+  margin: 0 0 0.85rem;
+  font-size: 0.98rem;
+  line-height: 1.5;
+  color: #1a3a52;
+  text-align: start;
+}
+
+.case-form-payment-amount-row {
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: center;
-  margin-top: 1rem;
-  padding: 0.75rem 1.25rem;
-  min-height: var(--touch-min);
-  font-size: 1rem;
-  font-weight: 600;
-  color: #fff;
-  background: linear-gradient(180deg, #ff9f43 0%, #e67e22 100%);
-  border: none;
+  gap: 0.65rem 0.9rem;
+  margin: 0.5rem 0 0.75rem;
+  padding: 0.75rem 1rem;
+  background: rgba(255, 255, 255, 0.88);
   border-radius: 12px;
-  cursor: pointer;
-  box-shadow: 0 3px 12px rgba(230, 126, 34, 0.35);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border: 1px solid #bbdefb;
+  font-size: 1.05rem;
 }
 
-.case-form-defer-payment-btn:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 5px 18px rgba(230, 126, 34, 0.45);
+.case-form-payment-usd {
+  font-weight: 700;
+  color: #1565c0;
 }
 
-.case-form-defer-payment-btn:disabled {
-  opacity: 0.65;
-  cursor: not-allowed;
+.case-form-payment-arrow {
+  color: #64b5f6;
+  font-weight: 600;
+  user-select: none;
+}
+
+.case-form-payment-nis {
+  font-weight: 600;
+  color: #0d47a1;
+}
+
+.case-form-payment-nis-label {
+  font-weight: 500;
+  color: #37474f;
+}
+
+.case-form-payment-nis-loading,
+.case-form-payment-nis-fallback {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #546e7a;
+}
+
+.case-form-payment-rate-note {
+  margin: 0 0 0.6rem;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: #455a64;
+  text-align: start;
+}
+
+.case-form-payment-xe-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #0d47a1;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.case-form-payment-xe-link:hover {
+  color: #1565c0;
+}
+
+.case-form-payment-methods {
+  text-align: start;
+}
+
+.case-form-payment-methods-heading {
+  margin: 0 0 0.75rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #1e6bb8;
+}
+
+.case-form-payment-method-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.case-form-payment-method-card {
+  margin: 0;
+  padding: 0.9rem 1rem;
+  background: #fafcff;
+  border: 1px solid #c5d8ef;
+  border-radius: 12px;
+  box-shadow: 0 1px 0 rgba(30, 107, 184, 0.06);
+}
+
+.case-form-payment-method-card--apps {
+  background: linear-gradient(135deg, #fff8e6 0%, #fffef5 100%);
+  border-color: #e0b96a;
+}
+
+.case-form-payment-method-title {
+  display: block;
+  font-weight: 700;
+  font-size: 1rem;
+  color: #0d47a1;
+  margin-bottom: 0.4rem;
+}
+
+.case-form-payment-method-placeholder {
+  margin: 0;
+  font-size: 0.92rem;
+  line-height: 1.45;
+  color: #607d8b;
+  font-style: italic;
+}
+
+.case-form-payment-apps-intro {
+  margin: 0 0 0.5rem;
+  font-size: 0.92rem;
+  line-height: 1.45;
+  color: #4a3728;
+}
+
+.case-form-payment-phone-link {
+  display: inline-block;
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: #c2410c;
+  text-decoration: none;
+  padding: 0.35rem 0.5rem;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(194, 65, 12, 0.35);
+}
+
+.case-form-payment-phone-link:hover {
+  background: #fff;
+  color: #9a3412;
 }
 
 .case-form-defer-notice {

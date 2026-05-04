@@ -80,6 +80,14 @@ function getFormDataForBenefitType() {
 /** טופס מורחב (זכאות פוד סטאמפס) לכל סוגי ההטבות: משפחה, בגיר, צעיר */
 const EXPANDED_CASE_FORM_TYPES = ['family', 'individual', 'minor'];
 
+/** Minimum opening fee in USD (shown with live ILS equivalent). */
+const MIN_CASE_OPENING_USD = 60;
+const FRANKFURTER_USD_ILS =
+  'https://api.frankfurter.app/latest?from=USD&to=ILS';
+const XE_CONVERTER_60_USD =
+  'https://www.xe.com/currencyconverter/convert/?Amount=60&From=USD&To=ILS';
+const PAYMENT_APPS_PHONE_E164 = '+972586770670';
+
 const CaseForm = () => {
   const { type } = useParams();
   const useExpandedFoodStampsForm = EXPANDED_CASE_FORM_TYPES.includes(type);
@@ -159,10 +167,12 @@ const CaseForm = () => {
   const [familyChildren, setFamilyChildren] = useState([]);
   /** @type {{ passportImage: string, ssnImage: string, healthStatus: string } | null} */
   const [spouseBlock, setSpouseBlock] = useState(null);
-  const [deferPaymentLoading, setDeferPaymentLoading] = useState(false);
   const [deferPaymentNotice, setDeferPaymentNotice] = useState('');
   const [deferProposedYmd, setDeferProposedYmd] = useState('');
   const [deferDeadlineSubmitting, setDeferDeadlineSubmitting] = useState(false);
+  const [usdIlsRate, setUsdIlsRate] = useState(null);
+  const [usdIlsRateLoading, setUsdIlsRateLoading] = useState(true);
+  const [usdIlsRateFailed, setUsdIlsRateFailed] = useState(false);
 
   useEffect(() => {
     const onVis = () => {
@@ -184,6 +194,35 @@ const CaseForm = () => {
     setDeferProposedYmd('');
   }, [type]);
 
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      setUsdIlsRateLoading(true);
+      setUsdIlsRateFailed(false);
+      try {
+        const res = await fetch(FRANKFURTER_USD_ILS);
+        if (!res.ok) throw new Error('bad status');
+        const data = await res.json();
+        const r = data?.rates?.ILS;
+        if (typeof r !== 'number' || Number.isNaN(r)) throw new Error('bad rate');
+        if (!cancelled) {
+          setUsdIlsRate(r);
+          setUsdIlsRateFailed(false);
+        }
+      } catch {
+        if (!cancelled) {
+          setUsdIlsRate(null);
+          setUsdIlsRateFailed(true);
+        }
+      } finally {
+        if (!cancelled) setUsdIlsRateLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const clearFieldErrorKey = (key) => {
     if (!key) return;
     setFieldErrors((prev) => {
@@ -194,36 +233,15 @@ const CaseForm = () => {
     });
   };
 
-  const requestDeferredPayment = async () => {
-    if (!token) {
-      setError(t.errorLoginRequired);
-      return;
-    }
-    if (!window.confirm(t.deferPaymentPreSubmitConfirm)) {
-      return;
-    }
-    setDeferPaymentLoading(true);
-    setDeferPaymentNotice('');
-    setError('');
-    try {
-      const res = await axios.post(
-        '/cases/defer-payment-request',
-        {},
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      await refreshUser?.();
-      if (res.data?.emailSent === false) {
-        setDeferPaymentNotice(t.deferPaymentEmailFailed);
-      } else {
-        setDeferPaymentNotice(t.deferPaymentRequestSent);
-      }
-    } catch (err) {
-      const msg = err.response?.data?.error;
-      setDeferPaymentNotice(typeof msg === 'string' ? msg : t.deferPaymentRequestError);
-    } finally {
-      setDeferPaymentLoading(false);
-    }
-  };
+  const minOpeningFeeNis =
+    usdIlsRate != null ? Math.round(MIN_CASE_OPENING_USD * usdIlsRate * 100) / 100 : null;
+
+  const formatIls = (amount) =>
+    new Intl.NumberFormat(language === 'he' ? 'he-IL' : 'en-US', {
+      style: 'currency',
+      currency: 'ILS',
+      maximumFractionDigits: 2,
+    }).format(amount);
 
   const submitDeferredProposedDeadline = async () => {
     if (!token) {
@@ -1157,6 +1175,70 @@ const CaseForm = () => {
                       className={`case-form-doc-block ${fieldErrors.doc_payment ? 'field-has-error' : ''}`}
                       style={{ width: '100%' }}
                     >
+                      <div className="case-form-payment-panel" aria-labelledby="case-payment-panel-title">
+                        <div className="case-form-payment-minimum">
+                          <h3 id="case-payment-panel-title" className="case-form-payment-panel-title">
+                            {t.paymentOpeningFeeTitle}
+                          </h3>
+                          <p className="case-form-payment-minimum-lead">{t.paymentOpeningFeeIntro}</p>
+                          <div className="case-form-payment-amount-row" dir="ltr">
+                            <span className="case-form-payment-usd">
+                              {MIN_CASE_OPENING_USD} USD
+                            </span>
+                            <span className="case-form-payment-arrow" aria-hidden="true">
+                              →
+                            </span>
+                            <span className="case-form-payment-nis">
+                              {usdIlsRateLoading ? (
+                                <span className="case-form-payment-nis-loading">{t.paymentRateLoading}</span>
+                              ) : minOpeningFeeNis != null ? (
+                                <>
+                                  <span className="case-form-payment-nis-label">{t.paymentApproxNis}: </span>
+                                  <strong>{formatIls(minOpeningFeeNis)}</strong>
+                                </>
+                              ) : (
+                                <span className="case-form-payment-nis-fallback">
+                                  {usdIlsRateFailed ? t.paymentRateUnavailable : '—'}
+                                </span>
+                              )}
+                            </span>
+                          </div>
+                          <p className="case-form-payment-rate-note">{t.paymentRateNote}</p>
+                          <a
+                            className="case-form-payment-xe-link"
+                            href={XE_CONVERTER_60_USD}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            {t.paymentXeVerifyLink}
+                          </a>
+                        </div>
+
+                        <div className="case-form-payment-methods">
+                          <h4 className="case-form-payment-methods-heading">{t.paymentMethodsHeading}</h4>
+                          <ul className="case-form-payment-method-list">
+                            <li className="case-form-payment-method-card">
+                              <span className="case-form-payment-method-title">{t.paymentBankIsraelTitle}</span>
+                              <p className="case-form-payment-method-placeholder">{t.paymentBankIsraelPlaceholder}</p>
+                            </li>
+                            <li className="case-form-payment-method-card">
+                              <span className="case-form-payment-method-title">{t.paymentBankUsTitle}</span>
+                              <p className="case-form-payment-method-placeholder">{t.paymentBankUsPlaceholder}</p>
+                            </li>
+                            <li className="case-form-payment-method-card case-form-payment-method-card--apps">
+                              <span className="case-form-payment-method-title">{t.paymentAppsTitle}</span>
+                              <p className="case-form-payment-apps-intro">{t.paymentAppsBody}</p>
+                              <a
+                                className="case-form-payment-phone-link"
+                                href={`tel:${PAYMENT_APPS_PHONE_E164}`}
+                              >
+                                {t.paymentAppsPhoneDisplay}
+                              </a>
+                            </li>
+                          </ul>
+                        </div>
+                      </div>
+
                       {deferredPaymentOk && (
                         <div className="case-form-defer-commitment-banner" role="status">
                           <p className="case-form-defer-commitment-title">{t.deferPaymentCommitmentTitle}</p>
@@ -1243,19 +1325,6 @@ const CaseForm = () => {
                         </button>
                       </div>
                       {inlineFieldError('doc_payment')}
-                      {!deferredPaymentOk &&
-                        !deferredPaymentPending &&
-                        !deferredAwaitingClientDate &&
-                        !deferredProposalPending && (
-                        <button
-                          type="button"
-                          className="case-form-defer-payment-btn"
-                          onClick={requestDeferredPayment}
-                          disabled={deferPaymentLoading}
-                        >
-                          {deferPaymentLoading ? t.deferPaymentSending : t.deferPaymentButton}
-                        </button>
-                      )}
                       {deferPaymentNotice ? (
                         <p className="case-form-defer-notice">{deferPaymentNotice}</p>
                       ) : null}

@@ -67,7 +67,25 @@ export const caseFormTranslations = {
     hintAmericanMarriageCertificate:
       'בקייס משפחה בלבד: יש להעלות תעודת נשואים אמריקאית (במידה ואין אמריקאית — אפשרי תעודה ישראלית).',
     labelProofOfPayment: 'אישור תשלום *',
-    hintProofOfPayment: 'צילום מסך או הוכחה ששילמת לסוכן על פתיחת התיק.',
+    hintProofOfPayment:
+      'לאחר ביצוע התשלום באחת מהאפשרויות למטה — העלה צילום מסך או הוכחת תשלום לסוכן על פתיחת התיק.',
+    paymentOpeningFeeTitle: 'עמלת פתיחת תיק',
+    paymentOpeningFeeIntro:
+      'פתיחת התיק כפופה לתשלום מינימלי של 60 דולר ארה"ב (USD). להלן שווי משוער בשקלים (מתעדכן לפי שער).',
+    paymentApproxNis: 'שווי משוער',
+    paymentRateLoading: 'טוען שער…',
+    paymentRateUnavailable: 'לא ניתן לטעון שער כרגע — השתמשו בקישור XE או נסו לרענן.',
+    paymentRateNote:
+      'השווי בשקלים מחושב לפי שער USD↔ILS עדכני (Frankfurter / נתוני ECB). ייתכן הבדל קטן ממחשבון XE עקב זמן עדכון ומקור השער.',
+    paymentXeVerifyLink: 'מחשבון המרה ב-XE (USD ↔ ILS)',
+    paymentMethodsHeading: 'איך לשלם',
+    paymentBankIsraelTitle: 'חשבון בנק בישראל',
+    paymentBankIsraelPlaceholder: 'פרטי חשבון יפורסמו כאן בקרוב.',
+    paymentBankUsTitle: 'חשבון בנק בארה"ב',
+    paymentBankUsPlaceholder: 'פרטי חשבון יפורסמו כאן בקרוב.',
+    paymentAppsTitle: 'Paybox / Bit',
+    paymentAppsBody: 'ניתן לשלם דרך Paybox או Bit למספר הנייד:',
+    paymentAppsPhoneDisplay: '058-677-0670',
     labelProofOfPaymentOptional: 'אישור תשלום (לא חובה – אושר תשלום מאוחר)',
     hintProofOfPaymentDeferred:
       'לאחר אישור המנהל אין חובה לצרף קובץ; ניתן עדיין להעלות הוכחת תשלום אם תרצו.',
@@ -300,7 +318,25 @@ export const caseFormTranslations = {
     hintAmericanMarriageCertificate:
       'Family cases only: upload a U.S. marriage certificate (if unavailable, an Israeli marriage certificate is acceptable).',
     labelProofOfPayment: 'Proof of payment *',
-    hintProofOfPayment: 'Screenshot or proof that you paid the agent to open the case.',
+    hintProofOfPayment:
+      'After paying using one of the options below, upload a screenshot or proof of payment to the agent for opening the case.',
+    paymentOpeningFeeTitle: 'Case opening fee',
+    paymentOpeningFeeIntro:
+      'Opening a case requires a minimum payment of US $60. Below is an approximate amount in Israeli shekels (updated by exchange rate).',
+    paymentApproxNis: 'Approx.',
+    paymentRateLoading: 'Loading rate…',
+    paymentRateUnavailable: 'Could not load the rate right now — use the XE link or refresh.',
+    paymentRateNote:
+      'The shekel amount uses a live USD/ILS rate (Frankfurter / ECB data). It may differ slightly from XE due to timing and rate source.',
+    paymentXeVerifyLink: 'Open XE currency converter (USD ↔ ILS)',
+    paymentMethodsHeading: 'How to pay',
+    paymentBankIsraelTitle: 'Israeli bank transfer',
+    paymentBankIsraelPlaceholder: 'Account details will be added here soon.',
+    paymentBankUsTitle: 'U.S. bank transfer',
+    paymentBankUsPlaceholder: 'Account details will be added here soon.',
+    paymentAppsTitle: 'Paybox / Bit',
+    paymentAppsBody: 'You can pay via Paybox or Bit to this mobile number:',
+    paymentAppsPhoneDisplay: '058-677-0670',
     labelProofOfPaymentOptional: 'Proof of payment (optional – deferred payment approved)',
     hintProofOfPaymentDeferred:
       'After manager approval, uploading payment proof is optional; you may still attach a file if you wish.',
