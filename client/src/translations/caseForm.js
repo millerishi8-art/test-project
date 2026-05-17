@@ -49,6 +49,7 @@ export const caseFormTranslations = {
     rentOptOut:
       'אינני מעוניין לקבל סיוע בשכר דירה (הימנע מהצהרה על תשלום שכר דירה)',
     rentOptedOutNote: 'בחרת שלא לקבל סיוע בשכר דירה. לא תיפתח בקשה לסיוע בשכר דירה.',
+    rentOptIn: 'אני מעוניין לקבל סיוע בשכר דירה (חזור להצהרת שכירות)',
     errorRentRequired: 'נא להזין סכום שכירות חודשי תקין אם ברצונך לקבל סיוע בשכר דירה.',
 
     // Section 3: Food Stamps History
@@ -309,6 +310,7 @@ export const caseFormTranslations = {
     rentLabel: 'Monthly Rent Amount ($)',
     rentOptOut: 'I am not interested in rental assistance (Skip rent declaration)',
     rentOptedOutNote: 'You opted out of rental assistance. No rent assistance request will be opened.',
+    rentOptIn: 'I want rental assistance (Return to rent declaration)',
     errorRentRequired: 'Please enter a valid monthly rent amount if you want rental assistance.',
 
     // Section 3: Food Stamps History

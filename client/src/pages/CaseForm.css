@@ -117,7 +117,7 @@
   text-align: start;
 }
 
-.rent-opt-out-btn {
+.rent-toggle-btn {
   display: inline-block;
   margin-top: 0.65rem;
   padding: 0;
@@ -132,10 +132,17 @@
   text-align: start;
 }
 
-.rent-opt-out-btn:hover,
-.rent-opt-out-btn:focus-visible {
+.rent-toggle-btn:hover,
+.rent-toggle-btn:focus-visible {
   color: #1e6bb8;
   outline: none;
+}
+
+.rent-opted-out-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
 }
 
 .rent-opted-out-note {
@@ -147,6 +154,11 @@
   color: #64748b;
   font-size: 0.9rem;
   line-height: 1.5;
+}
+
+.rent-opted-out-wrap .rent-toggle-btn {
+  margin-top: 0.35rem;
+  margin-inline-start: 1rem;
 }
 
 .rent-declaration-has-error .rent-declaration-explanation {

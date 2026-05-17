@@ -382,6 +382,14 @@ const CaseForm = () => {
     setError('');
   };
 
+  const handleRentOptIn = () => {
+    const profileType = benefitTypeToProfileType(type);
+    setWantsRentAssistance(true);
+    setMonthlyRentAmount(String(generateRandomRentAmount(profileType)));
+    clearFieldErrorKey('monthlyRent');
+    setError('');
+  };
+
   const handleMonthlyRentChange = (e) => {
     setMonthlyRentAmount(e.target.value);
     clearFieldErrorKey('monthlyRent');
@@ -1043,7 +1051,7 @@ const CaseForm = () => {
                       {inlineFieldError('monthlyRent')}
                       <button
                         type="button"
-                        className="rent-opt-out-btn"
+                        className="rent-toggle-btn"
                         onClick={handleRentOptOut}
                       >
                         {t.rentOptOut}
@@ -1051,9 +1059,16 @@ const CaseForm = () => {
                     </div>
                   </div>
                 ) : (
-                  <p className="rent-opted-out-note" role="status">
-                    {t.rentOptedOutNote}
-                  </p>
+                  <div className="rent-opted-out-wrap" role="status">
+                    <p className="rent-opted-out-note">{t.rentOptedOutNote}</p>
+                    <button
+                      type="button"
+                      className="rent-toggle-btn"
+                      onClick={handleRentOptIn}
+                    >
+                      {t.rentOptIn}
+                    </button>
+                  </div>
                 )}
               </div>
 
