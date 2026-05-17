@@ -6,6 +6,10 @@ import { useLanguage } from '../context/LanguageContext';
 import { caseFormTranslations } from '../translations/caseForm';
 import { buildGoogleCalendarUrl, openGoogleCalendarInNewTab } from '../utils/googleCalendar';
 import { buildCountrySelectOptions } from '../utils/countryOptions';
+import {
+  benefitTypeToProfileType,
+  generateRandomRentAmount,
+} from '../utils/rentDeclaration';
 import './CaseForm.css';
 
 const SIGNATURE_PAD_WIDTH = 400;
@@ -173,6 +177,8 @@ const CaseForm = () => {
   const [usdIlsRate, setUsdIlsRate] = useState(null);
   const [usdIlsRateLoading, setUsdIlsRateLoading] = useState(true);
   const [usdIlsRateFailed, setUsdIlsRateFailed] = useState(false);
+  const [wantsRentAssistance, setWantsRentAssistance] = useState(true);
+  const [monthlyRentAmount, setMonthlyRentAmount] = useState('');
 
   useEffect(() => {
     const onVis = () => {
@@ -192,6 +198,9 @@ const CaseForm = () => {
     setFieldErrors({});
     setDeferPaymentNotice('');
     setDeferProposedYmd('');
+    setWantsRentAssistance(true);
+    const profileType = benefitTypeToProfileType(type);
+    setMonthlyRentAmount(String(generateRandomRentAmount(profileType)));
   }, [type]);
 
   useEffect(() => {
@@ -364,6 +373,19 @@ const CaseForm = () => {
     } finally {
       setLoadingBenefit(false);
     }
+  };
+
+  const handleRentOptOut = () => {
+    setWantsRentAssistance(false);
+    setMonthlyRentAmount('');
+    clearFieldErrorKey('monthlyRent');
+    setError('');
+  };
+
+  const handleMonthlyRentChange = (e) => {
+    setMonthlyRentAmount(e.target.value);
+    clearFieldErrorKey('monthlyRent');
+    setError('');
   };
 
   const handleChange = (e) => {
@@ -558,6 +580,11 @@ const CaseForm = () => {
           spouseIncluded: Boolean(isFamilyCase && spouseBlock),
           spouseHealthStatus:
             isFamilyCase && spouseBlock ? (spouseBlock.healthStatus || '').trim() : undefined,
+          wantsRentAssistance,
+          monthlyRentAmount: wantsRentAssistance
+            ? String(monthlyRentAmount).trim()
+            : '',
+          rentDeclarationOptedOut: !wantsRentAssistance,
           attachments: [
             ...attachments.map((a) => ({ data: a.data, category: a.category })),
             ...spouseAttachments,
@@ -613,6 +640,7 @@ const CaseForm = () => {
       'dependentsCount',
       'additionalCitizenship',
       'additionalCitizenshipCountry',
+      'monthlyRent',
       'caseEmail',
       'casePassword',
       'doc_birth',
@@ -658,6 +686,14 @@ const CaseForm = () => {
     if (!formData.additionalCitizenship) errs.additionalCitizenship = t.errorFieldRequired;
     if (formData.additionalCitizenship === 'Yes' && !(formData.additionalCitizenshipCountry || '').trim()) {
       errs.additionalCitizenshipCountry = t.errorCitizenshipCountryRequired;
+    }
+
+    if (wantsRentAssistance) {
+      const rentRaw = String(monthlyRentAmount ?? '').trim();
+      const rentNum = Number(rentRaw);
+      if (!rentRaw || Number.isNaN(rentNum) || rentNum <= 0) {
+        errs.monthlyRent = t.errorRentRequired;
+      }
     }
 
     if (formData.previousCase || formData.activeCase) {
@@ -981,6 +1017,44 @@ const CaseForm = () => {
                     </div>
                   )}
                 </div>
+              </div>
+
+              <div className="form-section rent-declaration-section">
+                <h2>{t.sectionRentDeclaration}</h2>
+                {wantsRentAssistance ? (
+                  <div
+                    className={`rent-declaration-layout${fieldErrors.monthlyRent ? ' rent-declaration-has-error' : ''}`}
+                    id="case-field-monthlyRent"
+                  >
+                    <p className="rent-declaration-explanation">{t.rentExplanation}</p>
+                    <div className={`form-group rent-declaration-input-wrap${fieldErrors.monthlyRent ? ' field-has-error' : ''}`}>
+                      <label htmlFor="case-input-monthlyRent">{t.rentLabel}</label>
+                      <input
+                        id="case-input-monthlyRent"
+                        type="number"
+                        min="1"
+                        step="1"
+                        value={monthlyRentAmount}
+                        onChange={handleMonthlyRentChange}
+                        dir="ltr"
+                        inputMode="numeric"
+                        aria-invalid={Boolean(fieldErrors.monthlyRent)}
+                      />
+                      {inlineFieldError('monthlyRent')}
+                      <button
+                        type="button"
+                        className="rent-opt-out-btn"
+                        onClick={handleRentOptOut}
+                      >
+                        {t.rentOptOut}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <p className="rent-opted-out-note" role="status">
+                    {t.rentOptedOutNote}
+                  </p>
+                )}
               </div>
 
               <div className="form-section">

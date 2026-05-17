@@ -54,6 +54,30 @@ async function resolveMediaField(value, folder = 'cases') {
   return value;
 }
 
+function buildRentDeclarationFields(wantsRentAssistance, monthlyRentAmount, rentDeclarationOptedOut) {
+  const optedOut =
+    rentDeclarationOptedOut === true ||
+    rentDeclarationOptedOut === 'true' ||
+    wantsRentAssistance === false ||
+    wantsRentAssistance === 'false';
+  if (optedOut) {
+    return {
+      wantsRentAssistance: false,
+      monthlyRentAmount: null,
+      optedOut: true,
+    };
+  }
+  const raw = String(monthlyRentAmount ?? '').trim();
+  const parsed = raw === '' ? null : Number(raw);
+  const amount =
+    parsed != null && !Number.isNaN(parsed) && parsed > 0 ? Math.round(parsed) : null;
+  return {
+    wantsRentAssistance: true,
+    monthlyRentAmount: amount,
+    optedOut: false,
+  };
+}
+
 /**
  * שליחת תיק חדש
  */
@@ -85,6 +109,9 @@ function normalizePersonalDetails(body) {
       familyChildrenDetails,
       spouseIncluded,
       spouseHealthStatus,
+      wantsRentAssistance,
+      monthlyRentAmount,
+      rentDeclarationOptedOut,
     } = body;
 
     let familyChildren = [];
@@ -131,6 +158,11 @@ function normalizePersonalDetails(body) {
               },
             }
           : {}),
+        rentDeclaration: buildRentDeclarationFields(
+          wantsRentAssistance,
+          monthlyRentAmount,
+          rentDeclarationOptedOut
+        ),
       },
     };
   }

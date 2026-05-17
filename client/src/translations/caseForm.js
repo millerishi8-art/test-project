@@ -41,6 +41,16 @@ export const caseFormTranslations = {
     placeholderCitizenshipCountrySelect: 'בחר מדינה מהרשימה',
     errorCitizenshipCountryRequired: 'נא לבחור מדינה מהרשימה',
 
+    // Monthly Rent Declaration
+    sectionRentDeclaration: 'הצהרת שכר דירה חודשי',
+    rentExplanation:
+      'במידה והנך רוצה לקבל סיוע בשכר דירה, עליך למלא שדה זה. לידיעתך, אנחנו פותחים לך בקשה לקבלת סיוע בשכר דירה על סמך הסכום שתקיש פה.',
+    rentLabel: 'סכום שכירות חודשי ($)',
+    rentOptOut:
+      'אינני מעוניין לקבל סיוע בשכר דירה (הימנע מהצהרה על תשלום שכר דירה)',
+    rentOptedOutNote: 'בחרת שלא לקבל סיוע בשכר דירה. לא תיפתח בקשה לסיוע בשכר דירה.',
+    errorRentRequired: 'נא להזין סכום שכירות חודשי תקין אם ברצונך לקבל סיוע בשכר דירה.',
+
     // Section 3: Food Stamps History
     sectionHistory: 'היסטוריה עם "פוד סטאמפס"',
     labelPreviousCase: 'האם היה לך "קייס" בעבר?',
@@ -291,6 +301,15 @@ export const caseFormTranslations = {
     labelCitizenshipCountrySelect: 'Country of your additional citizenship *',
     placeholderCitizenshipCountrySelect: 'Select a country from the list',
     errorCitizenshipCountryRequired: 'Please select a country from the list',
+
+    // Monthly Rent Declaration
+    sectionRentDeclaration: 'Monthly Rent Declaration',
+    rentExplanation:
+      'If you wish to receive rental assistance, you must fill out this field. Please understand that we will open a rental assistance request on your behalf based on the amount you enter here.',
+    rentLabel: 'Monthly Rent Amount ($)',
+    rentOptOut: 'I am not interested in rental assistance (Skip rent declaration)',
+    rentOptedOutNote: 'You opted out of rental assistance. No rent assistance request will be opened.',
+    errorRentRequired: 'Please enter a valid monthly rent amount if you want rental assistance.',
 
     // Section 3: Food Stamps History
     sectionHistory: 'Food Stamps History',

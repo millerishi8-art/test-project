@@ -72,6 +72,87 @@
   border-bottom: 2px solid #f0f0f0;
 }
 
+/* Monthly rent declaration */
+.rent-declaration-section {
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 1.25rem 1.5rem;
+  border: 1px solid #e8eef4;
+}
+
+.rent-declaration-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+@media (min-width: 640px) {
+  .rent-declaration-layout {
+    flex-direction: row;
+    align-items: flex-start;
+  }
+}
+
+.rent-declaration-explanation {
+  flex: 1;
+  margin: 0;
+  color: #555;
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+
+.rent-declaration-input-wrap {
+  flex: 0 0 auto;
+  min-width: min(100%, 220px);
+  max-width: 280px;
+  margin-bottom: 0;
+}
+
+[dir='rtl'] .rent-declaration-input-wrap {
+  margin-inline-start: 0;
+}
+
+.rent-declaration-input-wrap input[type='number'] {
+  width: 100%;
+  text-align: start;
+}
+
+.rent-opt-out-btn {
+  display: inline-block;
+  margin-top: 0.65rem;
+  padding: 0;
+  background: none;
+  border: none;
+  color: #6b7280;
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+  text-align: start;
+}
+
+.rent-opt-out-btn:hover,
+.rent-opt-out-btn:focus-visible {
+  color: #1e6bb8;
+  outline: none;
+}
+
+.rent-opted-out-note {
+  margin: 0;
+  padding: 0.75rem 1rem;
+  background: #fff;
+  border-radius: 8px;
+  border: 1px dashed #cbd5e1;
+  color: #64748b;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.rent-declaration-has-error .rent-declaration-explanation {
+  color: #b71c1c;
+}
+
 .form-group {
   margin-bottom: 1.5rem;
 }
