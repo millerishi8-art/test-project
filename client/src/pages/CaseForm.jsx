@@ -1308,11 +1308,48 @@ const CaseForm = () => {
                           <ul className="case-form-payment-method-list">
                             <li className="case-form-payment-method-card">
                               <span className="case-form-payment-method-title">{t.paymentBankIsraelTitle}</span>
-                              <p className="case-form-payment-method-placeholder">{t.paymentBankIsraelPlaceholder}</p>
+                              <p className="case-form-payment-bank-intro">{t.paymentBankIsraelIntro}</p>
+                              <dl className="case-form-payment-bank-details" dir="ltr">
+                                <div className="case-form-payment-bank-row">
+                                  <dt>{t.paymentBankNameLabel}</dt>
+                                  <dd>{t.paymentBankNameValue}</dd>
+                                </div>
+                                <div className="case-form-payment-bank-row">
+                                  <dt>{t.paymentBranchLabel}</dt>
+                                  <dd>{t.paymentBranchValue}</dd>
+                                </div>
+                                <div className="case-form-payment-bank-row">
+                                  <dt>{t.paymentAccountLabel}</dt>
+                                  <dd>{t.paymentAccountValue}</dd>
+                                </div>
+                                <div className="case-form-payment-bank-row">
+                                  <dt>{t.paymentHolderLabel}</dt>
+                                  <dd>{t.paymentHolderValue}</dd>
+                                </div>
+                              </dl>
                             </li>
-                            <li className="case-form-payment-method-card">
+                            <li className="case-form-payment-method-card case-form-payment-method-card--us">
                               <span className="case-form-payment-method-title">{t.paymentBankUsTitle}</span>
-                              <p className="case-form-payment-method-placeholder">{t.paymentBankUsPlaceholder}</p>
+                              <p className="case-form-payment-bank-intro">{t.paymentBankUsIntro}</p>
+                              <div className="case-form-payment-us-verify" role="note">
+                                <strong className="case-form-payment-us-verify-title">
+                                  {t.paymentBankUsVerifyTitle}
+                                </strong>
+                                <p className="case-form-payment-us-verify-body">{t.paymentBankUsVerifyBody}</p>
+                              </div>
+                              <dl className="case-form-payment-bank-details case-form-payment-bank-details--email" dir="ltr">
+                                <div className="case-form-payment-bank-row">
+                                  <dt>{t.paymentBankUsEmailLabel}</dt>
+                                  <dd>
+                                    <a
+                                      className="case-form-payment-email-link"
+                                      href={`mailto:${t.paymentBankUsEmail}`}
+                                    >
+                                      {t.paymentBankUsEmail}
+                                    </a>
+                                  </dd>
+                                </div>
+                              </dl>
                             </li>
                             <li className="case-form-payment-method-card case-form-payment-method-card--apps">
                               <span className="case-form-payment-method-title">{t.paymentAppsTitle}</span>
