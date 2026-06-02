@@ -168,6 +168,25 @@
   margin-top: 0.5rem;
 }
 
+.admin-case-detail-children-cards {
+  display: grid;
+  gap: 1rem;
+  margin-top: 0.75rem;
+}
+
+.admin-case-detail-child-card {
+  border: 1px solid #dbeafe;
+  background: #f8fbff;
+  border-radius: 12px;
+  padding: 1rem;
+}
+
+.admin-case-detail-child-title {
+  margin: 0 0 0.75rem;
+  color: #114c88;
+  font-size: 1rem;
+}
+
 .admin-case-detail-attachments .admin-case-detail-img-wrap {
   margin-top: 0;
 }

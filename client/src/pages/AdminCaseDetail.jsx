@@ -36,6 +36,49 @@ function urlLooksLikePdf(url) {
   return /\.pdf(\?|#|$)/i.test(url);
 }
 
+function normalizeAttachmentRows(caseData) {
+  const meta = Array.isArray(caseData?.attachmentMeta) ? caseData.attachmentMeta : [];
+  if (meta.length > 0) {
+    return meta
+      .map((m, idx) => ({
+        id: `meta_${idx}`,
+        category: String(m?.category || 'general'),
+        url: mediaFieldToUrl(m?.path),
+      }))
+      .filter((r) => !!r.url);
+  }
+  const att = Array.isArray(caseData?.attachments) ? caseData.attachments : [];
+  return att
+    .map((a, idx) => ({
+      id: `att_${idx}`,
+      category: 'general',
+      url: mediaFieldToUrl(a),
+    }))
+    .filter((r) => !!r.url);
+}
+
+function parseChildCategory(category) {
+  const m = String(category || '').match(/^child_(.+)_(passport|ssn|medical|passportImage|ssnImage|medicalFormsImage)$/i);
+  if (!m) return null;
+  const rawType = String(m[2] || '');
+  const type =
+    rawType === 'passportImage'
+      ? 'passport'
+      : rawType === 'ssnImage'
+        ? 'ssn'
+        : rawType === 'medicalFormsImage'
+          ? 'medical'
+          : rawType;
+  return { childId: m[1], type };
+}
+
+function parseSpouseDocType(category) {
+  const v = String(category || '');
+  if (v === 'spouse_passport' || v === 'spouse_passportImage') return 'passport';
+  if (v === 'spouse_ssn' || v === 'spouse_ssnImage') return 'ssn';
+  return null;
+}
+
 const AdminCaseDetail = () => {
   const { caseId } = useParams();
   const navigate = useNavigate();
@@ -124,6 +167,55 @@ const AdminCaseDetail = () => {
   }
 
   const c = caseData;
+  const attachmentRows = normalizeAttachmentRows(c);
+  const mainDocs = {
+    birth: [],
+    ssn: [],
+    passport: [],
+    marriage_certificate_us: [],
+    payment: [],
+    general: [],
+  };
+  const spouseDocs = { passport: [], ssn: [] };
+  const childDocsById = new Map();
+  attachmentRows.forEach((row) => {
+    const childParsed = parseChildCategory(row.category);
+    if (childParsed) {
+      const prev = childDocsById.get(childParsed.childId) || { passport: [], ssn: [], medical: [] };
+      prev[childParsed.type]?.push(row);
+      childDocsById.set(childParsed.childId, prev);
+      return;
+    }
+    const spouseType = parseSpouseDocType(row.category);
+    if (spouseType) {
+      spouseDocs[spouseType].push(row);
+      return;
+    }
+    if (Object.prototype.hasOwnProperty.call(mainDocs, row.category)) {
+      mainDocs[row.category].push(row);
+      return;
+    }
+    mainDocs.general.push(row);
+  });
+  const familyChildren = Array.isArray(c?.personalDetails?.familyChildren) ? c.personalDetails.familyChildren : [];
+
+  const renderMediaCard = (row, label, idx) => {
+    const key = `${row.id}_${idx}`;
+    if (urlLooksLikePdf(row.url)) {
+      return (
+        <div key={key} className="admin-case-detail-attachment-card admin-case-detail-attachment-pdf">
+          <a className="admin-case-detail-pdf-open-link" href={row.url} target="_blank" rel="noopener noreferrer">
+            {label} – PDF
+          </a>
+        </div>
+      );
+    }
+    return (
+      <div key={key} className="admin-case-detail-img-wrap admin-case-detail-img-clickable" onClick={() => setEnlargedImage(row.url)}>
+        <img src={row.url} alt={label} className="admin-case-detail-uploaded-img" />
+      </div>
+    );
+  };
 
   const formatCitizenshipCountry = (code) => {
     if (!code || typeof code !== 'string') return '–';
@@ -200,12 +292,6 @@ const AdminCaseDetail = () => {
                   {pd.signatureLink}
                 </a>
               </p>
-            </div>
-          ) : null}
-          {Array.isArray(pd.familyChildren) && pd.familyChildren.length > 0 ? (
-            <div className="admin-case-detail-pd-children">
-              <h4 className="admin-case-detail-subheading">ילדים (מהטופס)</h4>
-              <pre className="admin-case-detail-json">{JSON.stringify(pd.familyChildren, null, 2)}</pre>
             </div>
           ) : null}
         </div>
@@ -346,7 +432,8 @@ const AdminCaseDetail = () => {
 
           {(mediaFieldToUrl(c.idCardPhoto) ||
             mediaFieldToUrl(c.idCardAnnex) ||
-            (Array.isArray(c.attachments) && c.attachments.length > 0)) && (
+            attachmentRows.length > 0 ||
+            familyChildren.length > 0) && (
             <>
               <h3 className="admin-case-detail-images-heading">תמונות ומסמכים שהלקוח העלה</h3>
               {mediaFieldToUrl(c.idCardPhoto) && (
@@ -401,35 +488,70 @@ const AdminCaseDetail = () => {
                   )}
                 </div>
               )}
-              {Array.isArray(c.attachments) && c.attachments.length > 0 && (
+              {(mainDocs.birth.length > 0 ||
+                mainDocs.ssn.length > 0 ||
+                mainDocs.passport.length > 0 ||
+                mainDocs.marriage_certificate_us.length > 0 ||
+                mainDocs.payment.length > 0 ||
+                mainDocs.general.length > 0) && (
                 <div className="admin-case-detail-field admin-case-detail-field-block">
-                  <span className="admin-case-detail-label">מסמכים מצורפים נוספים</span>
+                  <span className="admin-case-detail-label">מסמכים כלליים</span>
                   <div className="admin-case-detail-attachments">
-                    {c.attachments.map((item, i) => {
-                      const url = mediaFieldToUrl(item);
-                      if (!url) return null;
-                      if (urlLooksLikePdf(url)) {
-                        return (
-                          <div key={i} className="admin-case-detail-attachment-card admin-case-detail-attachment-pdf">
-                            <a
-                              className="admin-case-detail-pdf-open-link"
-                              href={url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                            >
-                              מסמך PDF {i + 1} – פתיחה
-                            </a>
-                          </div>
-                        );
-                      }
+                    {mainDocs.birth.map((r, i) => renderMediaCard(r, `תעודת לידה ${i + 1}`, i))}
+                    {mainDocs.ssn.map((r, i) => renderMediaCard(r, `כרטיס סושיאל ${i + 1}`, i))}
+                    {mainDocs.passport.map((r, i) => renderMediaCard(r, `דרכון ${i + 1}`, i))}
+                    {mainDocs.marriage_certificate_us.map((r, i) =>
+                      renderMediaCard(r, `תעודת נישואין ${i + 1}`, i)
+                    )}
+                    {mainDocs.payment.map((r, i) => renderMediaCard(r, `אישור תשלום ${i + 1}`, i))}
+                    {mainDocs.general.map((r, i) => renderMediaCard(r, `מסמך כללי ${i + 1}`, i))}
+                  </div>
+                </div>
+              )}
+              {(spouseDocs.passport.length > 0 || spouseDocs.ssn.length > 0) && (
+                <div className="admin-case-detail-field admin-case-detail-field-block">
+                  <span className="admin-case-detail-label">מסמכי בן/בת זוג</span>
+                  <div className="admin-case-detail-attachments">
+                    {spouseDocs.passport.map((r, i) => renderMediaCard(r, `דרכון בן/בת זוג ${i + 1}`, i))}
+                    {spouseDocs.ssn.map((r, i) => renderMediaCard(r, `סושיאל בן/בת זוג ${i + 1}`, i))}
+                  </div>
+                </div>
+              )}
+              {familyChildren.length > 0 && (
+                <div className="admin-case-detail-field admin-case-detail-field-block">
+                  <span className="admin-case-detail-label">ילדים ומסמכים משויכים</span>
+                  <div className="admin-case-detail-children-cards">
+                    {familyChildren.map((child, idx) => {
+                      const docs = childDocsById.get(String(child?.id || '')) || { passport: [], ssn: [], medical: [] };
                       return (
-                        <div
-                          key={i}
-                          className="admin-case-detail-img-wrap admin-case-detail-img-clickable"
-                          onClick={() => setEnlargedImage(url)}
-                        >
-                          <img src={url} alt={`מסמך מצורף ${i + 1}`} className="admin-case-detail-uploaded-img" />
-                        </div>
+                        <article key={child.id || idx} className="admin-case-detail-child-card">
+                          <h4 className="admin-case-detail-child-title">ילד #{idx + 1}</h4>
+                          <div className="admin-case-detail-grid">
+                            <div className="admin-case-detail-field">
+                              <span className="admin-case-detail-label">תאריך לידה</span>
+                              <span className="admin-case-detail-value">{child?.dob || '–'}</span>
+                            </div>
+                            <div className="admin-case-detail-field">
+                              <span className="admin-case-detail-label">גיל</span>
+                              <span className="admin-case-detail-value">{child?.age || '–'}</span>
+                            </div>
+                            <div className="admin-case-detail-field">
+                              <span className="admin-case-detail-label">כיתה</span>
+                              <span className="admin-case-detail-value">{child?.schoolClass || '–'}</span>
+                            </div>
+                          </div>
+                          {String(child?.medicalIssues || '').trim() !== '' && (
+                            <div className="admin-case-detail-field admin-case-detail-field-block">
+                              <span className="admin-case-detail-label">מצב/מידע רפואי</span>
+                              <p className="admin-case-detail-value admin-case-detail-text">{child.medicalIssues}</p>
+                            </div>
+                          )}
+                          <div className="admin-case-detail-attachments">
+                            {docs.passport.map((r, i) => renderMediaCard(r, `דרכון ילד ${idx + 1} - ${i + 1}`, i))}
+                            {docs.ssn.map((r, i) => renderMediaCard(r, `סושיאל ילד ${idx + 1} - ${i + 1}`, i))}
+                            {docs.medical.map((r, i) => renderMediaCard(r, `מסמך רפואי ילד ${idx + 1} - ${i + 1}`, i))}
+                          </div>
+                        </article>
                       );
                     })}
                   </div>
