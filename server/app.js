@@ -16,20 +16,44 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const app = express();
 
+function addOriginWithWwwVariants(set, rawOrigin) {
+  const origin = String(rawOrigin || '').trim();
+  if (!origin) return;
+  set.add(origin);
+  try {
+    const url = new URL(origin);
+    if (url.hostname.startsWith('www.')) {
+      const noWww = new URL(origin);
+      noWww.hostname = url.hostname.replace(/^www\./, '');
+      set.add(noWww.toString().replace(/\/$/, ''));
+      return;
+    }
+    // לדומיינים ציבוריים נוסיף גם www כדי למנוע חסימות מיותרות בין וריאציות.
+    if (!url.hostname.includes('localhost') && !url.hostname.endsWith('.vercel.app')) {
+      const withWww = new URL(origin);
+      withWww.hostname = `www.${url.hostname}`;
+      set.add(withWww.toString().replace(/\/$/, ''));
+    }
+  } catch (_) {
+    // אם זה לא URL תקין נשאיר את הערך המקורי בלבד.
+  }
+}
+
 function buildAllowedOrigins() {
-  const set = new Set([
+  const set = new Set();
+  [
     'https://test-project-tan-chi.vercel.app',
     'https://original-project-tan-chi.vercel.app',
     'http://localhost:3000',
     'http://localhost:5000',
-  ]);
+  ].forEach((o) => addOriginWithWwwVariants(set, o));
   (process.env.ALLOWED_ORIGINS || '')
     .split(',')
     .map((s) => s.trim())
     .filter(Boolean)
-    .forEach((o) => set.add(o));
+    .forEach((o) => addOriginWithWwwVariants(set, o));
   const vu = (process.env.VERCEL_URL || '').trim();
-  if (vu) set.add(`https://${vu}`);
+  if (vu) addOriginWithWwwVariants(set, `https://${vu}`);
   return [...set];
 }
 
