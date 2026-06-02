@@ -248,6 +248,10 @@ export const caseFormTranslations = {
     errorSubmit: 'שגיאה בשליחת הטופס.',
     errorImagesTooLarge:
       'המסמכים שצורפו גדולים מדי לשליחה. נסו לצלם מחדש באיכות נמוכה יותר, או להסיר קבצי PDF כבדים ולצרף צילום במקום, ואז לשלוח שוב.',
+    draftRestorePrompt:
+      'נמצאה טיוטה שמורה מהפעם הקודמת. לחצו אישור כדי לשחזר את הנתונים שהוזנו, או ביטול כדי למחוק ולהתחיל קייס חדש.',
+    draftRestoredNotice: 'הטיוטה שוחזרה בהצלחה. אפשר להמשיך מהנקודה שעצרתם.',
+    draftDiscardedNotice: 'הטיוטה הקודמת נמחקה. הטופס אופס והתחלתם קייס חדש.',
     errorEnglishOnly: 'אנא השתמש באותיות באנגלית בלבד בשדה זה.',
     errorMissingBirthCerts: 'תעודות לידה אינן חובה; ניתן להחמיץ ולקבל המלצה בשליחה.',
     errorMissingSSN: 'חובה להעלות צילום כרטיס סושיאל סקיוריטי (SSN) או מסמך מקביל.',
@@ -526,6 +530,10 @@ export const caseFormTranslations = {
     errorSubmit: 'Error submitting the form.',
     errorImagesTooLarge:
       'The attached documents are too large to send. Try retaking the photos at lower quality, or remove heavy PDF files and attach a photo instead, then submit again.',
+    draftRestorePrompt:
+      'We found a saved draft from your previous visit. Press OK to restore your entered data, or Cancel to delete it and start a new case.',
+    draftRestoredNotice: 'Draft restored successfully. You can continue where you left off.',
+    draftDiscardedNotice: 'Previous draft was deleted. The form was reset for a new case.',
     errorEnglishOnly: 'Please use English characters only in this field.',
     errorMissingBirthCerts: 'Birth certificates are optional; you can skip and get a reminder on submit.',
     errorMissingSSN: 'Please upload a photo of your Social Security card (SSN) or equivalent document.',

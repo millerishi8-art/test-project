@@ -95,6 +95,41 @@ const FRANKFURTER_USD_ILS =
 const XE_CONVERTER_60_USD =
   'https://www.xe.com/currencyconverter/convert/?Amount=60&From=USD&To=ILS';
 const PAYMENT_APPS_PHONE_E164 = '+972586770670';
+const CASE_FORM_DRAFT_VERSION = 1;
+
+function buildDraftStorageKey(caseType, userId) {
+  const safeType = String(caseType || 'unknown').trim().toLowerCase();
+  const safeUser = String(userId || 'guest').trim().toLowerCase();
+  return `case-form-draft:v${CASE_FORM_DRAFT_VERSION}:${safeUser}:${safeType}`;
+}
+
+function safeReadDraft(key) {
+  if (!key) return null;
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function safeWriteDraft(key, value) {
+  if (!key) return;
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // נפילה שקטה (למשל quota ב-Safari private mode)
+  }
+}
+
+function safeRemoveDraft(key) {
+  if (!key) return;
+  try {
+    localStorage.removeItem(key);
+  } catch {}
+}
 
 const CaseForm = () => {
   const { type } = useParams();
@@ -183,6 +218,10 @@ const CaseForm = () => {
   const [usdIlsRateFailed, setUsdIlsRateFailed] = useState(false);
   const [wantsRentAssistance, setWantsRentAssistance] = useState(true);
   const [monthlyRentAmount, setMonthlyRentAmount] = useState('');
+  const [draftNotice, setDraftNotice] = useState('');
+  const hydratedDraftKeyRef = useRef('');
+  const draftSaveReadyRef = useRef(false);
+  const draftStorageKey = useMemo(() => buildDraftStorageKey(type, user?.id), [type, user?.id]);
 
   useEffect(() => {
     const onVis = () => {
@@ -205,7 +244,151 @@ const CaseForm = () => {
     setWantsRentAssistance(true);
     const profileType = benefitTypeToProfileType(type);
     setMonthlyRentAmount(String(generateRandomRentAmount(profileType)));
+    setDraftNotice('');
+    draftSaveReadyRef.current = false;
   }, [type]);
+
+  useEffect(() => {
+    if (!useExpandedFoodStampsForm) return;
+    if (!draftStorageKey) return;
+    if (hydratedDraftKeyRef.current === draftStorageKey) return;
+    hydratedDraftKeyRef.current = draftStorageKey;
+
+    const draft = safeReadDraft(draftStorageKey);
+    if (!draft || typeof draft !== 'object') {
+      draftSaveReadyRef.current = true;
+      return;
+    }
+
+    const shouldRestore = window.confirm(t.draftRestorePrompt);
+    if (!shouldRestore) {
+      safeRemoveDraft(draftStorageKey);
+      setDraftNotice(t.draftDiscardedNotice);
+      draftSaveReadyRef.current = true;
+      return;
+    }
+
+    if (draft.formData && typeof draft.formData === 'object') {
+      setFormData((prev) => ({
+        ...prev,
+        ...draft.formData,
+        // קבצי חתימה לא נשמרים בטיוטה כדי לא לנפח זיכרון.
+        signatureImage: '',
+      }));
+    }
+    if (Array.isArray(draft.familyChildren)) {
+      setFamilyChildren(
+        draft.familyChildren.map((c) => ({
+          ...newFamilyChildEntry(),
+          ...c,
+          id: c?.id || `ch_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`,
+          passportImage: '',
+          ssnImage: '',
+          medicalFormsImage: '',
+        }))
+      );
+    }
+    if (draft.spouseBlock && typeof draft.spouseBlock === 'object') {
+      setSpouseBlock({
+        ...newSpouseDocumentsEntry(),
+        ...draft.spouseBlock,
+        passportImage: '',
+        ssnImage: '',
+      });
+    }
+    if (typeof draft.renewalAddedToCalendar === 'boolean') {
+      setRenewalAddedToCalendar(draft.renewalAddedToCalendar);
+    }
+    if (typeof draft.wantsRentAssistance === 'boolean') {
+      setWantsRentAssistance(draft.wantsRentAssistance);
+    }
+    if (draft.monthlyRentAmount != null) {
+      setMonthlyRentAmount(String(draft.monthlyRentAmount));
+    }
+    setDraftNotice(t.draftRestoredNotice);
+    draftSaveReadyRef.current = true;
+  }, [draftStorageKey, t, useExpandedFoodStampsForm]);
+
+  useEffect(() => {
+    if (!useExpandedFoodStampsForm) return;
+    if (!draftStorageKey) return;
+    if (!draftSaveReadyRef.current) return;
+
+    const payload = {
+      v: CASE_FORM_DRAFT_VERSION,
+      savedAt: new Date().toISOString(),
+      formData: {
+        ...formData,
+        signatureImage: '',
+      },
+      familyChildren: familyChildren.map(({ id, age, dob, schoolClass, medicalIssues }) => ({
+        id,
+        age,
+        dob,
+        schoolClass,
+        medicalIssues,
+      })),
+      spouseBlock: spouseBlock
+        ? {
+            healthStatus: spouseBlock.healthStatus || '',
+          }
+        : null,
+      wantsRentAssistance,
+      monthlyRentAmount,
+      renewalAddedToCalendar,
+    };
+
+    const tm = window.setTimeout(() => {
+      safeWriteDraft(draftStorageKey, payload);
+    }, 300);
+    return () => window.clearTimeout(tm);
+  }, [
+    draftStorageKey,
+    formData,
+    familyChildren,
+    spouseBlock,
+    wantsRentAssistance,
+    monthlyRentAmount,
+    renewalAddedToCalendar,
+    useExpandedFoodStampsForm,
+  ]);
+
+  const hasDraftableProgress = useMemo(() => {
+    const baseTextProgress = [
+      formData.fullName,
+      formData.dob,
+      formData.address,
+      formData.fatherName,
+      formData.motherName,
+      formData.additionalCitizenshipCountry,
+      formData.caseEmail,
+      formData.casePassword,
+      formData.signatoryName,
+      monthlyRentAmount,
+    ].some((v) => String(v || '').trim() !== '');
+    return (
+      baseTextProgress ||
+      formData.signature ||
+      formData.dec1 ||
+      formData.dec2 ||
+      formData.dec3 ||
+      formData.dec4 ||
+      attachments.length > 0 ||
+      familyChildren.length > 0 ||
+      !!spouseBlock ||
+      renewalAddedToCalendar
+    );
+  }, [attachments.length, familyChildren.length, formData, monthlyRentAmount, renewalAddedToCalendar, spouseBlock]);
+
+  useEffect(() => {
+    if (!hasDraftableProgress) return undefined;
+    const handler = (e) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [hasDraftableProgress]);
 
   useEffect(() => {
     let cancelled = false;
@@ -616,6 +799,7 @@ const CaseForm = () => {
         },
         { headers: { Authorization: `Bearer ${token}` } }
       );
+      safeRemoveDraft(draftStorageKey);
       navigate('/confirmation', { state: { benefitType: type } });
     } catch (err) {
       const status = err.response?.status;
@@ -852,6 +1036,11 @@ const CaseForm = () => {
         <p className="form-subtitle">
           {useExpandedFoodStampsForm ? t.formSubtitleFoodStamps : t.simpleFormSubtitle}
         </p>
+        {draftNotice ? (
+          <p className="form-subtitle" style={{ marginTop: '-4px', color: '#1b5e20', fontWeight: 600 }}>
+            {draftNotice}
+          </p>
+        ) : null}
 
         <form onSubmit={handleSubmit}>
           {useExpandedFoodStampsForm ? (
