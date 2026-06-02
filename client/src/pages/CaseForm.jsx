@@ -10,7 +10,11 @@ import {
   benefitTypeToProfileType,
   generateRandomRentAmount,
 } from '../utils/rentDeclaration';
+import { compressImageFile, approxDataUrlBytes } from '../utils/imageCompression';
 import './CaseForm.css';
+
+/** מגבלת גודל בטוחה לכלל גוף הבקשה (מתחת למגבלת Vercel ~4.5MB ולשרת 10MB). */
+const MAX_TOTAL_UPLOAD_BYTES = 4_000_000;
 
 const SIGNATURE_PAD_WIDTH = 400;
 const SIGNATURE_PAD_HEIGHT = 160;
@@ -409,13 +413,8 @@ const CaseForm = () => {
     setError('');
   };
 
-  const readFileAsDataUrl = (file) =>
-    new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
+  // דוחס תמונות (כולל HEIC מאייפון) ל-JPEG מוקטן לפני העלאה; PDF נשלח כמו שהוא.
+  const readFileAsDataUrl = (file) => compressImageFile(file);
 
   const updateFamilyChild = (childId, patch) => {
     setFamilyChildren((prev) => prev.map((c) => (c.id === childId ? { ...c, ...patch } : c)));
@@ -577,6 +576,25 @@ const CaseForm = () => {
             ]
           : [];
 
+      const allAttachments = [
+        ...attachments.map((a) => ({ data: a.data, category: a.category })),
+        ...spouseAttachments,
+        ...childAttachments,
+      ];
+
+      // מונע שליחת גוף בקשה גדול מדי שהפלטפורמה (Vercel) דוחה לפני שהקייס נשמר.
+      const totalBytes =
+        allAttachments.reduce(
+          (sum, a) => sum + approxDataUrlBytes(typeof a.data === 'string' ? a.data : ''),
+          0
+        ) + approxDataUrlBytes(formData.signatureImage || '');
+      if (totalBytes > MAX_TOTAL_UPLOAD_BYTES) {
+        setError(t.errorImagesTooLarge);
+        setLoading(false);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
+
       await axios.post(
         '/cases',
         {
@@ -593,11 +611,7 @@ const CaseForm = () => {
             ? String(monthlyRentAmount).trim()
             : '',
           rentDeclarationOptedOut: !wantsRentAssistance,
-          attachments: [
-            ...attachments.map((a) => ({ data: a.data, category: a.category })),
-            ...spouseAttachments,
-            ...childAttachments,
-          ],
+          attachments: allAttachments,
           documentType: 'passport',
         },
         { headers: { Authorization: `Bearer ${token}` } }
@@ -612,6 +626,8 @@ const CaseForm = () => {
         setError(t.errorSessionExpired);
       } else if (status === 403) {
         setError(msg || t.errorNoPermission);
+      } else if (status === 413) {
+        setError(t.errorImagesTooLarge);
       } else if (!err.response) {
         setError(t.errorServerDown);
       } else if (errCode === 'CITIZENSHIP_COUNTRY_REQUIRED') {

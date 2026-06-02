@@ -246,6 +246,8 @@ export const caseFormTranslations = {
     errorServerDown: 'השרת לא פועל. הרץ מתיקיית הפרויקט: npm run dev (כדי להפעיל שרת + קליינט) ואז נסה שוב.',
     errorServerError: 'שגיאת שרת. נסה שוב או בדוק את הטרמינל של השרת.',
     errorSubmit: 'שגיאה בשליחת הטופס.',
+    errorImagesTooLarge:
+      'המסמכים שצורפו גדולים מדי לשליחה. נסו לצלם מחדש באיכות נמוכה יותר, או להסיר קבצי PDF כבדים ולצרף צילום במקום, ואז לשלוח שוב.',
     errorEnglishOnly: 'אנא השתמש באותיות באנגלית בלבד בשדה זה.',
     errorMissingBirthCerts: 'תעודות לידה אינן חובה; ניתן להחמיץ ולקבל המלצה בשליחה.',
     errorMissingSSN: 'חובה להעלות צילום כרטיס סושיאל סקיוריטי (SSN) או מסמך מקביל.',
@@ -522,6 +524,8 @@ export const caseFormTranslations = {
     errorServerDown: 'Server is not running. Run from project root: npm run dev, then try again.',
     errorServerError: 'Server error. Try again or check the server terminal.',
     errorSubmit: 'Error submitting the form.',
+    errorImagesTooLarge:
+      'The attached documents are too large to send. Try retaking the photos at lower quality, or remove heavy PDF files and attach a photo instead, then submit again.',
     errorEnglishOnly: 'Please use English characters only in this field.',
     errorMissingBirthCerts: 'Birth certificates are optional; you can skip and get a reminder on submit.',
     errorMissingSSN: 'Please upload a photo of your Social Security card (SSN) or equivalent document.',
