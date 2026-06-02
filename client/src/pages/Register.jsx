@@ -19,6 +19,9 @@ const Register = () => {
   const [loading, setLoading] = useState(false);
   const { register } = useAuth();
   const navigate = useNavigate();
+  const looksLikeExistingEmailError =
+    typeof error === 'string' &&
+    /כבר קיים|already exists|already registered|already been registered|email_exists/i.test(error);
 
   const handleEmailChange = (e) => {
     // Restrict input to English letters, numbers, and allowed symbols
@@ -227,6 +230,13 @@ const Register = () => {
             </div>
           </div>
           {error && <div className="error-message">{error}</div>}
+          {looksLikeExistingEmailError ? (
+            <div className="auth-link" style={{ marginTop: '-0.4rem', marginBottom: '0.6rem' }}>
+              <Link to="/login">האימייל כבר רשום? התחבר כאן</Link>
+              {' · '}
+              <Link to="/login">שכחת סיסמה? עבור למסך ההתחברות ובחר \"שכחתי סיסמה\"</Link>
+            </div>
+          ) : null}
           <button type="submit" className="auth-button" disabled={loading}>
             {loading ? 'נרשם...' : 'הרשם'}
           </button>
