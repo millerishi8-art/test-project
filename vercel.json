@@ -1,6 +1,8 @@
 {
   "version": 2,
   "installCommand": "npm install && npm install --prefix server && npm install --prefix client",
+  "buildCommand": "npm run build",
+  "outputDirectory": "client/dist",
   "crons": [
     {
       "path": "/api/cron/deferred-payment-reminders",
