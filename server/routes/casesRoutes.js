@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import {
   submitCase,
+  uploadCaseAttachment,
   getMyCases,
   renewCase,
   requestDeferredPayment,
@@ -12,6 +13,7 @@ const router = Router();
 
 router.use(authenticateToken);
 
+router.post('/upload-attachment', uploadCaseAttachment);
 router.post('/', submitCase);
 router.post('/defer-payment-request', requestDeferredPayment);
 router.post('/defer-payment-proposed-deadline', submitDeferredPaymentProposedDeadline);

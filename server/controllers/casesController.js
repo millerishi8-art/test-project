@@ -42,6 +42,14 @@ function isBase64DataUrl(str) {
   return typeof str === 'string' && /^data:[^;]+;base64,/i.test(str.trim());
 }
 
+function fileExtFromDataUrl(dataUrl) {
+  const s = String(dataUrl || '').trim().toLowerCase();
+  if (s.startsWith('data:application/pdf')) return 'pdf';
+  if (s.startsWith('data:image/png')) return 'png';
+  if (s.startsWith('data:image/webp')) return 'webp';
+  return 'jpg';
+}
+
 async function resolveMediaField(value, folder = 'cases') {
   if (!value || typeof value !== 'string') return null;
   if (isBase64DataUrl(value)) {
@@ -53,6 +61,31 @@ async function resolveMediaField(value, folder = 'cases') {
   }
   return value;
 }
+
+export const uploadCaseAttachment = async (req, res) => {
+  try {
+    const rawData = req.body?.data;
+    const rawCategory = String(req.body?.category || 'general');
+    const rawFileName = String(req.body?.fileName || 'upload');
+    if (!isBase64DataUrl(rawData)) {
+      return res.status(400).json({ error: 'קובץ לא תקין להעלאה' });
+    }
+
+    const safeCategory = rawCategory.replace(/[^a-z0-9_-]/gi, '').toLowerCase() || 'general';
+    const safeFileName = rawFileName.replace(/[^a-z0-9_.-]/gi, '').slice(0, 80) || 'upload';
+    const ext = fileExtFromDataUrl(rawData);
+    const stampedName = `${safeCategory}-${Date.now()}-${safeFileName}.${ext}`;
+
+    const path = await uploadToSupabase(rawData, stampedName);
+    if (!path) {
+      return res.status(500).json({ error: 'העלאת קובץ נכשלה' });
+    }
+    return res.json({ ok: true, path, category: safeCategory });
+  } catch (error) {
+    console.error('uploadCaseAttachment error:', error);
+    return res.status(500).json({ error: 'שגיאה בהעלאת קובץ' });
+  }
+};
 
 function buildRentDeclarationFields(wantsRentAssistance, monthlyRentAmount, rentDeclarationOptedOut) {
   const optedOut =

@@ -197,7 +197,7 @@ const CaseForm = () => {
   const countryOptions = useMemo(() => buildCountrySelectOptions(language), [language]);
 
   const [formData, setFormData] = useState(() => getFormDataForBenefitType());
-  /** @type {{ id: string, data: string, category?: string }[]} */
+  /** @type {{ id: string, data: string, category?: string, path?: string, uploading?: boolean, error?: string }[]} */
   const [attachments, setAttachments] = useState([]);
   const [isDrawing, setIsDrawing] = useState(false);
   const [error, setError] = useState('');
@@ -218,6 +218,7 @@ const CaseForm = () => {
   const [usdIlsRateFailed, setUsdIlsRateFailed] = useState(false);
   const [wantsRentAssistance, setWantsRentAssistance] = useState(true);
   const [monthlyRentAmount, setMonthlyRentAmount] = useState('');
+  const [pendingUploads, setPendingUploads] = useState(0);
   const [draftNotice, setDraftNotice] = useState('');
   const hydratedDraftKeyRef = useRef('');
   const draftSaveReadyRef = useRef(false);
@@ -428,6 +429,8 @@ const CaseForm = () => {
       return next;
     });
   };
+  const attachmentReady = (a) =>
+    !!a && !a.uploading && !a.error && typeof a.category === 'string' && !!(a.path || a.data);
 
   const minOpeningFeeNis =
     usdIlsRate != null ? Math.round(MIN_CASE_OPENING_USD * usdIlsRate * 100) / 100 : null;
@@ -599,6 +602,24 @@ const CaseForm = () => {
   // דוחס תמונות (כולל HEIC מאייפון) ל-JPEG מוקטן לפני העלאה; PDF נשלח כמו שהוא.
   const readFileAsDataUrl = (file) => compressImageFile(file);
 
+  const uploadSingleFileToServer = async (file, category) => {
+    if (!token) throw new Error(t.errorLoginRequired);
+    const data = await readFileAsDataUrl(file);
+    const response = await axios.post(
+      '/cases/upload-attachment',
+      {
+        data,
+        category,
+        fileName: file?.name || 'file',
+      },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    return {
+      data,
+      path: response?.data?.path || '',
+    };
+  };
+
   const updateFamilyChild = (childId, patch) => {
     setFamilyChildren((prev) => prev.map((c) => (c.id === childId ? { ...c, ...patch } : c)));
     setError('');
@@ -615,8 +636,17 @@ const CaseForm = () => {
       e.target.value = '';
       return;
     }
-    const data = await readFileAsDataUrl(file);
-    updateFamilyChild(childId, { [field]: data });
+    setPendingUploads((n) => n + 1);
+    try {
+      const category = `child_${childId}_${field}`;
+      const { path } = await uploadSingleFileToServer(file, category);
+      updateFamilyChild(childId, { [field]: path });
+      clearFieldErrorKey(`child_${childId}_${CHILD_PATCH_TO_ERROR_KEY[field] || ''}`);
+    } catch {
+      setError(t.errorFileUploadFailed);
+    } finally {
+      setPendingUploads((n) => Math.max(0, n - 1));
+    }
     e.target.value = '';
   };
 
@@ -647,9 +677,17 @@ const CaseForm = () => {
       e.target.value = '';
       return;
     }
-    const data = await readFileAsDataUrl(file);
-    setSpouseBlock((prev) => (prev ? { ...prev, [field]: data } : prev));
-    clearFieldErrorKey(field === 'passportImage' ? 'spouse_passport' : 'spouse_ssn');
+    setPendingUploads((n) => n + 1);
+    try {
+      const category = `spouse_${field}`;
+      const { path } = await uploadSingleFileToServer(file, category);
+      setSpouseBlock((prev) => (prev ? { ...prev, [field]: path } : prev));
+      clearFieldErrorKey(field === 'passportImage' ? 'spouse_passport' : 'spouse_ssn');
+    } catch {
+      setError(t.errorFileUploadFailed);
+    } finally {
+      setPendingUploads((n) => Math.max(0, n - 1));
+    }
     e.target.value = '';
     setError('');
   };
@@ -664,14 +702,39 @@ const CaseForm = () => {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
     const okFiles = files.filter((f) => f.type.startsWith('image/') || f.type === 'application/pdf');
-    const newItems = await Promise.all(
-      okFiles.map(async (file) => ({
-        id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-        data: await readFileAsDataUrl(file),
-        category,
-      }))
+    const tempItems = okFiles.map((file) => ({
+      id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      data: '',
+      category,
+      path: '',
+      uploading: true,
+      error: '',
+      fileName: file.name,
+    }));
+    setAttachments((prev) => [...prev, ...tempItems]);
+    setPendingUploads((n) => n + tempItems.length);
+    await Promise.all(
+      tempItems.map(async (item, idx) => {
+        const file = okFiles[idx];
+        try {
+          const { data, path } = await uploadSingleFileToServer(file, category);
+          setAttachments((prev) =>
+            prev.map((a) =>
+              a.id === item.id ? { ...a, data, path, uploading: false, error: '' } : a
+            )
+          );
+        } catch {
+          setAttachments((prev) =>
+            prev.map((a) =>
+              a.id === item.id ? { ...a, uploading: false, error: t.errorFileUploadFailed } : a
+            )
+          );
+          setError(t.errorFileUploadFailed);
+        } finally {
+          setPendingUploads((n) => Math.max(0, n - 1));
+        }
+      })
     );
-    setAttachments((prev) => [...prev, ...newItems]);
     const fk = UPLOAD_CATEGORY_TO_FIELD_KEY[category];
     if (fk) clearFieldErrorKey(fk);
     e.target.value = '';
@@ -760,7 +823,9 @@ const CaseForm = () => {
           : [];
 
       const allAttachments = [
-        ...attachments.map((a) => ({ data: a.data, category: a.category })),
+        ...attachments
+          .filter((a) => !a.error && (a.path || a.data))
+          .map((a) => ({ data: a.path || a.data, category: a.category })),
         ...spouseAttachments,
         ...childAttachments,
       ];
@@ -768,7 +833,11 @@ const CaseForm = () => {
       // מונע שליחת גוף בקשה גדול מדי שהפלטפורמה (Vercel) דוחה לפני שהקייס נשמר.
       const totalBytes =
         allAttachments.reduce(
-          (sum, a) => sum + approxDataUrlBytes(typeof a.data === 'string' ? a.data : ''),
+          (sum, a) =>
+            sum +
+            (typeof a.data === 'string' && a.data.startsWith('data:')
+              ? approxDataUrlBytes(a.data)
+              : 0),
           0
         ) + approxDataUrlBytes(formData.signatureImage || '');
       if (totalBytes > MAX_TOTAL_UPLOAD_BYTES) {
@@ -912,12 +981,13 @@ const CaseForm = () => {
       if (!pw) errs.casePassword = t.errorCasePasswordRequired;
     }
 
-    if (!attachments.some((a) => a.category === 'ssn')) errs.doc_ssn = t.errorMissingSSN;
-    if (!attachments.some((a) => a.category === 'passport')) errs.doc_passport = t.errorMissingPassport;
-    if (isFamilyCase && !attachments.some((a) => a.category === 'marriage_certificate_us')) {
+    if (!attachments.some((a) => attachmentReady(a) && a.category === 'ssn')) errs.doc_ssn = t.errorMissingSSN;
+    if (!attachments.some((a) => attachmentReady(a) && a.category === 'passport'))
+      errs.doc_passport = t.errorMissingPassport;
+    if (isFamilyCase && !attachments.some((a) => attachmentReady(a) && a.category === 'marriage_certificate_us')) {
       errs.doc_marriage = t.errorMissingAmericanMarriageCertificate;
     }
-    if (!deferredPaymentOk && !attachments.some((a) => a.category === 'payment')) {
+    if (!deferredPaymentOk && !attachments.some((a) => attachmentReady(a) && a.category === 'payment')) {
       errs.doc_payment = t.errorMissingPayment;
     }
 
@@ -985,12 +1055,22 @@ const CaseForm = () => {
 
     setFieldErrors({});
 
+    if (pendingUploads > 0 || attachments.some((a) => a.uploading)) {
+      setError(t.errorWaitForUploads);
+      return;
+    }
+
+    if (attachments.some((a) => a.error)) {
+      setError(t.errorFileUploadFailed);
+      return;
+    }
+
     if (!token) {
       setError(t.errorLoginRequired);
       return;
     }
 
-    const hasBirthCertUpload = attachments.some((a) => a.category === 'birth');
+    const hasBirthCertUpload = attachments.some((a) => attachmentReady(a) && a.category === 'birth');
     if (!hasBirthCertUpload && !window.confirm(t.birthCertSubmitRecommendation)) {
       return;
     }
@@ -1666,10 +1746,14 @@ const CaseForm = () => {
                     <div className="attachments-preview">
                       {attachments.map((att) => (
                         <div key={att.id} className="attachment-thumb-wrap">
-                          {att.data.startsWith('data:application/pdf') ? (
+                          {att.uploading ? (
+                            <div className="attachment-thumb pdf-thumb">{t.uploadingLabel}</div>
+                          ) : att.error ? (
+                            <div className="attachment-thumb pdf-thumb">{t.uploadFailedLabel}</div>
+                          ) : att.data && att.data.startsWith('data:application/pdf') ? (
                             <div className="attachment-thumb pdf-thumb">PDF</div>
                           ) : (
-                            <img src={att.data} alt="" className="attachment-thumb" />
+                            <img src={att.data || ''} alt="" className="attachment-thumb" />
                           )}
                           <button
                             type="button"
@@ -2070,6 +2154,11 @@ const CaseForm = () => {
           </div>
 
           {error && <div className="error-message">{error}</div>}
+          {pendingUploads > 0 ? (
+            <div className="error-message" style={{ background: '#fff8e1', color: '#8a6d1d', borderColor: '#ffe58f' }}>
+              {t.uploadInProgressNotice.replace('{{count}}', String(pendingUploads))}
+            </div>
+          ) : null}
 
           <div className="form-actions">
             <button type="button" onClick={() => navigate(-1)} className="cancel-button">
@@ -2078,7 +2167,7 @@ const CaseForm = () => {
             <button
               type="submit"
               className="submit-button"
-              disabled={loading || !renewalAddedToCalendar || !useExpandedFoodStampsForm}
+              disabled={loading || pendingUploads > 0 || !renewalAddedToCalendar || !useExpandedFoodStampsForm}
             >
               {loading ? t.submitLoading : t.submit}
             </button>
