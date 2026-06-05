@@ -1,4 +1,4 @@
-/* Shared card styles for inline U.S. citizenship / SSN partner contact (no phone shown; wa.me only). */
+/* Shared card styles for inline U.S. citizenship / SSN partner contact (wa.me + displayed number). */
 :root {
   --usa-widget-blue: #2563a8;
   --usa-widget-blue-soft: #e8f1fb;
@@ -112,6 +112,16 @@
 
 .usa-widget-list li:last-child {
   margin-bottom: 0;
+}
+
+.usa-widget-phone {
+  margin: 0 0 0.65rem;
+  font-size: 0.9rem;
+  color: #1e3a5f;
+}
+
+.usa-widget-phone-label {
+  font-weight: 600;
 }
 
 .usa-widget-wa {

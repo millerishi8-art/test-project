@@ -59,7 +59,7 @@ const BenefitDetail = () => {
       <div className="error-container">
         <p className="error-title">{t.notFound}</p>
         <p className="error-hint">{t.notFoundHint}</p>
-        <button type="button" className="btn-back-home" onClick={() => navigate('/')}>
+        <button type="button" className="btn-back-home" onClick={() => navigate('/dashboard')}>
           {t.backToHome}
         </button>
       </div>
@@ -172,7 +172,7 @@ const BenefitDetail = () => {
         </div>
 
         <div className="action-buttons">
-          <button onClick={() => navigate('/')} className="back-button">
+          <button onClick={() => navigate('/dashboard')} className="back-button">
             {t.back}
           </button>
           <button onClick={handleContinue} className="continue-button">

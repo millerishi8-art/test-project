@@ -12,6 +12,7 @@ import './App.css';
 const Register = lazy(() => import('./pages/Register'));
 const Login = lazy(() => import('./pages/Login'));
 const VerifyEmail = lazy(() => import('./pages/VerifyEmail'));
+const Landing = lazy(() => import('./pages/Landing'));
 const Home = lazy(() => import('./pages/Home'));
 const BenefitDetail = lazy(() => import('./pages/BenefitDetail'));
 const CaseForm = lazy(() => import('./pages/CaseForm'));
@@ -40,8 +41,9 @@ function App() {
               <Route path="/register" element={<Register />} />
               <Route path="/login" element={<Login />} />
               <Route path="/verify-email" element={<VerifyEmail />} />
+              <Route path="/" element={<Landing />} />
               <Route
-                path="/"
+                path="/dashboard"
                 element={
                   <ProtectedRoute>
                     <Home />

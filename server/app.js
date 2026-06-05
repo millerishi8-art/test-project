@@ -9,6 +9,7 @@ import cors from 'cors';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import crypto from 'crypto';
 import routes from './routes/index.js';
 import { connectToDatabase } from './db/database.js';
 
@@ -74,6 +75,30 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.options('*', cors(corsOptions)); // טיפול בבקשות OPTIONS (Preflight)
 
+/**
+ * Observability hardening:
+ * לכל בקשה מוצמד X-Request-Id אחיד כדי שיהיה אפשר לאתר תקלה לפי מזהה יחיד
+ * בין הלקוח, הלוגים והתגובה מהשרת.
+ */
+app.use((req, res, next) => {
+  const incoming = String(req.headers['x-request-id'] || '').trim();
+  const requestId = incoming || crypto.randomUUID();
+  req.requestId = requestId;
+  res.setHeader('X-Request-Id', requestId);
+  const startedAt = Date.now();
+  res.on('finish', () => {
+    // לוגים רק לכשלונות כדי לא להציף.
+    if (res.statusCode >= 400) {
+      console.warn(
+        `[HTTP ${res.statusCode}] ${req.method} ${req.originalUrl} requestId=${requestId} durationMs=${
+          Date.now() - startedAt
+        } origin=${req.headers.origin || '-'}`
+      );
+    }
+  });
+  next();
+});
+
 // גודל body מוגדר להעלאת תמונות (חתימה וכו') כ-base64
 app.use(express.json({ limit: '10mb' }));
 
@@ -95,8 +120,9 @@ app.use('/api', routes);
 
 // תפיסת שגיאות גלובלית
 app.use((err, req, res, next) => {
-  console.error('Unhandled server error:', err);
-  res.status(500).json({ error: err?.message || 'שגיאת שרת' });
+  const requestId = req?.requestId || 'unknown';
+  console.error(`Unhandled server error requestId=${requestId}:`, err);
+  res.status(500).json({ error: err?.message || 'שגיאת שרת', requestId });
 });
 
 export default app;

@@ -99,7 +99,7 @@ const Confirmation = () => {
         </div>
 
         <div className="confirmation-actions">
-          <button onClick={() => navigate('/')} className="home-button">
+          <button onClick={() => navigate('/dashboard')} className="home-button">
             {t.backToHome}
           </button>
         </div>

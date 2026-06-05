@@ -30,7 +30,7 @@ const Navbar = () => {
   const handleLogout = () => {
     setMenuOpen(false);
     logout();
-    navigate('/login');
+    navigate('/');
   };
 
   const closeMenu = () => setMenuOpen(false);
@@ -39,7 +39,7 @@ const Navbar = () => {
     <>
       <nav className="navbar">
         <div className="navbar-container">
-          <Link to="/" className="navbar-logo" onClick={closeMenu}>
+          <Link to={isAuthenticated ? '/dashboard' : '/'} className="navbar-logo" onClick={closeMenu}>
             סוכן ביטוח
           </Link>
 
@@ -59,7 +59,7 @@ const Navbar = () => {
           <div className="navbar-menu navbar-menu-desktop">
             {isAuthenticated ? (
               <>
-                <Link to="/" className="navbar-link">
+                <Link to="/dashboard" className="navbar-link">
                   בית
                 </Link>
                 {isAdmin && (
@@ -103,7 +103,7 @@ const Navbar = () => {
           {isAuthenticated ? (
             <>
               <span className="navbar-drawer-user">שלום, {user?.name}</span>
-              <Link to="/" className="navbar-drawer-link" onClick={closeMenu}>
+              <Link to="/dashboard" className="navbar-drawer-link" onClick={closeMenu}>
                 בית
               </Link>
               {isAdmin && (

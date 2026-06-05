@@ -1,16 +1,17 @@
 import { useLanguage } from '../context/LanguageContext';
-import { buildWhatsAppUrl } from '../constants/whatsappPrefill';
+import { buildWhatsAppUrl, WHATSAPP_CONFIG } from '../constants/whatsappPrefill';
 import './agentSupportCard.css';
 import './AgentSupportInline.css';
 
-const WA_CITIZENSHIP_URL = buildWhatsAppUrl('AGENT');
+const WA_CITIZENSHIP_URL = buildWhatsAppUrl('CITIZENSHIP_PARTNER');
 
 const copy = {
   he: {
     title: 'ליווי מקצועי באזרחות אמריקאית',
     cta: 'צרו קשר ב-WhatsApp',
     homeLead:
-      'שירות משלים (אזרחות אמריקאית / SSN) — מוצג מתחת לקוביות בחירת ההטבה. ללא מספר טלפון גלוי; הכפתור פותח וואטסאפ.',
+      'שירות משלים (אזרחות אמריקאית / SSN) — בנימין בורקיס. לחיצה על הכפתור פותחת וואטסאפ.',
+    partnerPhoneLabel: 'וואטסאפ:',
     caseLead:
       'הגעתם לסיום מוצלח של התהליך. אם תרצו ליווי נוסף בנושאי אזרחות אמריקאית או ביטוח לאומי אמריקאי (SSN), אפשר לפנות כאן — ללא הצגת מספר.',
   },
@@ -18,7 +19,8 @@ const copy = {
     title: 'Professional U.S. citizenship support',
     cta: 'Contact on WhatsApp',
     homeLead:
-      'Optional partner support (U.S. citizenship / SSN) — below the benefit cards. No phone number shown; the button opens WhatsApp.',
+      'Optional partner support (U.S. citizenship / SSN) — Benjamin Borkis. The button opens WhatsApp.',
+    partnerPhoneLabel: 'WhatsApp:',
     caseLead:
       'Your case reached a successful outcome. For additional U.S. citizenship or Social Security (SSN) guidance, you can reach our partner here — no phone number displayed.',
   },
@@ -75,6 +77,7 @@ export default function AgentSupportInline({ context = 'home' }) {
   const dir = isHebrew ? 'rtl' : 'ltr';
   const textAlign = isHebrew ? 'right' : 'left';
   const lead = context === 'home' ? t.homeLead : t.caseLead;
+  const partnerPhone = WHATSAPP_CONFIG.CITIZENSHIP_PARTNER.displayNumber;
 
   return (
     <section
@@ -90,6 +93,10 @@ export default function AgentSupportInline({ context = 'home' }) {
         <div className="usa-widget-inner">
           <TitleWithFlag>{t.title}</TitleWithFlag>
           {isHebrew ? <HebrewServiceList /> : <EnglishServiceList />}
+          <p className="usa-widget-phone" dir="ltr">
+            <span className="usa-widget-phone-label">{t.partnerPhoneLabel}</span>{' '}
+            <strong>{partnerPhone}</strong>
+          </p>
           <a
             href={WA_CITIZENSHIP_URL}
             target="_blank"

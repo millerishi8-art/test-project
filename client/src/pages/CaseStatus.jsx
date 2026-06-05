@@ -226,7 +226,7 @@ const CaseStatus = () => {
         </section>
 
         <div className="case-status-actions">
-          <button type="button" className="case-status-back-btn" onClick={() => navigate('/')}>
+          <button type="button" className="case-status-back-btn" onClick={() => navigate('/dashboard')}>
             {t.backToHome}
           </button>
         </div>

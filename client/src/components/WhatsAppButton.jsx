@@ -1,21 +1,21 @@
-import { buildWhatsAppUrl } from '../constants/whatsappPrefill';
+import { buildWhatsAppUrl, WHATSAPP_CONFIG } from '../constants/whatsappPrefill';
 import { useLanguage } from '../context/LanguageContext';
 import './WhatsAppButton.css';
 
-const WHATSAPP_URL = buildWhatsAppUrl('NOAM');
+const WHATSAPP_URL = buildWhatsAppUrl('MANAGER');
 
 const copy = {
   he: {
     shortLabel: 'צור קשר עם המנהל',
     ariaLabel: 'צור קשר עם מנהל האתר בוואטסאפ — שאלות לגבי האתר',
-    bubble:
-      'לשאלות לגבי האתר אפשר לפנות בוואטסאפ (גם צילום מסך). בין השעות 16:00–22:00 שעון ישראל.',
+    bubble: (phone) =>
+      `לשאלות לגבי האתר: ${phone} (וואטסאפ, גם צילום מסך). בין השעות 16:00–22:00 שעון ישראל.`,
   },
   en: {
     shortLabel: 'Contact the manager',
     ariaLabel: 'Contact the site manager on WhatsApp — questions about this website',
-    bubble:
-      'Questions about this site? Message on WhatsApp (screenshots welcome). Replies roughly 4pm–10pm Israel time.',
+    bubble: (phone) =>
+      `Questions about this site: ${phone} (WhatsApp, screenshots welcome). Replies roughly 4pm–10pm Israel time.`,
   },
 };
 
@@ -37,11 +37,12 @@ function WhatsAppIcon({ size = 28 }) {
 export default function WhatsAppButton() {
   const { language } = useLanguage();
   const t = copy[language] || copy.he;
+  const managerPhone = WHATSAPP_CONFIG.MANAGER.displayNumber;
 
   return (
     <div className="whatsapp-float-wrap">
       <span className="whatsapp-float-bubble" role="tooltip">
-        {t.bubble}
+        {typeof t.bubble === 'function' ? t.bubble(managerPhone) : t.bubble}
       </span>
       <a
         href={WHATSAPP_URL}

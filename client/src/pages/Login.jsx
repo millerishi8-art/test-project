@@ -104,7 +104,7 @@ const Login = () => {
     const result = await login(formData.email, formData.password);
 
     if (result.success) {
-      navigate('/');
+      navigate('/dashboard');
       setLoading(false);
       return;
     }
@@ -176,7 +176,7 @@ const Login = () => {
     try {
       const res = await axios.post('/verify-phone', { email, code });
       applySession(res.data.token, res.data.user);
-      navigate('/');
+      navigate('/dashboard');
     } catch (err) {
       logAuthError('Login verify phone code', err);
       setError(apiErrorToString(err.response?.data?.error, 'קוד לא תקף או שפג תוקפו.'));
