@@ -687,13 +687,71 @@
 }
 
 @media (max-width: 768px) {
+  .admin-panel-container {
+    padding-top: var(--space-4);
+  }
+
+  .admin-header {
+    padding: var(--space-4) var(--space-3);
+    margin-bottom: var(--space-5);
+  }
+
+  .admin-header h1 {
+    font-size: clamp(1.35rem, 5.5vw, 1.85rem);
+    line-height: 1.25;
+  }
+
+  .admin-header p,
+  .admin-header .admin-welcome {
+    font-size: 0.95rem;
+    line-height: 1.6;
+  }
+
+  .admin-tabs-main {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .admin-tabs-main button {
+    width: 100%;
+    text-align: center;
+  }
+
+  .admin-users-subtabs {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .admin-users-subtabs button {
+    width: 100%;
+  }
+
+  .admin-cases-filters-inline {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+  }
+
+  .admin-cases-filters-inline button {
+    width: 100%;
+  }
+
+  .admin-table-container {
+    padding: var(--space-3);
+    border-radius: 16px;
+  }
+
   .admin-table {
-    font-size: 0.85rem;
+    font-size: 0.82rem;
+    min-width: 520px;
   }
 
   .admin-table th,
   .admin-table td {
-    padding: 0.5rem;
+    padding: 0.5rem 0.4rem;
+    white-space: nowrap;
   }
 
   .admin-actions-cell {
@@ -701,6 +759,7 @@
     flex-direction: column;
     gap: var(--space-2);
     align-items: stretch;
+    white-space: normal;
   }
 
   .admin-actions-cell .admin-view-form-btn {
@@ -709,5 +768,9 @@
     justify-content: center;
     display: inline-flex;
     align-items: center;
+  }
+
+  .admin-case-processing-btn {
+    max-width: 100%;
   }
 }

@@ -346,6 +346,78 @@
   50% { opacity: 0.5; }
 }
 
+@media (max-width: 768px) {
+  .admin-case-detail-container {
+    padding-top: var(--space-4);
+    padding-bottom: calc(6rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .admin-case-detail-card {
+    padding: var(--space-5) var(--space-4);
+    border-radius: 16px;
+  }
+
+  .admin-case-detail-card h1 {
+    font-size: clamp(1.25rem, 5vw, 1.6rem);
+    line-height: 1.3;
+  }
+
+  .admin-case-detail-section h2 {
+    font-size: 1.1rem;
+  }
+
+  .admin-case-detail-sub {
+    font-size: 0.92rem;
+    line-height: 1.55;
+  }
+
+  .admin-case-detail-back {
+    width: 100%;
+    min-height: 48px;
+  }
+
+  .admin-case-detail-attachments {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .admin-case-detail-img-wrap {
+    display: block;
+    width: 100%;
+  }
+
+  .admin-case-detail-uploaded-img {
+    max-height: 280px;
+    width: 100%;
+  }
+
+  .admin-case-detail-lightbox {
+    padding: max(1rem, env(safe-area-inset-top, 0px)) 0.75rem
+      max(1rem, env(safe-area-inset-bottom, 0px));
+  }
+
+  .admin-case-detail-lightbox-close {
+    top: max(0.75rem, env(safe-area-inset-top, 0px));
+    left: max(0.75rem, env(safe-area-inset-left, 0px));
+    min-width: var(--touch-min);
+    min-height: var(--touch-min);
+  }
+
+  .admin-case-detail-lightbox-img {
+    max-height: calc(100dvh - 5rem);
+    max-width: 100%;
+  }
+
+  .admin-case-detail-pdf-open-link {
+    width: 100%;
+    text-align: center;
+    min-height: var(--touch-min);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
 @media (min-width: 768px) {
   .admin-case-detail-container {
     padding: 2rem 1.5rem;

@@ -237,6 +237,19 @@
 }
 
 @media (max-width: 900px) {
+  .navbar {
+    padding: var(--space-2) var(--space-3);
+    padding-top: calc(var(--space-2) + env(safe-area-inset-top, 0px));
+  }
+
+  .navbar-logo {
+    font-size: clamp(1rem, 4.2vw, 1.25rem);
+    max-width: calc(100% - 3.5rem);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   .navbar-burger {
     display: flex;
   }
@@ -252,5 +265,12 @@
   .navbar-drawer {
     display: block;
     visibility: visible;
+    width: min(92vw, 300px);
+  }
+
+  .navbar-drawer-link,
+  .navbar-drawer-button {
+    min-height: 52px;
+    font-size: 1.05rem;
   }
 }

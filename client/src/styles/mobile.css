@@ -1,0 +1,151 @@
+/**
+ * שיפורי מובייל ומסכים קטנים – חוצה את כל האתר
+ * iPhone / Android + מחשבים עם חלון צר
+ */
+
+/* מניעת זום אוטומטי ב-iOS בשדות טופס */
+@media (max-width: 768px) {
+  input,
+  select,
+  textarea,
+  button {
+    font-size: max(16px, 1em);
+  }
+
+  input[type='checkbox'],
+  input[type='radio'] {
+    font-size: inherit;
+  }
+}
+
+/* מגע נוח – ללא עיכוב double-tap */
+button,
+a,
+[role='button'],
+label {
+  touch-action: manipulation;
+}
+
+/* כפתורי תרגום צפים – לא חופפים לניווט במסכים צרים */
+@media (max-width: 768px) {
+  .home-translate-btn,
+  .landing-translate-btn,
+  .case-form-translate-btn,
+  .benefit-detail-translate-btn,
+  .case-status-translate-btn,
+  .confirmation-translate-btn {
+    top: calc(3.85rem + env(safe-area-inset-top, 0px));
+    padding: 0.45rem 0.75rem;
+    min-height: 40px;
+    font-size: 0.8rem;
+    border-radius: 10px;
+    box-shadow: 0 3px 12px rgba(30, 107, 184, 0.22);
+  }
+
+  [dir='rtl'] .home-translate-btn,
+  [dir='rtl'] .landing-translate-btn,
+  [dir='rtl'] .case-form-translate-btn,
+  [dir='rtl'] .benefit-detail-translate-btn,
+  [dir='rtl'] .case-status-translate-btn,
+  [dir='rtl'] .confirmation-translate-btn {
+    left: 0.5rem;
+    right: auto;
+  }
+
+  [dir='ltr'] .home-translate-btn,
+  [dir='ltr'] .landing-translate-btn,
+  [dir='ltr'] .case-form-translate-btn,
+  [dir='ltr'] .benefit-detail-translate-btn,
+  [dir='ltr'] .case-status-translate-btn,
+  [dir='ltr'] .confirmation-translate-btn {
+    right: 0.5rem;
+    left: auto;
+  }
+}
+
+@media (max-width: 380px) {
+  .home-translate-btn,
+  .landing-translate-btn,
+  .case-form-translate-btn,
+  .benefit-detail-translate-btn,
+  .case-status-translate-btn,
+  .confirmation-translate-btn {
+    padding: 0.4rem 0.6rem;
+    font-size: 0.75rem;
+  }
+}
+
+/* כרטיסי תוכן – ריווח נוח במובייל */
+@media (max-width: 768px) {
+  .home-container,
+  .landing-page,
+  .case-form-container,
+  .benefit-detail-container,
+  .case-status-container,
+  .confirmation-container,
+  .auth-container,
+  .admin-panel-container,
+  .admin-case-detail-container,
+  .admin-case-processing-container {
+    padding-left: max(var(--space-3), env(safe-area-inset-left, 0px));
+    padding-right: max(var(--space-3), env(safe-area-inset-right, 0px));
+  }
+
+  .case-form-card,
+  .benefit-detail-card,
+  .case-status-card,
+  .confirmation-card,
+  .auth-card,
+  .landing-section,
+  .landing-hero {
+    border-radius: 18px;
+  }
+
+  .case-form-card,
+  .benefit-detail-card,
+  .case-status-card,
+  .confirmation-card {
+    padding: var(--space-5) var(--space-4);
+  }
+
+  .auth-card {
+    padding: var(--space-5) var(--space-4);
+  }
+}
+
+/* מסכים קטנים מאוד (SE, מכשירים ישנים) */
+@media (max-width: 400px) {
+  :root {
+    --font-size-h1: clamp(1.35rem, 6vw, 1.75rem);
+    --font-size-h2: clamp(1.12rem, 4.5vw, 1.4rem);
+    --font-size-lead: 0.98rem;
+  }
+
+  .benefit-cube h2,
+  .landing-type-card h3 {
+    font-size: 1.05rem;
+  }
+}
+
+/* מכשירי מגע – ביטול אפקט hover שמפריע */
+@media (hover: none) and (pointer: coarse) {
+  .benefit-cube:hover,
+  .landing-btn:hover,
+  .navbar-button:hover,
+  .upload-source-btn:hover {
+    transform: none;
+  }
+
+  .benefit-cube:active {
+    transform: scale(0.98);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  }
+}
+
+/* גלילה חלקה באזורי overflow */
+.admin-table-container,
+.signature-pad-wrap,
+.admin-table-wrap {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+}

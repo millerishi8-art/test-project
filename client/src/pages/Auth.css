@@ -400,9 +400,10 @@
 
 @media (max-width: 768px) {
   .auth-container {
-    padding-bottom: calc(2rem + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(6rem + env(safe-area-inset-bottom, 0px));
     align-items: flex-start;
     padding-top: var(--space-5);
+    min-height: auto;
   }
 
   .auth-card {
@@ -410,15 +411,43 @@
     box-shadow: 0 12px 40px rgba(30, 107, 184, 0.15);
   }
 
+  .auth-card h2 {
+    font-size: clamp(1.25rem, 5vw, 1.6rem);
+    margin-bottom: var(--space-5);
+  }
+
+  .form-group {
+    margin-bottom: 1.25rem;
+  }
+
+  .form-group label {
+    font-size: 0.95rem;
+    line-height: 1.45;
+  }
+
   .form-group input,
   .form-group select,
   .form-group textarea {
     font-size: 16px; /* מונע זום אוטומטי ב-iOS */
     border-radius: 12px;
+    min-height: 48px;
   }
 
   .auth-button {
     min-height: 48px;
     border-radius: 14px;
+    width: 100%;
+  }
+
+  .auth-links {
+    font-size: 0.95rem;
+    line-height: 1.6;
+  }
+
+  .auth-links a {
+    display: inline-block;
+    padding: 0.35rem 0;
+    min-height: var(--touch-min);
+    line-height: 1.4;
   }
 }

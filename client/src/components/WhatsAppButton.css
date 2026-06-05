@@ -144,3 +144,30 @@
 .whatsapp-float-hit:active .whatsapp-float {
   transform: scale(1.02);
 }
+
+@media (max-width: 768px) {
+  .whatsapp-float-wrap {
+    bottom: calc(1.15rem + env(safe-area-inset-bottom, 0px));
+    z-index: 10002;
+  }
+
+  .whatsapp-float {
+    width: 52px;
+    height: 52px;
+  }
+
+  .whatsapp-float-label {
+    display: none;
+  }
+
+  .whatsapp-float-bubble {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .whatsapp-float {
+    width: 48px;
+    height: 48px;
+  }
+}

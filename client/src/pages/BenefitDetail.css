@@ -349,6 +349,69 @@
   }
 }
 
+@media (max-width: 768px) {
+  .benefit-detail-container {
+    padding-top: var(--space-4);
+    padding-bottom: calc(6rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .benefit-product-description {
+    padding: var(--space-4);
+    margin-bottom: var(--space-5);
+  }
+
+  .benefit-product-description .product-block h3 {
+    font-size: 1.05rem;
+  }
+
+  .benefit-product-description .product-block p {
+    font-size: 0.95rem;
+    line-height: 1.65;
+  }
+
+  .benefit-explanation-block {
+    padding: 1.25rem 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .explanation-block-title {
+    font-size: 1.15rem;
+    margin-bottom: 1rem;
+  }
+
+  .explanation-section h3 {
+    font-size: 1rem;
+  }
+
+  .explanation-section p {
+    font-size: 0.95rem;
+    line-height: 1.65;
+  }
+
+  .benefit-section h2 {
+    font-size: 1.2rem;
+  }
+
+  .benefit-section p {
+    font-size: 1rem;
+    line-height: 1.65;
+  }
+
+  .alert-box {
+    padding: 1.25rem 1rem;
+    margin: 1.5rem 0;
+  }
+
+  .alert-box h3 {
+    font-size: 1.1rem;
+  }
+
+  .price-item {
+    padding: var(--space-3) var(--space-4);
+    font-size: 1.1rem;
+  }
+}
+
 @media (min-width: 640px) {
   .price-display {
     flex-direction: row;

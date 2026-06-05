@@ -8,10 +8,16 @@
   flex-direction: column;
 }
 
-/* מקום לבאנר אזרחות אמריקאית + כפתור וואטסאפ צף במובייל */
+/* מקום לווידג'ט המלצות + כפתור וואטסאפ + כרטיס ליווי במובייל */
 @media (max-width: 768px) {
   .app {
-    padding-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(13rem + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+@media (max-width: 480px) {
+  .app {
+    padding-bottom: calc(11.5rem + env(safe-area-inset-bottom, 0px));
   }
 }
 

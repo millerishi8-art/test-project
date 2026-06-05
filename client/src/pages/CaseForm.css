@@ -1362,4 +1362,83 @@
   .renewal-section-unified {
     padding: 1.1rem 1rem;
   }
+
+  .case-form-container {
+    padding-top: var(--space-4);
+  }
+
+  .case-form-card {
+    padding: var(--space-5) var(--space-4);
+  }
+
+  .family-child-card {
+    padding: 1rem;
+  }
+
+  .family-child-card-title {
+    font-size: 1.05rem;
+  }
+
+  .remove-family-child-btn {
+    min-height: var(--touch-min);
+    padding: 0.5rem 1rem;
+  }
+
+  .document-type-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+
+  .document-type-label {
+    min-width: 0;
+  }
+
+  .document-type-select {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .upload-buttons-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .case-form-payment-bank-row {
+    grid-template-columns: 1fr;
+    gap: 0.15rem 0;
+    padding: 0.5rem 0;
+  }
+
+  .case-form-payment-bank-row dt {
+    font-size: 0.8rem;
+  }
+
+  .case-form-payment-bank-row dd {
+    font-size: 0.92rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .renewal-modal {
+    padding: 1.25rem 1rem;
+    max-height: calc(100dvh - 2rem);
+    overflow-y: auto;
+  }
+
+  .renewal-modal-confirm {
+    width: 100%;
+    min-height: 48px;
+  }
+
+  .add-family-child-btn {
+    width: 100%;
+    justify-content: center;
+    min-height: 48px;
+  }
+
+  .clear-signature-btn {
+    min-height: var(--touch-min);
+    width: 100%;
+  }
 }

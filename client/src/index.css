@@ -87,3 +87,27 @@ svg {
     line-height: 1.6;
   }
 }
+
+/* מסכים קטנים (טאבלט צר / חלון מחשב מצומצם) */
+@media (max-width: 1024px) {
+  body {
+    line-height: 1.62;
+  }
+}
+
+/* מניעת גלילה אופקית מטבלאות ותוכן רחב */
+table {
+  max-width: 100%;
+}
+
+/* כפתורים וקישורים – שטח מגע מינימלי */
+@media (max-width: 768px) {
+  button:not(.navbar-burger):not(.ticker-close-btn),
+  .landing-btn,
+  .auth-button,
+  .submit-button,
+  .continue-button,
+  .home-case-status-btn {
+    min-height: var(--touch-min);
+  }
+}
