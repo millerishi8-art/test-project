@@ -365,15 +365,95 @@
   text-decoration: underline;
 }
 
-.phone-prefix {
-  background-color: #f9f9f9;
+.phone-input-hint {
+  margin: 0 0 0.5rem;
+  font-size: 0.85rem;
+  color: #64748b;
+  line-height: 1.45;
+}
+
+.phone-input-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: stretch;
+}
+
+.phone-country-select,
+.phone-custom-dial,
+.phone-number-input {
+  min-height: var(--touch-min);
+  padding: 0.75rem 1rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-family: inherit;
+  background: #fff;
+  transition: border-color 0.2s;
+}
+
+.phone-country-select {
+  flex: 1 1 100%;
   cursor: pointer;
-  appearance: none; /* remove default arrow */
+  appearance: none;
+  background-color: #f9f9f9;
   background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23131313%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
   background-repeat: no-repeat;
   background-position: left 0.7rem top 50%;
   background-size: 0.65rem auto;
-  padding-left: 2rem !important; /* space for arrow */
+  padding-left: 2rem;
+}
+
+.phone-custom-dial {
+  flex: 0 0 5.5rem;
+  width: 5.5rem;
+  text-align: center;
+}
+
+.phone-number-input {
+  flex: 1 1 8rem;
+  min-width: 0;
+}
+
+.phone-country-select:focus,
+.phone-custom-dial:focus,
+.phone-number-input:focus {
+  outline: none;
+  border-color: #1e6bb8;
+}
+
+.field-error-message {
+  color: #d32f2f;
+  font-size: 0.85rem;
+  margin-top: 0.3rem;
+}
+
+.auth-link--tight {
+  margin-top: -0.4rem;
+  margin-bottom: 0.6rem;
+}
+
+@media (min-width: 480px) {
+  .phone-country-select {
+    flex: 1 1 auto;
+    min-width: 10rem;
+  }
+
+  .phone-number-input {
+    flex: 2 1 10rem;
+  }
+}
+
+/* תאימות לאחור */
+.phone-prefix {
+  background-color: #f9f9f9;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23131313%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+  background-repeat: no-repeat;
+  background-position: left 0.7rem top 50%;
+  background-size: 0.65rem auto;
+  padding-left: 2rem !important;
 }
 
 .phone-prefix:focus {
@@ -381,7 +461,13 @@
   border-color: #1e6bb8 !important;
 }
 
-[dir="rtl"] .phone-prefix {
+[dir='rtl'] .phone-country-select {
+  background-position: right 0.7rem top 50%;
+  padding-right: 2rem;
+  padding-left: 0.75rem;
+}
+
+[dir='rtl'] .phone-prefix {
   background-position: right 0.7rem top 50%;
   padding-right: 2rem !important;
   padding-left: 0.75rem !important;

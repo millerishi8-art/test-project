@@ -19,18 +19,42 @@ async function getTwilioClient() {
   }
 }
 
-/** מנרמל מספר טלפון לפורמט בינלאומי (למשל +972...) */
+/** מנרמל מספר טלפון לפורמט בינלאומי E.164 (למשל +972…, +1…) */
 function normalizePhone(phone) {
   if (!phone || typeof phone !== 'string') return '';
-  const digits = phone.replace(/\D/g, '');
-  if (digits.length === 9 && (digits.startsWith('5') || digits.startsWith('4') || digits.startsWith('2') || digits.startsWith('3'))) {
-    return '+972' + digits;
+  const trimmed = phone.trim();
+  const digits = trimmed.replace(/\D/g, '');
+  if (!digits) return '';
+
+  // כבר בפורמט בינלאומי (+972… / +1…)
+  if (trimmed.startsWith('+') && digits.length >= 8) {
+    return '+' + digits;
   }
+
+  // ישראל: 0501234567
   if (digits.length === 10 && digits.startsWith('0')) {
     return '+972' + digits.slice(1);
   }
+  // ישראל: 501234567
+  if (digits.length === 9 && /^[5-9]/.test(digits)) {
+    return '+972' + digits;
+  }
+  // ישראל: 972501234567
+  if (digits.startsWith('972') && digits.length >= 11) {
+    return '+' + digits;
+  }
+
+  // ארה"ב/קנדה: 19296518827
+  if (digits.length === 11 && digits.startsWith('1')) {
+    return '+' + digits;
+  }
+  // ארה"ב/קנדה: 9296518827 (10 ספרות, אזור לא מתחיל ב-0/1)
+  if (digits.length === 10 && /^[2-9]/.test(digits)) {
+    return '+1' + digits;
+  }
+
   if (digits.length >= 10) {
-    return digits.startsWith('972') ? '+' + digits : '+' + digits;
+    return '+' + digits;
   }
   return '+' + digits;
 }

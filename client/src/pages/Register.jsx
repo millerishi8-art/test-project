@@ -1,16 +1,23 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import {
+  PHONE_COUNTRIES,
+  sanitizePhoneDigits,
+  validatePhoneInput,
+  getPhonePlaceholder,
+} from '../utils/phoneInput';
 import './Auth.css';
 
 const Register = () => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    phonePrefix: '050',
-    phoneBody: '',
+    phoneCountry: 'IL',
+    phoneCustomDial: '',
+    phoneNumber: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -24,7 +31,6 @@ const Register = () => {
     /כבר קיים|already exists|already registered|already been registered|email_exists/i.test(error);
 
   const handleEmailChange = (e) => {
-    // Restrict input to English letters, numbers, and allowed symbols
     const val = e.target.value;
     const sanitized = val.replace(/[^a-zA-Z0-9@._-]/g, '');
     setFormData({ ...formData, email: sanitized });
@@ -35,38 +41,45 @@ const Register = () => {
   const handleEmailBlur = async () => {
     const { email } = formData;
     if (!email) return;
-    
-    // Strict Regex for valid email format
+
     const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
     if (!emailRegex.test(email)) {
       setEmailError('פורמט אימייל לא חוקי. אנא הזן כתובת תקינה.');
       return;
     }
 
-    // Placeholder for API check (e.g. checking if email exists/valid in DB or via external service)
     try {
-      // Simulate an API call
-      // const response = await fetch(`/api/check-email?email=${email}`);
-      // const data = await response.json();
-      // if (!data.isValid) { setEmailError('כתובת האימייל אינה תקינה או לא קיימת.'); }
-      setEmailError(''); // Clear error if all good
+      setEmailError('');
     } catch (err) {
       console.error('Email validation check failed', err);
     }
   };
 
-  const handlePhoneBodyChange = (e) => {
-    // Only allow up to 7 digits
-    const val = e.target.value.replace(/\D/g, '').slice(0, 7);
-    setFormData({ ...formData, phoneBody: val });
+  const handlePhoneNumberChange = (e) => {
+    const maxLen = formData.phoneCountry === 'US' ? 11 : 15;
+    const val = sanitizePhoneDigits(e.target.value, maxLen);
+    setFormData({ ...formData, phoneNumber: val });
+    setError('');
+  };
+
+  const handlePhoneCustomDialChange = (e) => {
+    const val = sanitizePhoneDigits(e.target.value, 4);
+    setFormData({ ...formData, phoneCustomDial: val });
     setError('');
   };
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+    const { name, value } = e.target;
+    if (name === 'phoneCountry') {
+      setFormData({
+        ...formData,
+        phoneCountry: value,
+        phoneNumber: '',
+        phoneCustomDial: value === 'OTHER' ? formData.phoneCustomDial : '',
+      });
+    } else {
+      setFormData({ ...formData, [name]: value });
+    }
     setError('');
   };
 
@@ -87,24 +100,27 @@ const Register = () => {
       return;
     }
 
-    if (formData.phoneBody.length < 7) {
-      setError('מספר טלפון חייב להכיל בדיוק 7 ספרות (ללא הקידומת)');
+    const phoneCheck = validatePhoneInput(
+      formData.phoneCountry,
+      formData.phoneNumber,
+      formData.phoneCustomDial
+    );
+    if (!phoneCheck.ok) {
+      setError(phoneCheck.error);
       setLoading(false);
       return;
     }
-    
+
     if (emailError) {
       setError('אנא תקן את שגיאות האימייל לפני ההרשמה');
       setLoading(false);
       return;
     }
 
-    const fullPhone = `${formData.phonePrefix}${formData.phoneBody}`;
-
     const result = await register(
       formData.name,
       formData.email,
-      fullPhone,
+      phoneCheck.e164,
       formData.password
     );
 
@@ -124,6 +140,8 @@ const Register = () => {
     setError(result.error);
     setLoading(false);
   };
+
+  const isOtherCountry = formData.phoneCountry === 'OTHER';
 
   return (
     <div className="auth-container">
@@ -152,36 +170,52 @@ const Register = () => {
               dir="ltr"
               placeholder="example@mail.com"
             />
-            {emailError && <div className="field-error-message" style={{ color: '#d32f2f', fontSize: '0.85rem', marginTop: '0.3rem' }}>{emailError}</div>}
+            {emailError && (
+              <div className="field-error-message">{emailError}</div>
+            )}
           </div>
           <div className="form-group">
             <label>מספר טלפון</label>
-            <div className="phone-input-group" style={{ display: 'flex', gap: '0.5rem', direction: 'ltr' }}>
-              <select 
-                name="phonePrefix" 
-                value={formData.phonePrefix} 
+            <p className="phone-input-hint">
+              ניתן להירשם עם מספר ישראלי, אמריקאי או בינלאומי
+            </p>
+            <div className="phone-input-group" dir="ltr">
+              <select
+                name="phoneCountry"
+                value={formData.phoneCountry}
                 onChange={handleChange}
-                className="phone-prefix"
-                style={{ width: '90px', padding: '0.75rem', borderRadius: '8px', border: '2px solid #e0e0e0', fontSize: '1rem' }}
+                className="phone-country-select"
+                aria-label="מדינה"
               >
-                <option value="050">050</option>
-                <option value="051">051</option>
-                <option value="052">052</option>
-                <option value="053">053</option>
-                <option value="054">054</option>
-                <option value="055">055</option>
-                <option value="057">057</option>
-                <option value="058">058</option>
-                <option value="059">059</option>
+                {PHONE_COUNTRIES.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.label}
+                  </option>
+                ))}
               </select>
+              {isOtherCountry ? (
+                <input
+                  type="tel"
+                  name="phoneCustomDial"
+                  value={formData.phoneCustomDial}
+                  onChange={handlePhoneCustomDialChange}
+                  className="phone-custom-dial"
+                  placeholder="קידומת"
+                  inputMode="numeric"
+                  aria-label="קידומת מדינה"
+                  required
+                />
+              ) : null}
               <input
                 type="tel"
-                name="phoneBody"
-                value={formData.phoneBody}
-                onChange={handlePhoneBodyChange}
-                placeholder="1234567"
+                name="phoneNumber"
+                value={formData.phoneNumber}
+                onChange={handlePhoneNumberChange}
+                className="phone-number-input"
+                placeholder={getPhonePlaceholder(formData.phoneCountry)}
+                inputMode="numeric"
                 required
-                style={{ flex: 1 }}
+                aria-label="מספר טלפון"
               />
             </div>
           </div>
@@ -203,7 +237,9 @@ const Register = () => {
                 title={showPassword ? 'הסתר סיסמה' : 'הצג סיסמה'}
                 aria-label={showPassword ? 'הסתר סיסמה' : 'הצג סיסמה'}
               >
-                <span className="password-icon" aria-hidden>{showPassword ? '🙈' : '👁'}</span>
+                <span className="password-icon" aria-hidden>
+                  {showPassword ? '🙈' : '👁'}
+                </span>
               </button>
             </div>
           </div>
@@ -225,16 +261,20 @@ const Register = () => {
                 title={showConfirmPassword ? 'הסתר סיסמה' : 'הצג סיסמה'}
                 aria-label={showConfirmPassword ? 'הסתר סיסמה' : 'הצג סיסמה'}
               >
-                <span className="password-icon" aria-hidden>{showConfirmPassword ? '🙈' : '👁'}</span>
+                <span className="password-icon" aria-hidden>
+                  {showConfirmPassword ? '🙈' : '👁'}
+                </span>
               </button>
             </div>
           </div>
           {error && <div className="error-message">{error}</div>}
           {looksLikeExistingEmailError ? (
-            <div className="auth-link" style={{ marginTop: '-0.4rem', marginBottom: '0.6rem' }}>
+            <div className="auth-link auth-link--tight">
               <Link to="/login">האימייל כבר רשום? התחבר כאן</Link>
               {' · '}
-              <Link to="/login">שכחת סיסמה? עבור למסך ההתחברות ובחר \"שכחתי סיסמה\"</Link>
+              <Link to="/login">
+                שכחת סיסמה? עבור למסך ההתחברות ובחר &quot;שכחתי סיסמה&quot;
+              </Link>
             </div>
           ) : null}
           <button type="submit" className="auth-button" disabled={loading}>
