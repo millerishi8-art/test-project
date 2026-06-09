@@ -66,6 +66,45 @@ export async function signInWithPassword({ email, password }) {
   return data.session;
 }
 
+/**
+ * מסווג שגיאת התחברות Supabase – להחזרת קוד HTTP והודעה נכונים ללקוח
+ * @returns {{ kind: 'invalid_credentials' | 'email_not_confirmed' | 'infrastructure' | 'unknown', message: string }}
+ */
+export function classifySupabaseAuthError(err) {
+  const msg = String(err?.message || err || '').toLowerCase();
+  const code = String(err?.code || err?.status || '').toLowerCase();
+
+  if (
+    msg.includes('email not confirmed') ||
+    msg.includes('email_not_confirmed') ||
+    code === 'email_not_confirmed'
+  ) {
+    return { kind: 'email_not_confirmed', message: String(err?.message || 'Email not confirmed') };
+  }
+
+  if (
+    msg.includes('invalid login credentials') ||
+    msg.includes('invalid credentials') ||
+    code === 'invalid_credentials' ||
+    code === '400'
+  ) {
+    return { kind: 'invalid_credentials', message: String(err?.message || 'Invalid credentials') };
+  }
+
+  if (
+    msg.includes('fetch failed') ||
+    msg.includes('network') ||
+    msg.includes('timeout') ||
+    msg.includes('econnrefused') ||
+    msg.includes('enotfound') ||
+    code === '503'
+  ) {
+    return { kind: 'infrastructure', message: String(err?.message || 'Auth service unavailable') };
+  }
+
+  return { kind: 'unknown', message: String(err?.message || err || 'Unknown auth error') };
+}
+
 export async function updateAuthUserPassword(userId, newPassword) {
   const sb = getSupabaseAdmin();
   const { data, error } = await sb.auth.admin.updateUserById(userId, {

@@ -3,12 +3,42 @@ import { normalizeUserRole, ROLES } from '../components/constants.js';
 
 const TABLE = 'app_users';
 
+let usersTableHasDataColumn = null;
+
+function isMissingColumnError(error, column) {
+  const msg = String(error?.message || '').toLowerCase();
+  const code = String(error?.code || '');
+  return (
+    code === 'PGRST204' ||
+    code === '42703' ||
+    msg.includes(`'${column}' column`) ||
+    msg.includes(`app_users.${column}`) ||
+    msg.includes(`.${column} does not exist`)
+  );
+}
+
+/** האם לטבלה יש עמודת data JSONB (סכמה מלאה) או רק עמודות שטוחות (id/email/full_name/role) */
+async function usersTableUsesJsonbData(sb) {
+  if (usersTableHasDataColumn !== null) return usersTableHasDataColumn;
+  const { error } = await sb.from(TABLE).select('data').limit(0);
+  usersTableHasDataColumn = !isMissingColumnError(error, 'data');
+  return usersTableHasDataColumn;
+}
+
 /** מיפוי שדות טיפוסי עמודת-DB לשמות בשימוש האפליקציה */
 function mapFlatColumnToAppFields(flat) {
   const o = { ...flat };
+  if ('full_name' in o && o.name === undefined) {
+    o.name = o.full_name;
+    delete o.full_name;
+  }
   if ('email_verified' in o && o.emailVerified === undefined) {
     o.emailVerified = !!o.email_verified;
     delete o.email_verified;
+  }
+  if ('auth_provider' in o && o.authProvider === undefined) {
+    o.authProvider = o.auth_provider;
+    delete o.auth_provider;
   }
   if ('created_at' in o && o.createdAt === undefined) {
     o.createdAt = o.created_at;
@@ -44,7 +74,21 @@ function rowToUser(row) {
   if (normalizeUserRole(roleFromJson) === ROLES.ADMIN || normalizeUserRole(roleFromCol) === ROLES.ADMIN) {
     merged.role = ROLES.ADMIN;
   }
+  if (!merged.authProvider && row.data == null && Object.keys(fromRow).length > 0) {
+    merged.authProvider = 'supabase';
+  }
+  if (merged.emailVerified === undefined && merged.authProvider === 'supabase') {
+    merged.emailVerified = true;
+  }
   return merged;
+}
+
+function flatRowFromUser(normalized) {
+  const row = { id: String(normalized.id || '') };
+  if (normalized.email) row.email = normalized.email;
+  if (normalized.name != null) row.full_name = String(normalized.name);
+  if (normalized.role != null) row.role = normalizeUserRole(normalized.role);
+  return row;
 }
 
 function normalizeUserPayload(userData) {
@@ -132,6 +176,18 @@ export async function createUser(userData) {
   const sb = getSupabaseAdmin();
   const normalized = normalizeUserPayload(userData);
   const id = String(normalized.id || '');
+  const usesJsonb = await usersTableUsesJsonbData(sb);
+
+  if (!usesJsonb) {
+    const row = flatRowFromUser(normalized);
+    const { error } = await sb.from(TABLE).insert(row);
+    if (error) {
+      console.error('User createUser error:', error?.message || error);
+      throw error;
+    }
+    return normalized;
+  }
+
   const data = { ...normalized, id };
   if (data.authProvider === 'supabase') {
     delete data.password;
@@ -164,6 +220,17 @@ export async function promoteToSuperAdminById(id, canonicalEmail) {
     const sb = getSupabaseAdmin();
     const { data: row, error: fetchErr } = await sb.from(TABLE).select('*').eq('id', id).maybeSingle();
     if (fetchErr || !row) return null;
+    const usesJsonb = await usersTableUsesJsonbData(sb);
+    if (!usesJsonb) {
+      const { data: out, error } = await sb
+        .from(TABLE)
+        .update({ role: ROLES.ADMIN, email: canonical })
+        .eq('id', id)
+        .select('*')
+        .maybeSingle();
+      if (error) throw error;
+      return rowToUser(out);
+    }
     const prev =
       row.data != null && typeof row.data === 'object' && !Array.isArray(row.data) ? { ...row.data } : {};
     const merged = normalizeUserPayload({
@@ -225,17 +292,28 @@ export async function updateUserById(id, updateFields) {
 
     const data = normalizeUserPayload(next);
     if (Object.keys(allowed).length === 0) return current;
-    const patch = {
-      data,
-      ...(next.email ? { email: next.email } : {}),
-      ...(next.name != null ? { name: next.name } : {}),
-      ...(next.phone != null ? { phone: next.phone } : {}),
-    };
-    let { data: out, error } = await sb.from(TABLE).update(patch).eq('id', id).select('*').single();
-    if (error) {
-      const r2 = await sb.from(TABLE).update({ data }).eq('id', id).select('*').single();
-      out = r2.data;
-      error = r2.error;
+    const usesJsonb = await usersTableUsesJsonbData(sb);
+    let out;
+    let error;
+    if (!usesJsonb) {
+      const patch = {};
+      if (next.email) patch.email = next.email;
+      if (next.name != null) patch.full_name = String(next.name);
+      if (next.role != null) patch.role = normalizeUserRole(next.role);
+      ({ data: out, error } = await sb.from(TABLE).update(patch).eq('id', id).select('*').single());
+    } else {
+      const patch = {
+        data,
+        ...(next.email ? { email: next.email } : {}),
+        ...(next.name != null ? { name: next.name } : {}),
+        ...(next.phone != null ? { phone: next.phone } : {}),
+      };
+      ({ data: out, error } = await sb.from(TABLE).update(patch).eq('id', id).select('*').single());
+      if (error) {
+        const r2 = await sb.from(TABLE).update({ data }).eq('id', id).select('*').single();
+        out = r2.data;
+        error = r2.error;
+      }
     }
     if (error) throw error;
     return rowToUser(out);

@@ -56,6 +56,7 @@ const Login = () => {
   const [phoneVerifyLoading, setPhoneVerifyLoading] = useState(false);
   const [phoneMessage, setPhoneMessage] = useState('');
   const [loginErrorCode, setLoginErrorCode] = useState(null);
+  const [loginErrorHint, setLoginErrorHint] = useState(null);
   const [emailCode, setEmailCode] = useState('');
   const [emailVerifyLoading, setEmailVerifyLoading] = useState(false);
   const [emailVerifySuccess, setEmailVerifySuccess] = useState('');
@@ -75,7 +76,11 @@ const Login = () => {
   const errorStr = apiErrorToString(error);
   const errorDisplay = displayLoginError(error);
   const showVerificationOptions =
-    requireEmailVerification || errorStr.includes('לאמת') || loginErrorCode === 'EMAIL_NOT_VERIFIED';
+    requireEmailVerification ||
+    errorStr.includes('לאמת') ||
+    loginErrorCode === 'EMAIL_NOT_VERIFIED' ||
+    loginErrorHint === 'EMAIL_VERIFICATION_MAY_BE_REQUIRED' ||
+    (errorStr === 'פרטי התחברות לא תקינים' && !!formData.email.trim());
   const showEmailVerifyBlock = showVerificationOptions;
 
   useEffect(() => {
@@ -91,6 +96,7 @@ const Login = () => {
     });
     setError('');
     setLoginErrorCode(null);
+    setLoginErrorHint(null);
   };
 
   const handleSubmit = async (e) => {
@@ -99,6 +105,7 @@ const Login = () => {
     setResendMessage('');
     setResetMessage('');
     setLoginErrorCode(null);
+    setLoginErrorHint(null);
     setLoading(true);
 
     const result = await login(formData.email, formData.password);
@@ -115,6 +122,7 @@ const Login = () => {
     }
     setError(apiErrorToString(result.error, 'ההתחברות נכשלה.'));
     setLoginErrorCode(result.code || null);
+    setLoginErrorHint(result.hint || null);
     setLoading(false);
   };
 
@@ -422,10 +430,20 @@ const Login = () => {
           {errorDisplay && (
             <div className={loginErrorCode === 'EMAIL_NOT_VERIFIED' ? 'error-message error-message-verify' : 'error-message'}>
               {errorDisplay}
-              {(errorStr === 'פרטי התחברות לא תקינים' ||
-                errorStr === 'Invalid credentials' ||
-                errorStr.includes('Login failed')) && (
-                <p className="error-hint">בדוק שהאימייל והסיסמה נכונים. אם הרגע נרשמת – אמת קודם את האימייל (קוד שנשלח אליך).</p>
+              {loginErrorCode === 'EMAIL_NOT_VERIFIED' ? (
+                <p className="error-hint">החשבון קיים אך האימייל טרם אומת. הזן את קוד האימות למטה או שלח קוד חדש.</p>
+              ) : (
+                (errorStr === 'פרטי התחברות לא תקינים' ||
+                  errorStr === 'Invalid credentials' ||
+                  errorStr.includes('Login failed')) && (
+                  <p className="error-hint">
+                    בדוק שהאימייל והסיסמה נכונים. אם הרגע נרשמת – אמת קודם את האימייל (קוד למטה) או{' '}
+                    <Link to="/verify-email" state={{ email: formData.email.trim() }}>
+                      עבור לדף אימות
+                    </Link>
+                    .
+                  </p>
+                )
               )}
             </div>
           )}

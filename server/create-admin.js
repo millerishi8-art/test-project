@@ -7,7 +7,9 @@ import { ROLES, isUserRoleAdmin } from './components/constants.js';
 import {
   isSupabasePasswordAuthEnabled,
   registerAuthUserWithAdminApi,
+  signInWithPassword,
   updateAuthUserPassword,
+  isSupabaseAuthUserExistsError,
 } from './services/supabaseAuth.js';
 import { getSuperAdminEmail, DEFAULT_PRIMARY_ADMIN_EMAIL } from './utils/adminEmails.js';
 
@@ -72,12 +74,20 @@ async function run() {
   const adminPassword = cliPassword || process.env.ADMIN_PASSWORD || 'admin123';
 
   if (isSupabasePasswordAuthEnabled()) {
-    const authUser = await registerAuthUserWithAdminApi({
-      email: adminEmail,
-      password: adminPassword,
-      name: 'מנהל מערכת',
-      phone: '0500000000',
-    });
+    let authUser;
+    try {
+      authUser = await registerAuthUserWithAdminApi({
+        email: adminEmail,
+        password: adminPassword,
+        name: 'מנהל מערכת',
+        phone: '0500000000',
+      });
+    } catch (authErr) {
+      if (!isSupabaseAuthUserExistsError(authErr)) throw authErr;
+      const session = await signInWithPassword({ email: adminEmail, password: adminPassword });
+      authUser = session.user;
+      console.log('משתמש כבר קיים ב-Supabase Auth – יוצר/משחזר פרופיל ב-app_users.');
+    }
     await createUser({
       id: authUser.id,
       name: 'מנהל מערכת',

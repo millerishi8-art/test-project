@@ -14,7 +14,7 @@ import { ROLES, ERROR_MESSAGES, SUCCESS_MESSAGES, isUserRoleAdmin, normalizeUser
 import { sendVerificationCodeEmail, sendPasswordResetCodeEmail } from '../services/email.js';
 import { sendVerificationSms } from '../services/sms.js';
 import { connectToDatabase, dbErrorMessageForClient } from '../db/database.js';
-import { isSuperAdminEmail, isSecondaryAdminEmail } from '../utils/adminEmails.js';
+import { isSuperAdminEmail, isSecondaryAdminEmail, isAnyAdminPanelEmail } from '../utils/adminEmails.js';
 import { secureCompare } from '../utils/auth.js';
 import {
   isSupabasePasswordAuthEnabled,
@@ -24,6 +24,7 @@ import {
   deleteAuthUser,
   isSupabaseAuthUserExistsError,
   canSignInWithSupabasePassword,
+  classifySupabaseAuthError,
 } from '../services/supabaseAuth.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this';
@@ -186,6 +187,74 @@ function phoneCodeExpiresAt() {
   return d.toISOString();
 }
 
+async function ensureAdminEmailVerified(user, email) {
+  if (!user?.id) return user;
+  const canon = String(email || user.email || '')
+    .trim()
+    .toLowerCase();
+  if (!isAnyAdminPanelEmail(canon) || user.emailVerified !== false) return user;
+  const updated = await updateUserById(user.id, { emailVerified: true });
+  return updated || { ...user, emailVerified: true };
+}
+
+async function compareStoredPassword(user, plainPassword) {
+  const storedHash = user?.password;
+  const hasValidHash = storedHash && typeof storedHash === 'string' && storedHash.startsWith('$2');
+  if (!hasValidHash || !plainPassword) return false;
+  try {
+    return await bcrypt.compare(plainPassword, storedHash);
+  } catch (compareErr) {
+    logAuthError('Login bcrypt.compare', compareErr, { status: 500 });
+    return false;
+  }
+}
+
+async function buildLoginSuccessResponse(user, rawEmail, token) {
+  let u = await ensureAdminEmailVerified(user, rawEmail);
+  u = await ensurePrivilegedAdminRoleInDb(u, rawEmail);
+  const loginCanon = String(rawEmail || u.email || '')
+    .trim()
+    .toLowerCase();
+  const userOut = serializeUserForClient(u);
+  if (!userOut) {
+    return { error: ERROR_MESSAGES?.SERVER?.LOGIN || 'שגיאת שרת בהתחברות', status: 500 };
+  }
+  applyAdminClientFlags(userOut, u.role, loginCanon);
+  return {
+    status: 200,
+    body: {
+      message: SUCCESS_MESSAGES?.AUTH?.LOGIN || 'ההתחברות בוצעה בהצלחה',
+      token,
+      user: userOut,
+    },
+  };
+}
+
+/** פרופיל חסר ב-app_users אחרי מעבר ל-Supabase Auth – יוצר שורה מ-metadata של GoTrue */
+async function provisionAppUserFromSupabaseAuth(authUser, loginEmail) {
+  const id = authUser?.id != null ? String(authUser.id) : '';
+  if (!id) return null;
+  const email = String(loginEmail || authUser.email || '')
+    .trim()
+    .toLowerCase();
+  if (!email) return null;
+  const meta = authUser.user_metadata && typeof authUser.user_metadata === 'object' ? authUser.user_metadata : {};
+  const isAdmin = isAnyAdminPanelEmail(email);
+  const role = isAdmin ? ROLES.ADMIN : ROLES.USER;
+  const emailVerified = !!authUser.email_confirmed_at || isAdmin;
+  await createUser({
+    id,
+    name: meta.name != null ? String(meta.name) : '',
+    email,
+    phone: meta.phone != null ? String(meta.phone) : '',
+    role,
+    emailVerified,
+    authProvider: 'supabase',
+    createdAt: authUser.created_at || new Date().toISOString(),
+  });
+  return findUserById(id);
+}
+
 /**
  * הרשמה – יוצר משתמש, שולח אימייל אימות, לא מחזיר טוקן (חייבים לאמת אימייל ואז להתחבר)
  */
@@ -203,6 +272,9 @@ export const register = async (req, res) => {
     if (!name || !email || !phone || !password) {
       return res.status(400).json({ error: ERROR_MESSAGES.AUTH.FIELDS_REQUIRED });
     }
+
+    const registerEmail = (email + '').trim().toLowerCase();
+    const isPrivilegedAdminRegister = isAnyAdminPanelEmail(registerEmail);
 
     let existingUser = null;
     try {
@@ -244,12 +316,16 @@ export const register = async (req, res) => {
         await createUser({
           id: authUser.id,
           name,
-          email: (email + '').trim().toLowerCase(),
+          email: registerEmail,
           phone,
-          role: ROLES.USER,
-          emailVerified: false,
-          emailVerificationCode: verificationCode,
-          emailVerificationCodeExpires: expires,
+          role: isPrivilegedAdminRegister ? ROLES.ADMIN : ROLES.USER,
+          emailVerified: isPrivilegedAdminRegister,
+          ...(isPrivilegedAdminRegister
+            ? {}
+            : {
+                emailVerificationCode: verificationCode,
+                emailVerificationCodeExpires: expires,
+              }),
           authProvider: 'supabase',
           createdAt: new Date().toISOString(),
         });
@@ -279,19 +355,24 @@ export const register = async (req, res) => {
       }
 
       let emailSent = false;
-      try {
-        emailSent = await sendVerificationCodeEmail(authUser.email, name, verificationCode);
-      } catch (emailErr) {
-        logAuthError('Registration sendVerificationCodeEmail (Supabase)', emailErr);
+      if (!isPrivilegedAdminRegister) {
+        try {
+          emailSent = await sendVerificationCodeEmail(authUser.email, name, verificationCode);
+        } catch (emailErr) {
+          logAuthError('Registration sendVerificationCodeEmail (Supabase)', emailErr);
+        }
       }
 
-      const message = emailSent
-        ? (SUCCESS_MESSAGES?.AUTH?.REGISTRATION) || 'ההרשמה בוצעה בהצלחה. נשלח אליך אימייל לאימות.'
-        : (SUCCESS_MESSAGES?.AUTH?.REGISTRATION_EMAIL_FAILED) || 'ההרשמה בוצעה בהצלחה, אך שליחת אימייל האימות נכשלה.';
+      const message = isPrivilegedAdminRegister
+        ? 'חשבון מנהל נוצר בהצלחה. ניתן להתחבר מיד.'
+        : emailSent
+          ? (SUCCESS_MESSAGES?.AUTH?.REGISTRATION) || 'ההרשמה בוצעה בהצלחה. נשלח אליך אימייל לאימות.'
+          : (SUCCESS_MESSAGES?.AUTH?.REGISTRATION_EMAIL_FAILED) ||
+            'ההרשמה בוצעה בהצלחה, אך שליחת אימייל האימות נכשלה.';
 
       return res.status(201).json({
         message,
-        emailSent,
+        emailSent: isPrivilegedAdminRegister ? false : emailSent,
         user: userSafe,
       });
     }
@@ -312,13 +393,17 @@ export const register = async (req, res) => {
     const newUser = {
       id: uuidv4(),
       name,
-      email: (email + '').trim().toLowerCase(),
+      email: registerEmail,
       phone,
       password: hashedPassword,
-      role: ROLES.USER,
-      emailVerified: false,
-      emailVerificationCode: verificationCode,
-      emailVerificationCodeExpires: emailCodeExpiresAt(),
+      role: isPrivilegedAdminRegister ? ROLES.ADMIN : ROLES.USER,
+      emailVerified: isPrivilegedAdminRegister,
+      ...(isPrivilegedAdminRegister
+        ? {}
+        : {
+            emailVerificationCode: verificationCode,
+            emailVerificationCodeExpires: emailCodeExpiresAt(),
+          }),
       createdAt: new Date().toISOString(),
     };
 
@@ -337,20 +422,25 @@ export const register = async (req, res) => {
     console.log('[Auth] Registration: user created', newUser.id, newUser.email);
 
     let emailSent = false;
-    try {
-      emailSent = await sendVerificationCodeEmail(newUser.email, newUser.name, verificationCode);
-    } catch (emailErr) {
-      logAuthError('Registration sendVerificationCodeEmail', emailErr);
-    }
-    if (!emailSent) {
-      console.warn('[Auth] Registration: verification email was NOT sent to', newUser.email, '- check EMAIL_USER/EMAIL_PASS in server/.env');
-    } else {
-      console.log('[Auth] Registration: verification email sent to', newUser.email);
+    if (!isPrivilegedAdminRegister) {
+      try {
+        emailSent = await sendVerificationCodeEmail(newUser.email, newUser.name, verificationCode);
+      } catch (emailErr) {
+        logAuthError('Registration sendVerificationCodeEmail', emailErr);
+      }
+      if (!emailSent) {
+        console.warn('[Auth] Registration: verification email was NOT sent to', newUser.email, '- check EMAIL_USER/EMAIL_PASS in server/.env');
+      } else {
+        console.log('[Auth] Registration: verification email sent to', newUser.email);
+      }
     }
 
-    const message = emailSent
-      ? (SUCCESS_MESSAGES?.AUTH?.REGISTRATION) || 'ההרשמה בוצעה בהצלחה. נשלח אליך אימייל לאימות.'
-      : (SUCCESS_MESSAGES?.AUTH?.REGISTRATION_EMAIL_FAILED) || 'ההרשמה בוצעה בהצלחה, אך שליחת אימייל האימות נכשלה.';
+    const message = isPrivilegedAdminRegister
+      ? 'חשבון מנהל נוצר בהצלחה. ניתן להתחבר מיד.'
+      : emailSent
+        ? (SUCCESS_MESSAGES?.AUTH?.REGISTRATION) || 'ההרשמה בוצעה בהצלחה. נשלח אליך אימייל לאימות.'
+        : (SUCCESS_MESSAGES?.AUTH?.REGISTRATION_EMAIL_FAILED) ||
+          'ההרשמה בוצעה בהצלחה, אך שליחת אימייל האימות נכשלה.';
 
     let userSafe = null;
     try {
@@ -402,6 +492,24 @@ export const login = async (req, res) => {
       return res.status(400).json({ error: ERROR_MESSAGES?.AUTH?.EMAIL_PASSWORD_REQUIRED || 'אימייל וסיסמה חובה' });
     }
 
+    const plainPassword = typeof password === 'string' ? password : String(password ?? '');
+
+    const respondEmailNotVerified = () =>
+      res.status(403).json({
+        error:
+          ERROR_MESSAGES?.AUTH?.EMAIL_NOT_VERIFIED ||
+          'נא לאמת את כתובת האימייל לפני ההתחברות.',
+        code: 'EMAIL_NOT_VERIFIED',
+      });
+
+    const respondInvalidCredentials = (extra = {}) => {
+      console.log('[Backend] Login: invalid credentials. email:', maskEmail(rawEmail));
+      return res.status(401).json({
+        error: ERROR_MESSAGES?.AUTH?.INVALID_CREDENTIALS || 'פרטי התחברות לא תקינים',
+        ...extra,
+      });
+    };
+
     let user;
     try {
       user = await findUserByEmail(rawEmail);
@@ -412,122 +520,159 @@ export const login = async (req, res) => {
     if (process.env.NODE_ENV !== 'production') {
       console.log('[Backend] Login: user', user ? 'found' : 'NOT found', '| email:', maskEmail(rawEmail));
     }
-    if (!user) {
-      console.log('[Backend] Login: user not found, returning 401. email:', maskEmail(rawEmail));
-      return res.status(401).json({
-        error: ERROR_MESSAGES?.AUTH?.INVALID_CREDENTIALS || 'פרטי התחברות לא תקינים',
-      });
-    }
 
-    const plainPassword = typeof password === 'string' ? password : String(password ?? '');
-
-    if (user.authProvider === 'supabase') {
-      if (!canSignInWithSupabasePassword()) {
-        return res.status(503).json({
-          error: 'השרת לא מוגדר להתחברות Supabase Auth. הוסף SUPABASE_ANON_KEY ל-server/.env (ו-AUTH_PROVIDER=supabase).',
-        });
+    if (!user && canSignInWithSupabasePassword()) {
+      let session;
+      try {
+        session = await signInWithPassword({ email: rawEmail, password: plainPassword });
+      } catch (authErr) {
+        const classified = classifySupabaseAuthError(authErr);
+        logAuthError('Login signInWithPassword (no app_users row)', authErr, { status: 401 });
+        if (classified.kind === 'email_not_confirmed') {
+          return respondEmailNotVerified();
+        }
+        if (classified.kind === 'infrastructure') {
+          return res.status(503).json({ error: dbErrorMessageForClient(authErr) });
+        }
+        return respondInvalidCredentials();
       }
       try {
-        const session = await signInWithPassword({ email: rawEmail, password: plainPassword });
         let u = await findUserById(session.user.id);
         if (!u) {
-          return res.status(401).json({
-            error: ERROR_MESSAGES?.AUTH?.INVALID_CREDENTIALS || 'פרטי התחברות לא תקינים',
-          });
+          console.log(
+            '[Backend] Login: Supabase auth OK but app_users missing – provisioning profile. email:',
+            maskEmail(rawEmail)
+          );
+          u = await provisionAppUserFromSupabaseAuth(session.user, rawEmail);
         }
-        if (u.emailVerified === false) {
-          return res.status(403).json({
-            error:
-              ERROR_MESSAGES?.AUTH?.EMAIL_NOT_VERIFIED ||
-              'נא לאמת את כתובת האימייל לפני ההתחברות.',
-            code: 'EMAIL_NOT_VERIFIED',
-          });
-        }
-        const loginCanon = String(session.user?.email || rawEmail || u.email || '')
-          .trim()
-          .toLowerCase();
-        u = await ensurePrivilegedAdminRoleInDb(u, loginCanon);
-        const userOut = serializeUserForClient(u);
-        if (!userOut) {
+        if (!u) {
           return res.status(500).json({ error: ERROR_MESSAGES?.SERVER?.LOGIN || 'שגיאת שרת בהתחברות' });
         }
-        applyAdminClientFlags(userOut, u.role, loginCanon);
-        return res.json({
-          message: (SUCCESS_MESSAGES?.AUTH?.LOGIN) || 'ההתחברות בוצעה בהצלחה',
-          token: session.access_token,
-          user: userOut,
-        });
-      } catch {
-        return res.status(401).json({
-          error: ERROR_MESSAGES?.AUTH?.INVALID_CREDENTIALS || 'פרטי התחברות לא תקינים',
-        });
-      }
-    }
-
-    const storedHash = user.password;
-    const hasValidHash = storedHash && typeof storedHash === 'string' && storedHash.startsWith('$2');
-
-    let isValidPassword = false;
-    if (hasValidHash && plainPassword.length > 0) {
-      try {
-        isValidPassword = await bcrypt.compare(plainPassword, storedHash);
-      } catch (compareErr) {
-        console.error('[Backend] Login bcrypt.compare threw – exact error:', compareErr?.message ?? String(compareErr));
-        console.error('[Backend] Login bcrypt.compare stack:', compareErr?.stack);
-        logAuthError('Login bcrypt.compare', compareErr, { status: 500 });
+        u = await ensureAdminEmailVerified(u, rawEmail);
+        if (u.emailVerified === false && !isAnyAdminPanelEmail(rawEmail)) {
+          return respondEmailNotVerified();
+        }
+        const result = await buildLoginSuccessResponse(u, rawEmail, session.access_token);
+        if (result.error) {
+          return res.status(result.status).json({ error: result.error });
+        }
+        console.log('[Backend] Login success (Supabase provision) for', maskEmail(rawEmail));
+        return res.json(result.body);
+      } catch (provisionErr) {
+        logAuthError('Login provision app_users profile', provisionErr, { status: 500 });
+        if (isInfrastructureError(provisionErr)) {
+          return res.status(503).json({ error: dbErrorMessageForClient(provisionErr) });
+        }
         return res.status(500).json({ error: ERROR_MESSAGES?.SERVER?.LOGIN || 'שגיאת שרת בהתחברות' });
       }
     }
+
+    if (!user) {
+      console.log('[Backend] Login: user not found, returning 401. email:', maskEmail(rawEmail));
+      return respondInvalidCredentials();
+    }
+
+    const usesSupabaseAuth = user.authProvider === 'supabase';
+
+    if (usesSupabaseAuth || canSignInWithSupabasePassword()) {
+      if (!canSignInWithSupabasePassword()) {
+        if (usesSupabaseAuth) {
+          return res.status(503).json({
+            error:
+              'השרת לא מוגדר להתחברות Supabase Auth. הוסף SUPABASE_ANON_KEY ל-server/.env (ו-AUTH_PROVIDER=supabase).',
+          });
+        }
+      } else {
+        try {
+          const session = await signInWithPassword({ email: rawEmail, password: plainPassword });
+          let u = await findUserById(session.user.id);
+          if (!u) {
+            u = user;
+          }
+          u = await ensureAdminEmailVerified(u, rawEmail);
+          if (u.emailVerified === false && !isAnyAdminPanelEmail(rawEmail)) {
+            return respondEmailNotVerified();
+          }
+          const result = await buildLoginSuccessResponse(u, rawEmail, session.access_token);
+          if (result.error) {
+            return res.status(result.status).json({ error: result.error });
+          }
+          console.log('[Backend] Login success (Supabase) for', maskEmail(rawEmail));
+          return res.json(result.body);
+        } catch (authErr) {
+          const classified = classifySupabaseAuthError(authErr);
+          logAuthError('Login signInWithPassword', authErr, { status: 401 });
+
+          if (classified.kind === 'email_not_confirmed') {
+            return respondEmailNotVerified();
+          }
+          if (classified.kind === 'infrastructure') {
+            return res.status(503).json({ error: dbErrorMessageForClient(authErr) });
+          }
+
+          const bcryptOk = await compareStoredPassword(user, plainPassword);
+          if (bcryptOk) {
+            user = await ensureAdminEmailVerified(user, rawEmail);
+            if (user.emailVerified === false && !isAnyAdminPanelEmail(rawEmail)) {
+              return respondEmailNotVerified();
+            }
+            const emailForJwt =
+              typeof user.email === 'string' ? user.email : String(user.email ?? '');
+            const token = signToken({
+              id: user.id != null ? String(user.id) : '',
+              email: emailForJwt,
+              role: normalizeUserRole(user.role),
+            });
+            const result = await buildLoginSuccessResponse(user, rawEmail, token);
+            if (result.error) {
+              return res.status(result.status).json({ error: result.error });
+            }
+            console.log('[Backend] Login success (bcrypt fallback) for', maskEmail(rawEmail));
+            return res.json(result.body);
+          }
+
+          if (!usesSupabaseAuth) {
+            /* נמשיך לנתיב bcrypt למטה */
+          } else {
+            return respondInvalidCredentials({
+              hint:
+                user.emailVerified === false
+                  ? 'EMAIL_VERIFICATION_MAY_BE_REQUIRED'
+                  : undefined,
+            });
+          }
+        }
+      }
+    }
+
+    const isValidPassword = await compareStoredPassword(user, plainPassword);
     if (process.env.NODE_ENV !== 'production') {
-      console.log('[Backend] Login: password field valid?', hasValidHash, '| bcrypt.compare result:', isValidPassword);
+      console.log('[Backend] Login: bcrypt.compare result:', isValidPassword);
     }
     if (!isValidPassword) {
-      console.log('[Backend] Login: invalid password, returning 401. email:', maskEmail(rawEmail));
-      return res.status(401).json({
-        error: ERROR_MESSAGES?.AUTH?.INVALID_CREDENTIALS || 'פרטי התחברות לא תקינים',
+      return respondInvalidCredentials({
+        hint:
+          user.emailVerified === false ? 'EMAIL_VERIFICATION_MAY_BE_REQUIRED' : undefined,
       });
     }
 
-    // Legacy users (no emailVerified field) are allowed. Only block when explicitly false.
-    const isVerified = user.emailVerified !== false;
-    if (!isVerified) {
-      console.log('[Backend] Login: email not verified, returning 403. email:', maskEmail(rawEmail));
-      return res.status(403).json({
-        error: ERROR_MESSAGES?.AUTH?.EMAIL_NOT_VERIFIED || 'נא לאמת את כתובת האימייל לפני ההתחברות.',
-        code: 'EMAIL_NOT_VERIFIED',
-      });
+    user = await ensureAdminEmailVerified(user, rawEmail);
+    if (user.emailVerified === false && !isAnyAdminPanelEmail(rawEmail)) {
+      return respondEmailNotVerified();
     }
 
-    user = await ensurePrivilegedAdminRoleInDb(user, rawEmail);
-
-    console.log('[Backend] Login success for', maskEmail(rawEmail));
-    let token;
-    let userOut;
-    try {
-      const emailForJwt =
-        typeof user.email === 'string' ? user.email : String(user.email ?? '');
-      token = signToken({
-        id: user.id != null ? String(user.id) : '',
-        email: emailForJwt,
-        role: normalizeUserRole(user.role),
-      });
-      userOut = serializeUserForClient(user);
-    } catch (signErr) {
-      logAuthError('Login signToken/sanitizeUser', signErr, { status: 500 });
-      return res.status(500).json({ error: ERROR_MESSAGES?.SERVER?.LOGIN || 'שגיאת שרת בהתחברות' });
-    }
-    if (!userOut) {
-      return res.status(500).json({ error: ERROR_MESSAGES?.SERVER?.LOGIN || 'שגיאת שרת בהתחברות' });
-    }
-    const loginCanonBcrypt = String(rawEmail || user.email || '')
-      .trim()
-      .toLowerCase();
-    applyAdminClientFlags(userOut, user.role, loginCanonBcrypt);
-    res.json({
-      message: (SUCCESS_MESSAGES?.AUTH?.LOGIN) || 'ההתחברות בוצעה בהצלחה',
-      token,
-      user: userOut,
+    const emailForJwt = typeof user.email === 'string' ? user.email : String(user.email ?? '');
+    const token = signToken({
+      id: user.id != null ? String(user.id) : '',
+      email: emailForJwt,
+      role: normalizeUserRole(user.role),
     });
+    const result = await buildLoginSuccessResponse(user, rawEmail, token);
+    if (result.error) {
+      return res.status(result.status).json({ error: result.error });
+    }
+    console.log('[Backend] Login success for', maskEmail(rawEmail));
+    return res.json(result.body);
   } catch (error) {
     const errMsg = errorMessageString(error);
     const isDbError = isInfrastructureError(error);

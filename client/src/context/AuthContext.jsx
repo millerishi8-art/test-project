@@ -116,10 +116,12 @@ export const AuthProvider = ({ children }) => {
       const debugMsg =
         typeof debugRaw === 'string' ? debugRaw : debugRaw != null ? String(debugRaw) : '';
       const code = data?.code;
+      const hint = data?.hint || null;
       return {
         success: false,
         error: debugMsg ? `${message}: ${debugMsg}` : message,
         code: code || null,
+        hint,
       };
     }
   };
