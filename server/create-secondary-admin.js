@@ -11,12 +11,14 @@ import './loadEnv.js';
 import bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
 import { connectToDatabase } from './db/database.js';
+import { getSupabaseAdmin } from './db/supabaseClient.js';
 import { createUser, findUserByEmail, updateUserByEmail } from './models/User.js';
 import { ROLES, isUserRoleAdmin } from './components/constants.js';
 import {
   isSupabasePasswordAuthEnabled,
   registerAuthUserWithAdminApi,
   updateAuthUserPassword,
+  isSupabaseAuthUserExistsError,
 } from './services/supabaseAuth.js';
 import { getSecondaryAdminEmails, getSuperAdminEmail } from './utils/adminEmails.js';
 
@@ -86,22 +88,47 @@ async function run() {
   }
 
   if (isSupabasePasswordAuthEnabled()) {
-    const authUser = await registerAuthUserWithAdminApi({
-      email: targetEmail,
-      password: cliPassword,
-      name: 'מנהל משנה',
-      phone: '0500000001',
-    });
-    await createUser({
-      id: authUser.id,
-      name: 'מנהל משנה',
-      email: targetEmail,
-      phone: '0500000001',
-      role: ROLES.ADMIN,
-      emailVerified: true,
-      authProvider: 'supabase',
-      createdAt: new Date().toISOString(),
-    });
+    let authUser;
+    try {
+      authUser = await registerAuthUserWithAdminApi({
+        email: targetEmail,
+        password: cliPassword,
+        name: 'מנהל משנה',
+        phone: '0500000001',
+      });
+    } catch (authErr) {
+      if (!isSupabaseAuthUserExistsError(authErr)) throw authErr;
+      const sb = getSupabaseAdmin();
+      const { data, error } = await sb.auth.admin.listUsers({ page: 1, perPage: 1000 });
+      if (error) throw error;
+      const match = (data?.users || []).find(
+        (u) => String(u.email || '').trim().toLowerCase() === targetEmail
+      );
+      if (!match) throw authErr;
+      await updateAuthUserPassword(match.id, cliPassword);
+      authUser = match;
+      console.log('משתמש כבר קיים ב-Supabase Auth – מעדכן סיסמה ויוצר/משחזר פרופיל ב-app_users.');
+    }
+    const profile = await findUserByEmail(targetEmail);
+    if (profile) {
+      await updateUserByEmail(targetEmail, {
+        role: ROLES.ADMIN,
+        email: targetEmail,
+        emailVerified: true,
+        authProvider: 'supabase',
+      });
+    } else {
+      await createUser({
+        id: authUser.id,
+        name: 'מנהל משנה',
+        email: targetEmail,
+        phone: '0500000001',
+        role: ROLES.ADMIN,
+        emailVerified: true,
+        authProvider: 'supabase',
+        createdAt: new Date().toISOString(),
+      });
+    }
   } else {
     const hashedPassword = await bcrypt.hash(cliPassword, 10);
     await createUser({
