@@ -1,5 +1,6 @@
 import { readUsers, findUserById, updateUserById, deleteUserById } from '../models/User.js';
 import { readCases, findCaseById, findCasesByUserId, updateCase, deleteCase, deleteCasesByIds } from '../models/Case.js';
+import { readPayouts, createPayout } from '../models/Payout.js';
 import { DEFAULT_UNKNOWN, CASE_STATUS } from '../components/constants.js';
 import { isAnyAdminPanelEmail, isSuperAdminEmail } from '../utils/adminEmails.js';
 import {
@@ -295,7 +296,8 @@ export const updateCaseStatus = async (req, res) => {
 };
 
 /**
- * מנהל מאשר שהקייס הושלם בהצלחה – אחרי זה הסטטוס "יחודש בעוד חצי שנה" יוצג
+ * מנהל מאשר שהקייס הושלם בהצלחה – אחרי זה הסטטוס "יחודש בעוד חצי שנה" יוצג.
+ * נשמר גם מי העובד (המנהל) שאישר את הסיום – לצורך מעקב תשלומי עובדים (15$ לכייס).
  */
 export const confirmCaseCompleted = async (req, res) => {
   try {
@@ -304,9 +306,18 @@ export const confirmCaseCompleted = async (req, res) => {
     if (!caseData) {
       return res.status(404).json({ error: 'תיק לא נמצא' });
     }
+    /* אידמפוטנטי: אישור חוזר לא דורס את שיוך העובד ולא מאפס תשלום ששולם */
+    if (caseData.adminConfirmedCompleted === true) {
+      return res.json({ message: 'הקייס כבר אושר כהושלם', case: caseData });
+    }
+    const actorEmail = (req.user?.email || '').trim().toLowerCase();
+    const now = new Date().toISOString();
     const updated = await updateCase(id, {
       adminConfirmedCompleted: true,
-      adminConfirmedAt: new Date().toISOString(),
+      adminConfirmedAt: now,
+      completedBy: actorEmail || null,
+      completedAt: now,
+      employeePaid: false,
     });
     return res.json({ message: 'הקייס אושר כהושלם בהצלחה', case: updated });
   } catch (error) {
@@ -374,6 +385,139 @@ export const updateCaseProcessing = async (req, res) => {
   } catch (error) {
     console.error('updateCaseProcessing error:', error);
     return res.status(500).json({ error: 'שגיאה בעדכון סטטוס העיבוד' });
+  }
+};
+
+/** תעריף לעובד עבור כל כייס שהושלם (בדולרים) */
+const EMPLOYEE_RATE_PER_CASE_USD = 15;
+
+/** כייס שנספר לתשלום עובד: הושלם, משויך לעובד, וטרם שולם עליו */
+function isUnpaidCompletedCase(c) {
+  return c.adminConfirmedCompleted === true && !!c.completedBy && c.employeePaid !== true;
+}
+
+/**
+ * מעקב תשלומי עובדים – סיכום כייסים שהושלמו וטרם שולמו, מקובץ לפי עובד,
+ * כולל היסטוריית תשלומים. נגיש לכל מנהלי הפאנל (ראשי + משנה).
+ */
+export const getEmployeePayouts = async (req, res) => {
+  try {
+    const [cases, users, history] = await Promise.all([readCases(), readUsers(), readPayouts()]);
+
+    const nameByEmail = new Map();
+    for (const u of users) {
+      const e = String(u.email || '').trim().toLowerCase();
+      if (e && u.name) nameByEmail.set(e, u.name);
+    }
+
+    const byEmployee = new Map();
+    for (const c of cases) {
+      if (!isUnpaidCompletedCase(c)) continue;
+      const email = String(c.completedBy).trim().toLowerCase();
+      if (!byEmployee.has(email)) {
+        byEmployee.set(email, {
+          email,
+          name: nameByEmail.get(email) || '',
+          cases: [],
+        });
+      }
+      byEmployee.get(email).cases.push({
+        id: c.id,
+        completedAt: c.completedAt || c.adminConfirmedAt || null,
+        benefitType: c.benefitType || null,
+      });
+    }
+
+    const employees = [...byEmployee.values()]
+      .map((emp) => ({
+        ...emp,
+        cases: emp.cases.sort((a, b) => new Date(b.completedAt || 0) - new Date(a.completedAt || 0)),
+        casesCount: emp.cases.length,
+        totalDue: emp.cases.length * EMPLOYEE_RATE_PER_CASE_USD,
+      }))
+      .sort((a, b) => b.casesCount - a.casesCount);
+
+    return res.json({
+      ratePerCase: EMPLOYEE_RATE_PER_CASE_USD,
+      employees,
+      totals: {
+        casesCount: employees.reduce((sum, e) => sum + e.casesCount, 0),
+        amountDue: employees.reduce((sum, e) => sum + e.totalDue, 0),
+      },
+      history,
+    });
+  } catch (error) {
+    console.error('getEmployeePayouts error:', error);
+    return res.status(500).json({ error: 'שגיאה בשליפת תשלומי העובדים' });
+  }
+};
+
+/**
+ * מנהל-על מאשר ששילם לעובד – מסמן את כל הכייסים הפתוחים של העובד כשולמו
+ * (זה האיפוס החודשי) ושומר רשומה בהיסטוריית התשלומים.
+ */
+export const settleEmployeePayout = async (req, res) => {
+  try {
+    const actorEmail = (req.user?.email || '').trim().toLowerCase();
+    if (!isSuperAdminEmail(actorEmail)) {
+      return res.status(403).json({ error: 'רק מנהל המערכת הראשי יכול לאשר תשלום לעובד' });
+    }
+
+    const employeeEmail = String(req.body?.employeeEmail || '').trim().toLowerCase();
+    if (!employeeEmail) {
+      return res.status(400).json({ error: 'חסר אימייל של העובד' });
+    }
+
+    const cases = await readCases();
+    const toSettle = cases.filter(
+      (c) => isUnpaidCompletedCase(c) && String(c.completedBy).trim().toLowerCase() === employeeEmail
+    );
+    if (toSettle.length === 0) {
+      return res.status(400).json({ error: 'אין כייסים שממתינים לתשלום עבור עובד זה' });
+    }
+
+    const now = new Date().toISOString();
+    for (const c of toSettle) {
+      await updateCase(c.id, {
+        employeePaid: true,
+        employeePaidAt: now,
+        employeePaidBy: actorEmail,
+      });
+    }
+
+    const casesCount = toSettle.length;
+    const amount = casesCount * EMPLOYEE_RATE_PER_CASE_USD;
+
+    /* ההיסטוריה משנית – אם הכתיבה אליה נכשלת (למשל טבלה חסרה) התשלום עצמו כבר נרשם על הכייסים */
+    let historySaved = true;
+    try {
+      const users = await readUsers();
+      const employeeUser = users.find(
+        (u) => String(u.email || '').trim().toLowerCase() === employeeEmail
+      );
+      await createPayout({
+        employeeEmail,
+        employeeName: employeeUser?.name || '',
+        casesCount,
+        amount,
+        caseIds: toSettle.map((c) => c.id),
+        paidBy: actorEmail,
+      });
+    } catch (historyError) {
+      historySaved = false;
+      console.error('settleEmployeePayout history error:', historyError);
+    }
+
+    return res.json({
+      message: `התשלום אושר – ${casesCount} כייסים בסך $${amount} סומנו כשולמו`,
+      employeeEmail,
+      casesCount,
+      amount,
+      historySaved,
+    });
+  } catch (error) {
+    console.error('settleEmployeePayout error:', error);
+    return res.status(500).json({ error: 'שגיאה באישור התשלום לעובד' });
   }
 };
 

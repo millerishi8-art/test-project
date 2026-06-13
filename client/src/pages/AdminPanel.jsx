@@ -333,6 +333,13 @@ const AdminPanel = () => {
           >
             עובדים לך על הכייס
           </button>
+          <button
+            type="button"
+            className="admin-payouts-nav-btn"
+            onClick={() => navigate('/admin/payouts')}
+          >
+            תשלומי עובדים
+          </button>
         </div>
       </div>
 

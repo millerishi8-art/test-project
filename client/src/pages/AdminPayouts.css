@@ -1,0 +1,93 @@
+/* עמוד תשלומי עובדים – משלים את AdminPanel.css */
+
+.payouts-stats-top {
+  margin-top: 0;
+  margin-bottom: 2rem;
+}
+
+.payouts-section-title {
+  margin: 0 0 1rem;
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #0d47a1;
+}
+
+.payouts-history-container {
+  margin-top: 2rem;
+}
+
+.payouts-count-badge {
+  background: #e3f2fd;
+  color: #1565c0;
+  font-size: 1rem;
+}
+
+.payouts-amount {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #2e7d32;
+  white-space: nowrap;
+}
+
+.payouts-amount-paid {
+  color: #1565c0;
+}
+
+.payouts-settle-btn {
+  padding: 0.5rem 0.95rem;
+  min-height: var(--touch-min);
+  font-size: clamp(0.85rem, 2vw, 0.95rem);
+  font-weight: 700;
+  color: white;
+  background: linear-gradient(135deg, #2e7d32 0%, #1b5e20 100%);
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  box-shadow: 0 3px 10px rgba(27, 94, 32, 0.25);
+}
+
+.payouts-settle-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #388e3c 0%, #2e7d32 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 5px 14px rgba(27, 94, 32, 0.35);
+}
+
+.payouts-settle-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.payouts-error-message {
+  background: #ffebee;
+  color: #c62828;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  margin-bottom: 1rem;
+  font-weight: 600;
+  direction: rtl;
+}
+
+.payouts-case-id {
+  font-family: monospace;
+  font-size: 0.8rem;
+  direction: ltr;
+  text-align: left;
+  color: #777;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+  .payouts-case-id {
+    max-width: 120px;
+  }
+
+  .admin-actions-cell .payouts-settle-btn {
+    width: 100%;
+    text-align: center;
+  }
+}

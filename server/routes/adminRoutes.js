@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getAllCases, getCaseById, getAllUsers, confirmCaseCompleted, updateCaseStatus, updateCaseProcessing, deleteCasePermanent, patchUserDeferredPayment } from '../controllers/adminController.js';
+import { getAllCases, getCaseById, getAllUsers, confirmCaseCompleted, updateCaseStatus, updateCaseProcessing, deleteCasePermanent, patchUserDeferredPayment, getEmployeePayouts, settleEmployeePayout } from '../controllers/adminController.js';
 import { authenticateToken, isAdmin } from '../middleware/auth.js';
 
 const router = Router();
@@ -15,5 +15,7 @@ router.patch('/cases/:id/confirm-completed', confirmCaseCompleted);
 router.delete('/cases/:id', deleteCasePermanent);
 router.get('/users', getAllUsers);
 router.patch('/users/:id/deferred-payment', patchUserDeferredPayment);
+router.get('/payouts', getEmployeePayouts);
+router.post('/payouts/settle', settleEmployeePayout);
 
 export default router;

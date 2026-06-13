@@ -21,6 +21,7 @@ const CaseStatus = lazy(() => import('./pages/CaseStatus'));
 const AdminPanel = lazy(() => import('./pages/AdminPanel'));
 const AdminCaseDetail = lazy(() => import('./pages/AdminCaseDetail'));
 const AdminCaseProcessing = lazy(() => import('./pages/AdminCaseProcessing'));
+const AdminPayouts = lazy(() => import('./pages/AdminPayouts'));
 
 const LoadingFallback = () => (
   <div className="loading-container" style={{ minHeight: '60vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
@@ -103,6 +104,14 @@ function App() {
                 element={
                   <ProtectedRoute adminOnly>
                     <AdminCaseProcessing />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/payouts"
+                element={
+                  <ProtectedRoute adminOnly>
+                    <AdminPayouts />
                   </ProtectedRoute>
                 }
               />

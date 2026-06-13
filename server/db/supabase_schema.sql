@@ -44,5 +44,21 @@ $$;
 
 GRANT EXECUTE ON FUNCTION public.find_app_users_by_email_normalized(TEXT) TO anon, authenticated, service_role;
 
+-- היסטוריית תשלומים לעובדים (15$ לכייס שהושלם) – כל רשומה = סגירת חשבון לעובד
+CREATE TABLE IF NOT EXISTS public.app_payouts (
+  id TEXT PRIMARY KEY,
+  employee_email TEXT NOT NULL,
+  employee_name TEXT,
+  cases_count INTEGER NOT NULL DEFAULT 0,
+  amount NUMERIC NOT NULL DEFAULT 0,
+  case_ids JSONB NOT NULL DEFAULT '[]'::jsonb,
+  paid_by TEXT,
+  paid_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS app_payouts_employee_email_idx ON public.app_payouts (employee_email);
+CREATE INDEX IF NOT EXISTS app_payouts_paid_at_idx ON public.app_payouts (paid_at DESC);
+
 COMMENT ON TABLE public.app_users IS 'משתמשי האפליקציה (מסמך JSON בשדה data)';
 COMMENT ON TABLE public.app_cases IS 'תיקים – user_id לשאילתות, data מסמך מלא';
+COMMENT ON TABLE public.app_payouts IS 'היסטוריית תשלומים לעובדים על כייסים שהושלמו';
