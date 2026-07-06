@@ -5,6 +5,7 @@ import { LanguageProvider } from './context/LanguageContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Navbar from './components/Navbar';
 import WhatsAppButton from './components/WhatsAppButton';
+import AccessibilityWidget from './components/AccessibilityWidget';
 import TestimonialTicker from './components/TestimonialTicker';
 import './App.css';
 
@@ -22,6 +23,7 @@ const AdminPanel = lazy(() => import('./pages/AdminPanel'));
 const AdminCaseDetail = lazy(() => import('./pages/AdminCaseDetail'));
 const AdminCaseProcessing = lazy(() => import('./pages/AdminCaseProcessing'));
 const AdminPayouts = lazy(() => import('./pages/AdminPayouts'));
+const AccessibilityStatement = lazy(() => import('./pages/AccessibilityStatement'));
 
 const LoadingFallback = () => (
   <div className="loading-container" style={{ minHeight: '60vh', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
@@ -36,6 +38,7 @@ function App() {
         <div className="app">
           <Navbar />
           <WhatsAppButton />
+          <AccessibilityWidget />
           <TestimonialTicker />
           <Suspense fallback={<LoadingFallback />}>
             <Routes>
@@ -43,6 +46,7 @@ function App() {
               <Route path="/login" element={<Login />} />
               <Route path="/verify-email" element={<VerifyEmail />} />
               <Route path="/" element={<Landing />} />
+              <Route path="/accessibility" element={<AccessibilityStatement />} />
               <Route
                 path="/dashboard"
                 element={

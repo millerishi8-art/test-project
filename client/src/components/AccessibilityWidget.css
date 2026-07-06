@@ -1,0 +1,354 @@
+/* ===== כפתור נגישות צף + פאנל ===== */
+/* הוואטסאפ יושב בפינה השמאלית-תחתונה (RTL) — הנגישות בפינה הימנית-תחתונה */
+
+.a11y-widget {
+  position: fixed;
+  bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
+  right: calc(1rem + env(safe-area-inset-right, 0px));
+  z-index: 10005;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.a11y-toggle-btn {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  background: linear-gradient(135deg, #1e6bb8 0%, #0d47a1 100%);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(13, 71, 161, 0.45);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.a11y-toggle-btn:hover {
+  transform: scale(1.08);
+  box-shadow: 0 6px 20px rgba(13, 71, 161, 0.55);
+}
+
+.a11y-toggle-btn:focus-visible {
+  outline: 3px solid #ffd54f;
+  outline-offset: 2px;
+}
+
+.a11y-active-badge {
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: #ffd54f;
+  color: #1a1a1a;
+  font-size: 0.75rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.25);
+}
+
+.a11y-panel {
+  position: absolute;
+  bottom: calc(100% + 12px);
+  right: 0;
+  width: min(320px, calc(100vw - 2rem));
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+  border: 1px solid #e0e0e0;
+  padding: 1rem;
+  direction: rtl;
+  text-align: right;
+}
+
+.a11y-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.85rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 2px solid #e3f2fd;
+}
+
+.a11y-panel-title {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #0d47a1;
+  margin: 0;
+}
+
+.a11y-close-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid #ccc;
+  background: #f5f5f5;
+  color: #444;
+  font-size: 0.9rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.a11y-close-btn:hover {
+  background: #ffebee;
+  border-color: #c62828;
+  color: #c62828;
+}
+
+.a11y-close-btn:focus-visible,
+.a11y-font-btn:focus-visible,
+.a11y-option-btn:focus-visible,
+.a11y-reset-btn:focus-visible,
+.a11y-statement-link:focus-visible {
+  outline: 3px solid #1e6bb8;
+  outline-offset: 2px;
+}
+
+.a11y-font-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.85rem;
+  padding: 0.5rem 0.65rem;
+  background: #f4f8fd;
+  border-radius: 10px;
+}
+
+.a11y-font-label {
+  font-weight: 700;
+  color: #1a2a3a;
+  font-size: 0.95rem;
+}
+
+.a11y-font-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.a11y-font-btn {
+  min-width: 42px;
+  height: 38px;
+  border-radius: 8px;
+  border: 2px solid #1e6bb8;
+  background: #e3f2fd;
+  color: #0d47a1;
+  font-size: 1rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.a11y-font-btn:hover:not(:disabled) {
+  background: #1e6bb8;
+  color: #fff;
+}
+
+.a11y-font-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.a11y-font-step {
+  min-width: 2.6rem;
+  text-align: center;
+  font-weight: 700;
+  color: #0d47a1;
+  font-size: 0.9rem;
+}
+
+.a11y-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.a11y-option-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  min-height: 64px;
+  padding: 0.5rem 0.4rem;
+  border-radius: 10px;
+  border: 2px solid #d6e4f5;
+  background: #fafcff;
+  color: #1a2a3a;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+
+.a11y-option-btn:hover {
+  border-color: #1e6bb8;
+  background: #eef6ff;
+}
+
+.a11y-option-btn.active {
+  background: #1e6bb8;
+  border-color: #0d47a1;
+  color: #fff;
+}
+
+.a11y-option-icon {
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+.a11y-panel-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 0.85rem;
+  padding-top: 0.75rem;
+  border-top: 2px solid #e3f2fd;
+}
+
+.a11y-reset-btn {
+  padding: 0.45rem 0.8rem;
+  border-radius: 8px;
+  border: 2px solid #b71c1c;
+  background: #ffebee;
+  color: #b71c1c;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.a11y-reset-btn:hover {
+  background: #b71c1c;
+  color: #fff;
+}
+
+.a11y-statement-link {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #0d47a1;
+  text-decoration: underline;
+}
+
+.a11y-statement-link:hover {
+  color: #1e6bb8;
+}
+
+@media (max-width: 768px) {
+  .a11y-widget {
+    bottom: calc(1.15rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .a11y-toggle-btn {
+    width: 52px;
+    height: 52px;
+  }
+}
+
+@media (max-width: 480px) {
+  .a11y-toggle-btn {
+    width: 48px;
+    height: 48px;
+  }
+}
+
+/* ===== מצבי נגישות גלובליים (מוחלים כמחלקות על <html>) ===== */
+
+/* הגדלת טקסט — הטיפוגרפיה מבוססת rem ולכן סקיילינג על השורש מגדיל את כל האתר */
+html.a11y-font-1 {
+  font-size: 112.5%;
+}
+
+html.a11y-font-2 {
+  font-size: 125%;
+}
+
+html.a11y-font-3 {
+  font-size: 140%;
+}
+
+/* ניגודיות כהה — רקע כהה וטקסט בהיר בכל האתר.
+   לא משתמשים ב-filter על html כי זה שובר מיקום fixed של הנאבבר והכפתורים הצפים. */
+html.a11y-contrast body,
+html.a11y-contrast body *:not(img):not(video):not(picture):not(svg):not(svg *) {
+  background-color: #111 !important;
+  background-image: none !important;
+  color: #fff !important;
+  border-color: #9e9e9e !important;
+  text-shadow: none !important;
+  box-shadow: none !important;
+}
+
+html.a11y-contrast a,
+html.a11y-contrast a *:not(svg):not(svg *) {
+  color: #ffeb3b !important;
+  text-decoration: underline;
+}
+
+html.a11y-contrast button,
+html.a11y-contrast input,
+html.a11y-contrast select,
+html.a11y-contrast textarea {
+  border: 2px solid #bdbdbd !important;
+}
+
+html.a11y-contrast ::placeholder {
+  color: #cfcfcf !important;
+}
+
+/* שמירה על חיווי מצב פעיל בתוך תפריט הנגישות גם בניגודיות כהה */
+html.a11y-contrast .a11y-option-btn.active,
+html.a11y-contrast .a11y-active-badge {
+  background-color: #ffeb3b !important;
+  color: #111 !important;
+}
+
+/* גווני אפור — שכבת backdrop-filter צפה שלא משנה את פריסת העמוד */
+html.a11y-grayscale body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2147483647;
+  backdrop-filter: grayscale(1);
+  -webkit-backdrop-filter: grayscale(1);
+}
+
+/* הדגשת קישורים */
+html.a11y-links a,
+html.a11y-links a * {
+  text-decoration: underline !important;
+  background-color: #fff59d !important;
+  color: #0d2b57 !important;
+}
+
+/* גופן קריא */
+html.a11y-readable-font body,
+html.a11y-readable-font body * {
+  font-family: Arial, 'Segoe UI', Tahoma, sans-serif !important;
+  letter-spacing: 0.02em;
+}
+
+/* עצירת אנימציות ותנועות */
+html.a11y-no-motion *,
+html.a11y-no-motion *::before,
+html.a11y-no-motion *::after {
+  animation: none !important;
+  transition: none !important;
+}
+
+html.a11y-no-motion {
+  scroll-behavior: auto !important;
+}
