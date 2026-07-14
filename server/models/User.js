@@ -153,8 +153,19 @@ export async function findUserByEmail(email) {
       if (rows.length > 0) {
         const re = emailRegex(email);
         const hydrated = rows.map((r) => rowToUser(r)).filter(Boolean);
-        const match = hydrated.find((u) => re && re.test(String(u.email || '').trim()));
-        return match || hydrated[0];
+        /* רק התאמה מדויקת לאימייל – לעולם לא מחזירים hydrated[0] "במקרה" (עלול לשלוח מייל למשתמש אחר) */
+        const match = hydrated.find((u) => {
+          const uEmail = String(u.email || '').trim().toLowerCase();
+          return uEmail === normalized || (re && re.test(String(u.email || '').trim()));
+        });
+        if (match) {
+          /* מבטיחים שהאימייל שיוחזר הוא זה שחיפשו (לא עמודה ישנה/שגויה) */
+          return { ...match, email: normalized };
+        }
+        /* RPC מצא שורה לפי data/עמודה אבל אחרי מיזוג אין התאמה – עדיין מחזירים עם האימייל המבוקש */
+        if (hydrated[0]) {
+          return { ...hydrated[0], email: normalized };
+        }
       }
     }
   } catch (_) {
@@ -314,6 +325,18 @@ export async function updateUserById(id, updateFields) {
         out = r2.data;
         error = r2.error;
       }
+      /* אם קיימת עמודת role שטוחה – מעדכנים גם אותה (אחרת rowToUser ישאיר admin) */
+      if (!error && next.role != null) {
+        const rolePatch = await sb
+          .from(TABLE)
+          .update({ role: normalizeUserRole(next.role) })
+          .eq('id', id)
+          .select('*')
+          .maybeSingle();
+        if (!rolePatch.error && rolePatch.data) {
+          out = rolePatch.data;
+        }
+      }
     }
     if (error) throw error;
     return rowToUser(out);
@@ -328,26 +351,37 @@ export async function updateUserByEmail(email, updateFields) {
     const sb = getSupabaseAdmin();
     const normalized = (email || '').trim().toLowerCase();
     if (!normalized) return null;
-    let rows;
+    let rows = [];
     const { data, error } = await sb.rpc('find_app_users_by_email_normalized', { e: normalized });
-    if (error) throw error;
-    rows = Array.isArray(data) ? data : [];
+    if (!error) {
+      rows = Array.isArray(data) ? data : [];
+    } else {
+      /* RPC חסר (PGRST202 וכו') – נופלים לחיפוש רגיל כמו findUserByEmail */
+      console.warn('User updateUserByEmail: RPC unavailable, falling back. ', error?.message || error);
+    }
+    if (rows.length === 0) {
+      const byColumn = await findUserByEmailColumn(sb, normalized);
+      if (byColumn) {
+        rows = [{ id: byColumn.id }];
+      }
+    }
     if (rows.length === 0) {
       const re = emailRegex(email);
       const { data: all, error: e2 } = await sb.from(TABLE).select('*');
       if (e2) throw e2;
       rows = (all || []).filter((r) => {
         const u = rowToUser(r);
-        return u && re && re.test(String(u.email || '').trim());
+        return u && (String(u.email || '').trim().toLowerCase() === normalized || (re && re.test(String(u.email || '').trim())));
       });
     }
     if (rows.length === 0) return null;
     const { id, ...allowed } = updateFields;
     if (Object.keys(allowed).length === 0) return rowToUser(rows[0]);
+    let last = null;
     for (const row of rows) {
-      await updateUserById(row.id, allowed);
+      last = await updateUserById(row.id, allowed);
     }
-    return findUserById(rows[0].id);
+    return last || findUserById(rows[0].id);
   } catch (error) {
     console.error('User updateUserByEmail error:', error);
     return null;

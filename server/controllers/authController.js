@@ -811,7 +811,9 @@ export const resendVerificationEmail = async (req, res) => {
     });
     let sent = false;
     try {
-      sent = await sendVerificationCodeEmail(user.email, user.name, verificationCode);
+      /* שולחים לכתובת מהבקשה (מנורמלת), לא ל-user.email שעלול להיות ישן */
+      const recipientEmail = email.trim().toLowerCase();
+      sent = await sendVerificationCodeEmail(recipientEmail, user.name, verificationCode);
     } catch (emailErr) {
       logAuthError('Resend verification sendVerificationCodeEmail', emailErr);
     }
@@ -947,11 +949,23 @@ export const requestPasswordReset = async (req, res) => {
     if (user) {
       const code = generateEmailVerificationCode();
       const expires = emailCodeExpiresAt();
+      /* תמיד שולחים לכתובת שהלקוח הזין בבקשה – לא ל-user.email ישן/שגוי מהמסד */
+      const recipientEmail = email;
       await updateUserById(user.id, {
         passwordResetCode: code,
         passwordResetCodeExpires: expires,
+        /* מסנכרנים אימייל אם העמודה/JSON היו לא עקביים */
+        email: recipientEmail,
       });
-      const sent = await sendPasswordResetCodeEmail(user.email, user.name, code);
+      const sent = await sendPasswordResetCodeEmail(recipientEmail, user.name, code);
+      console.log(
+        '[Auth] Password reset requested for',
+        maskEmail(recipientEmail),
+        '| userId:',
+        user.id,
+        '| emailSent:',
+        sent
+      );
       if (process.env.NODE_ENV !== 'production' && !sent) {
         console.log('[Backend] Password reset code (email not sent):', code);
       }

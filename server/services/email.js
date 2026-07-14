@@ -100,7 +100,12 @@ export async function sendVerificationCodeEmail(to, name, code) {
   }
 
   const codeStr = String(code || '').trim().replace(/\D/g, '').slice(0, 6) || '000000';
-  console.log('[Email] Sending verification code to', (to || '').trim(), '| from:', fromAddress);
+  const recipient = String(to || '').trim().toLowerCase();
+  if (!recipient || !recipient.includes('@')) {
+    console.error('[Email] Verification aborted: missing/invalid recipient. to=', to);
+    return false;
+  }
+  console.log('[Email] Sending verification code to', recipient, '| from:', fromAddress);
   const subject = 'קוד אימות – סוכן ביטוח';
   const html = `
     <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 500px;">
@@ -117,15 +122,19 @@ export async function sendVerificationCodeEmail(to, name, code) {
 
   const mailOptions = {
     from: fromAddress,
-    to: (to || '').trim(),
+    to: recipient,
     subject,
     text,
     html,
+    envelope: {
+      from: fromAddress,
+      to: recipient,
+    },
   };
 
   try {
-    await transport.sendMail(mailOptions);
-    console.log('[Email] Verification code email sent successfully to', (to || '').trim());
+    const info = await transport.sendMail(mailOptions);
+    console.log('[Email] Verification code email sent successfully to', recipient, '| accepted:', info?.accepted);
     return true;
   } catch (err) {
     const msg = err?.message || String(err);
@@ -148,8 +157,18 @@ export async function sendVerificationCodeEmail(to, name, code) {
 }
 
 /**
+ * נרמול כתובת נמען – חייבת להיות כתובת אמיתית של הלקוח, לא תיבת השליחה של המערכת.
+ */
+function normalizeRecipientEmail(to) {
+  return String(to || '')
+    .trim()
+    .toLowerCase();
+}
+
+/**
  * Send 6-digit password reset code email.
  * Never throws – returns false on failure and logs errors.
+ * חשוב: תמיד נשלח לכתובת שהלקוח הזין (to), עם envelope מפורש – לא לתיבת EMAIL_USER.
  */
 export async function sendPasswordResetCodeEmail(to, name, code) {
   const config = getConfig();
@@ -164,8 +183,20 @@ export async function sendPasswordResetCodeEmail(to, name, code) {
   const fromAddress = config.EMAIL_FROM || config.EMAIL_USER || config.SMTP_USER;
   if (!fromAddress) return false;
 
+  const recipient = normalizeRecipientEmail(to);
+  if (!recipient || !recipient.includes('@')) {
+    console.error('[Email] Password reset aborted: missing/invalid recipient. to=', to);
+    return false;
+  }
+
+  const systemMailbox = normalizeRecipientEmail(config.EMAIL_USER || config.SMTP_USER);
+  if (systemMailbox && recipient === systemMailbox) {
+    /* מותר רק אם הלקוח באמת ביקש איפוס לתיבה הזו (מנהל וכו') – לא חוסמים, רק מתריעים */
+    console.warn('[Email] Password reset recipient equals system EMAIL_USER:', recipient);
+  }
+
   const codeStr = String(code || '').trim().replace(/\D/g, '').slice(0, 6) || '000000';
-  console.log('[Email] Sending password reset code to', (to || '').trim());
+  console.log('[Email] Sending password reset code to', recipient, '| from:', fromAddress);
   const subject = 'קוד איפוס סיסמה – סוכן ביטוח';
   const html = `
     <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 500px;">
@@ -181,14 +212,23 @@ export async function sendPasswordResetCodeEmail(to, name, code) {
   const text = `שלום ${name || 'משתמש'},\n\nקוד איפוס הסיסמה: ${codeStr}\n\nהזן את הקוד באתר ובחר סיסמה חדשה. הקוד תקף ל-15 דקות.`;
 
   try {
-    await transport.sendMail({
+    const info = await transport.sendMail({
       from: fromAddress,
-      to: (to || '').trim(),
+      to: recipient,
       subject,
       text,
       html,
+      /* envelope מפורש – מבטיח ש-SMTP ימסור לנמען הנכון ולא רק לתיבת השולח */
+      envelope: {
+        from: fromAddress,
+        to: recipient,
+      },
     });
-    console.log('[Email] Password reset code sent to', (to || '').trim());
+    console.log('[Email] Password reset code sent to', recipient, '| accepted:', info?.accepted, '| rejected:', info?.rejected);
+    if (Array.isArray(info?.rejected) && info.rejected.length > 0) {
+      console.error('[Email] Password reset rejected recipients:', info.rejected);
+      return false;
+    }
     return true;
   } catch (err) {
     console.error('[Email] Send password reset code failed:', err?.message || err);

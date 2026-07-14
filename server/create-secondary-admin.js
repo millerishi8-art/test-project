@@ -5,7 +5,7 @@
  * שימוש:
  *   node create-secondary-admin.js <email> <password>
  * דוגמה:
- *   node create-secondary-admin.js lapidwoldenberg@gmail.com 'lapid770!'
+ *   node create-secondary-admin.js abergelyud7@gmail.com 'Abergel770!'
  */
 import './loadEnv.js';
 import bcrypt from 'bcryptjs';
