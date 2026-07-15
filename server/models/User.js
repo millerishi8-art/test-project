@@ -143,29 +143,28 @@ export async function findUserByEmail(email) {
   const normalized = (email || '').trim().toLowerCase();
   if (!normalized) return null;
   const sb = getSupabaseAdmin();
+
+  /** תמיד מחזירים את האימייל שחופש (מנורמל) – לא ערך ישן/שגוי מהמסד */
+  const withNormalizedEmail = (user) => (user ? { ...user, email: normalized } : null);
+
   const byColumn = await findUserByEmailColumn(sb, normalized);
-  if (byColumn) return byColumn;
+  if (byColumn) return withNormalizedEmail(byColumn);
 
   try {
     const { data, error } = await sb.rpc('find_app_users_by_email_normalized', { e: normalized });
     if (!error) {
       const rows = Array.isArray(data) ? data : [];
       if (rows.length > 0) {
-        const re = emailRegex(email);
+        const re = emailRegex(normalized);
         const hydrated = rows.map((r) => rowToUser(r)).filter(Boolean);
         /* רק התאמה מדויקת לאימייל – לעולם לא מחזירים hydrated[0] "במקרה" (עלול לשלוח מייל למשתמש אחר) */
         const match = hydrated.find((u) => {
           const uEmail = String(u.email || '').trim().toLowerCase();
-          return uEmail === normalized || (re && re.test(String(u.email || '').trim()));
+          return uEmail === normalized || (re && re.test(uEmail));
         });
-        if (match) {
-          /* מבטיחים שהאימייל שיוחזר הוא זה שחיפשו (לא עמודה ישנה/שגויה) */
-          return { ...match, email: normalized };
-        }
-        /* RPC מצא שורה לפי data/עמודה אבל אחרי מיזוג אין התאמה – עדיין מחזירים עם האימייל המבוקש */
-        if (hydrated[0]) {
-          return { ...hydrated[0], email: normalized };
-        }
+        if (match) return withNormalizedEmail(match);
+        /* RPC מצא שורה לפי data/עמודה אבל אחרי מיזוג אין התאמה – עדיין עם האימייל המבוקש */
+        if (hydrated[0]) return withNormalizedEmail(hydrated[0]);
       }
     }
   } catch (_) {
@@ -174,9 +173,15 @@ export async function findUserByEmail(email) {
   try {
     const { data: all, error } = await sb.from(TABLE).select('*');
     if (error) throw error;
-    const re = emailRegex(email);
-    const u = (all || []).map(rowToUser).find((x) => x && re && re.test(String(x.email || '').trim()));
-    return u || null;
+    const re = emailRegex(normalized);
+    const u = (all || [])
+      .map(rowToUser)
+      .find((x) => {
+        if (!x) return false;
+        const uEmail = String(x.email || '').trim().toLowerCase();
+        return uEmail === normalized || (re && re.test(uEmail));
+      });
+    return withNormalizedEmail(u);
   } catch (err) {
     console.error('User findUserByEmail error:', err);
     throw err;
