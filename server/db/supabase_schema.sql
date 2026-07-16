@@ -10,6 +10,23 @@ CREATE TABLE IF NOT EXISTS public.app_users (
 ALTER TABLE public.app_users ADD COLUMN IF NOT EXISTS email TEXT;
 ALTER TABLE public.app_users ADD COLUMN IF NOT EXISTS name TEXT;
 ALTER TABLE public.app_users ADD COLUMN IF NOT EXISTS phone TEXT;
+ALTER TABLE public.app_users ADD COLUMN IF NOT EXISTS full_name TEXT;
+ALTER TABLE public.app_users ADD COLUMN IF NOT EXISTS role TEXT;
+ALTER TABLE public.app_users ADD COLUMN IF NOT EXISTS auth_provider TEXT;
+ALTER TABLE public.app_users ADD COLUMN IF NOT EXISTS email_verified BOOLEAN;
+ALTER TABLE public.app_users ADD COLUMN IF NOT EXISTS email_verification_code TEXT;
+ALTER TABLE public.app_users ADD COLUMN IF NOT EXISTS email_verification_code_expires TIMESTAMPTZ;
+ALTER TABLE public.app_users ADD COLUMN IF NOT EXISTS password_reset_code TEXT;
+ALTER TABLE public.app_users ADD COLUMN IF NOT EXISTS password_reset_code_expires TIMESTAMPTZ;
+ALTER TABLE public.app_users ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT now();
+
+-- אם הטבלה הייתה שטוחה בלי data – מוסיפים JSONB (חובה לקודי אימות מלאים)
+ALTER TABLE public.app_users ADD COLUMN IF NOT EXISTS data JSONB NOT NULL DEFAULT '{}'::jsonb;
+
+-- משתמשי קדם: מסמנים כמאומתים כדי לא לנעול אותם אחרי השינוי
+UPDATE public.app_users
+SET email_verified = true
+WHERE email_verified IS NULL;
 
 CREATE INDEX IF NOT EXISTS app_users_email_lower_idx
   ON public.app_users (lower(trim(data ->> 'email')));

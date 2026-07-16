@@ -36,6 +36,22 @@ function mapFlatColumnToAppFields(flat) {
     o.emailVerified = !!o.email_verified;
     delete o.email_verified;
   }
+  if ('email_verification_code' in o && o.emailVerificationCode === undefined) {
+    o.emailVerificationCode = o.email_verification_code;
+    delete o.email_verification_code;
+  }
+  if ('email_verification_code_expires' in o && o.emailVerificationCodeExpires === undefined) {
+    o.emailVerificationCodeExpires = o.email_verification_code_expires;
+    delete o.email_verification_code_expires;
+  }
+  if ('password_reset_code' in o && o.passwordResetCode === undefined) {
+    o.passwordResetCode = o.password_reset_code;
+    delete o.password_reset_code;
+  }
+  if ('password_reset_code_expires' in o && o.passwordResetCodeExpires === undefined) {
+    o.passwordResetCodeExpires = o.password_reset_code_expires;
+    delete o.password_reset_code_expires;
+  }
   if ('auth_provider' in o && o.authProvider === undefined) {
     o.authProvider = o.auth_provider;
     delete o.auth_provider;
@@ -77,9 +93,10 @@ function rowToUser(row) {
   if (!merged.authProvider && row.data == null && Object.keys(fromRow).length > 0) {
     merged.authProvider = 'supabase';
   }
-  if (merged.emailVerified === undefined && merged.authProvider === 'supabase') {
-    merged.emailVerified = true;
-  }
+  /*
+   * אל תמציא emailVerified=true אוטומטית — זה גרם לדילוג על אימות כשהקוד לא נשמר בסכמה שטוחה.
+   * משתמשים ישנים בלי הדגל: login מתייחס ל-undefined כאל מאומת (תאימות לאחור).
+   */
   return merged;
 }
 
@@ -88,6 +105,23 @@ function flatRowFromUser(normalized) {
   if (normalized.email) row.email = normalized.email;
   if (normalized.name != null) row.full_name = String(normalized.name);
   if (normalized.role != null) row.role = normalizeUserRole(normalized.role);
+  if (normalized.phone != null) row.phone = String(normalized.phone);
+  if (normalized.authProvider != null) row.auth_provider = String(normalized.authProvider);
+  if (normalized.emailVerified !== undefined) row.email_verified = !!normalized.emailVerified;
+  if (normalized.emailVerificationCode !== undefined) {
+    row.email_verification_code =
+      normalized.emailVerificationCode == null ? null : String(normalized.emailVerificationCode);
+  }
+  if (normalized.emailVerificationCodeExpires !== undefined) {
+    row.email_verification_code_expires = normalized.emailVerificationCodeExpires || null;
+  }
+  if (normalized.passwordResetCode !== undefined) {
+    row.password_reset_code =
+      normalized.passwordResetCode == null ? null : String(normalized.passwordResetCode);
+  }
+  if (normalized.passwordResetCodeExpires !== undefined) {
+    row.password_reset_code_expires = normalized.passwordResetCodeExpires || null;
+  }
   return row;
 }
 
@@ -196,7 +230,17 @@ export async function createUser(userData) {
 
   if (!usesJsonb) {
     const row = flatRowFromUser(normalized);
-    const { error } = await sb.from(TABLE).insert(row);
+    let { error } = await sb.from(TABLE).insert(row);
+    if (error && isMissingColumnError(error, 'email_verification_code')) {
+      /* סכמה שטוחה ישנה בלי עמודות אימות – שומרים לפחות פרופיל בסיסי */
+      const basic = {
+        id: row.id,
+        ...(row.email ? { email: row.email } : {}),
+        ...(row.full_name != null ? { full_name: row.full_name } : {}),
+        ...(row.role != null ? { role: row.role } : {}),
+      };
+      ({ error } = await sb.from(TABLE).insert(basic));
+    }
     if (error) {
       console.error('User createUser error:', error?.message || error);
       throw error;
@@ -208,22 +252,42 @@ export async function createUser(userData) {
   if (data.authProvider === 'supabase') {
     delete data.password;
   }
-  const withColumns = {
-    id,
-    data,
-    ...(normalized.email ? { email: normalized.email } : {}),
-    ...(normalized.name != null ? { name: normalized.name } : {}),
-    ...(normalized.phone != null ? { phone: normalized.phone } : {}),
-  };
-  let { error } = await sb.from(TABLE).insert(withColumns);
-  if (error) {
-    const { error: err2 } = await sb.from(TABLE).insert({ id, data });
-    if (err2) {
-      console.error('User createUser error:', err2?.message || err2);
-      throw err2;
+  /* תואם גם לסכמה עם name וגם עם full_name */
+  const attempts = [
+    {
+      id,
+      data,
+      ...(normalized.email ? { email: normalized.email } : {}),
+      ...(normalized.name != null ? { full_name: String(normalized.name) } : {}),
+      ...(normalized.phone != null ? { phone: normalized.phone } : {}),
+      ...(normalized.role != null ? { role: normalizeUserRole(normalized.role) } : {}),
+    },
+    {
+      id,
+      data,
+      ...(normalized.email ? { email: normalized.email } : {}),
+      ...(normalized.name != null ? { name: String(normalized.name) } : {}),
+      ...(normalized.phone != null ? { phone: normalized.phone } : {}),
+    },
+    {
+      id,
+      data,
+      ...(normalized.email ? { email: normalized.email } : {}),
+    },
+    { id, data },
+  ];
+  let lastError = null;
+  for (const payload of attempts) {
+    const { error } = await sb.from(TABLE).insert(payload);
+    if (!error) return normalized;
+    lastError = error;
+    if (!isMissingColumnError(error, 'name') && !isMissingColumnError(error, 'full_name') && !isMissingColumnError(error, 'phone') && !isMissingColumnError(error, 'role')) {
+      /* שגיאה אחרת (למשל כפילות) – לא ממשיכים לנסות */
+      break;
     }
   }
-  return normalized;
+  console.error('User createUser error:', lastError?.message || lastError);
+  throw lastError;
 }
 
 /**
@@ -312,11 +376,21 @@ export async function updateUserById(id, updateFields) {
     let out;
     let error;
     if (!usesJsonb) {
-      const patch = {};
-      if (next.email) patch.email = next.email;
-      if (next.name != null) patch.full_name = String(next.name);
-      if (next.role != null) patch.role = normalizeUserRole(next.role);
-      ({ data: out, error } = await sb.from(TABLE).update(patch).eq('id', id).select('*').single());
+      const patch = flatRowFromUser(next);
+      delete patch.id;
+      /* מסירים שדות אופציונליים אם העמודות חסרות – מנסים מלא ואז בסיסי */
+      let result = await sb.from(TABLE).update(patch).eq('id', id).select('*').single();
+      out = result.data;
+      error = result.error;
+      if (error && (isMissingColumnError(error, 'email_verification_code') || isMissingColumnError(error, 'email_verified') || isMissingColumnError(error, 'auth_provider') || isMissingColumnError(error, 'phone'))) {
+        const basic = {};
+        if (next.email) basic.email = next.email;
+        if (next.name != null) basic.full_name = String(next.name);
+        if (next.role != null) basic.role = normalizeUserRole(next.role);
+        result = await sb.from(TABLE).update(basic).eq('id', id).select('*').single();
+        out = result.data;
+        error = result.error;
+      }
     } else {
       const patch = {
         data,

@@ -25,6 +25,10 @@ import {
   isSupabaseAuthUserExistsError,
   canSignInWithSupabasePassword,
   classifySupabaseAuthError,
+  setEmailVerificationInAuthMeta,
+  getEmailVerificationFromAuthMeta,
+  setPasswordResetInAuthMeta,
+  getPasswordResetFromAuthMeta,
 } from '../services/supabaseAuth.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-this';
@@ -194,7 +198,50 @@ async function ensureAdminEmailVerified(user, email) {
     .toLowerCase();
   if (!isAnyAdminPanelEmail(canon) || user.emailVerified !== false) return user;
   const updated = await updateUserById(user.id, { emailVerified: true });
+  try {
+    await setEmailVerificationInAuthMeta(user.id, { verified: true });
+  } catch (_) {
+    /* best-effort */
+  }
   return updated || { ...user, emailVerified: true };
+}
+
+async function isAppEmailVerified(user) {
+  if (!user) return false;
+  if (user.emailVerified === true) return true;
+  if (user.emailVerified === false) return false;
+  if (user.authProvider === 'supabase' || canSignInWithSupabasePassword()) {
+    const meta = await getEmailVerificationFromAuthMeta(user.id);
+    if (meta.appEmailVerified === false) return false;
+    if (meta.appEmailVerified === true) return true;
+  }
+  return true;
+}
+
+async function resolveStoredEmailVerification(user) {
+  const fromProfile = {
+    code: (user?.emailVerificationCode || '').toString().trim(),
+    expires: user?.emailVerificationCodeExpires || '',
+  };
+  if (fromProfile.code && fromProfile.code.length === 6) return fromProfile;
+  const meta = await getEmailVerificationFromAuthMeta(user.id);
+  return {
+    code: meta.emailVerificationCode || '',
+    expires: meta.emailVerificationCodeExpires || '',
+  };
+}
+
+async function resolveStoredPasswordReset(user) {
+  const fromProfile = {
+    code: (user?.passwordResetCode || '').toString().trim(),
+    expires: user?.passwordResetCodeExpires || '',
+  };
+  if (fromProfile.code && fromProfile.code.length === 6) return fromProfile;
+  const meta = await getPasswordResetFromAuthMeta(user.id);
+  return {
+    code: meta.passwordResetCode || '',
+    expires: meta.passwordResetCodeExpires || '',
+  };
 }
 
 async function compareStoredPassword(user, plainPassword) {
@@ -357,10 +404,23 @@ export const register = async (req, res) => {
       let emailSent = false;
       if (!isPrivilegedAdminRegister) {
         try {
+          await setEmailVerificationInAuthMeta(authUser.id, {
+            code: verificationCode,
+            expires,
+            verified: false,
+          });
+        } catch (metaErr) {
+          logAuthError('Registration setEmailVerificationInAuthMeta', metaErr);
+        }
+        try {
           emailSent = await sendVerificationCodeEmail(authUser.email, name, verificationCode);
         } catch (emailErr) {
           logAuthError('Registration sendVerificationCodeEmail (Supabase)', emailErr);
         }
+      } else {
+        try {
+          await setEmailVerificationInAuthMeta(authUser.id, { verified: true });
+        } catch (_) {}
       }
 
       const message = isPrivilegedAdminRegister
@@ -549,7 +609,7 @@ export const login = async (req, res) => {
           return res.status(500).json({ error: ERROR_MESSAGES?.SERVER?.LOGIN || 'שגיאת שרת בהתחברות' });
         }
         u = await ensureAdminEmailVerified(u, rawEmail);
-        if (u.emailVerified === false && !isAnyAdminPanelEmail(rawEmail)) {
+        if (!(await isAppEmailVerified(u)) && !isAnyAdminPanelEmail(rawEmail)) {
           return respondEmailNotVerified();
         }
         const result = await buildLoginSuccessResponse(u, rawEmail, session.access_token);
@@ -590,7 +650,7 @@ export const login = async (req, res) => {
             u = user;
           }
           u = await ensureAdminEmailVerified(u, rawEmail);
-          if (u.emailVerified === false && !isAnyAdminPanelEmail(rawEmail)) {
+          if (!(await isAppEmailVerified(u)) && !isAnyAdminPanelEmail(rawEmail)) {
             return respondEmailNotVerified();
           }
           const result = await buildLoginSuccessResponse(u, rawEmail, session.access_token);
@@ -613,7 +673,7 @@ export const login = async (req, res) => {
           const bcryptOk = await compareStoredPassword(user, plainPassword);
           if (bcryptOk) {
             user = await ensureAdminEmailVerified(user, rawEmail);
-            if (user.emailVerified === false && !isAnyAdminPanelEmail(rawEmail)) {
+            if (!(await isAppEmailVerified(user)) && !isAnyAdminPanelEmail(rawEmail)) {
               return respondEmailNotVerified();
             }
             const emailForJwt =
@@ -636,7 +696,7 @@ export const login = async (req, res) => {
           } else {
             return respondInvalidCredentials({
               hint:
-                user.emailVerified === false
+                !(await isAppEmailVerified(user))
                   ? 'EMAIL_VERIFICATION_MAY_BE_REQUIRED'
                   : undefined,
             });
@@ -652,12 +712,12 @@ export const login = async (req, res) => {
     if (!isValidPassword) {
       return respondInvalidCredentials({
         hint:
-          user.emailVerified === false ? 'EMAIL_VERIFICATION_MAY_BE_REQUIRED' : undefined,
+          !(await isAppEmailVerified(user)) ? 'EMAIL_VERIFICATION_MAY_BE_REQUIRED' : undefined,
       });
     }
 
     user = await ensureAdminEmailVerified(user, rawEmail);
-    if (user.emailVerified === false && !isAnyAdminPanelEmail(rawEmail)) {
+    if (!(await isAppEmailVerified(user)) && !isAnyAdminPanelEmail(rawEmail)) {
       return respondEmailNotVerified();
     }
 
@@ -752,15 +812,21 @@ export const verifyCode = async (req, res) => {
       return res.status(400).json({ error: ERROR_MESSAGES.AUTH.VERIFICATION_CODE_INVALID });
     }
 
-    const now = new Date().toISOString();
-    const storedCode = (user.emailVerificationCode || '').toString().trim();
-    const expires = user.emailVerificationCodeExpires || '';
+    /* כבר מאומת – מחזירים הצלחה (אידמפוטנטי) במקום שגיאה מבלבלת */
+    if (await isAppEmailVerified(user)) {
+      return res.json({ message: SUCCESS_MESSAGES.AUTH.EMAIL_VERIFIED });
+    }
 
-    if (!secureCompare(storedCode, code)) {
-      console.log('[Backend] Verify code: code mismatch, returning 400. email:', maskEmail(email));
+    const now = new Date().toISOString();
+    const stored = await resolveStoredEmailVerification(user);
+    const storedCode = stored.code;
+    const expires = stored.expires;
+
+    if (!storedCode || !secureCompare(storedCode, code)) {
+      console.log('[Backend] Verify code: code mismatch, returning 400. email:', maskEmail(email), '| hasStored:', !!storedCode);
       return res.status(400).json({ error: ERROR_MESSAGES.AUTH.VERIFICATION_CODE_INVALID });
     }
-    if (expires < now) {
+    if (expires && expires < now) {
       console.log('[Backend] Verify code: code expired, returning 400. email:', maskEmail(email));
       return res.status(400).json({ error: ERROR_MESSAGES.AUTH.VERIFICATION_CODE_EXPIRED });
     }
@@ -770,9 +836,14 @@ export const verifyCode = async (req, res) => {
       emailVerificationCode: null,
       emailVerificationCodeExpires: null,
     });
+    try {
+      await setEmailVerificationInAuthMeta(user.id, { verified: true });
+    } catch (metaErr) {
+      logAuthError('Verify code setEmailVerificationInAuthMeta', metaErr);
+    }
     if (!updated) {
-      console.error('[Backend] Verify code: updateUserById returned null, returning 500. user.id:', user.id);
-      return res.status(500).json({ error: ERROR_MESSAGES.AUTH.VERIFICATION_CODE_INVALID });
+      /* גם אם עדכון app_users נכשל (סכמה שטוחה) – Auth metadata כבר מסומן; מאפשרים הצלחה */
+      console.warn('[Backend] Verify code: updateUserById returned null; relying on Auth metadata. user.id:', user.id);
     }
 
     console.log('[Backend] Verify code success for', maskEmail(email));
@@ -803,12 +874,25 @@ export const resendVerificationEmail = async (req, res) => {
     if (user.emailVerified) {
       return res.status(400).json({ error: 'האימייל כבר אומת. ניתן להתחבר.' });
     }
+    if (await isAppEmailVerified(user)) {
+      return res.status(400).json({ error: 'האימייל כבר אומת. ניתן להתחבר.' });
+    }
     const verificationCode = generateEmailVerificationCode();
     const expires = emailCodeExpiresAt();
     await updateUserById(user.id, {
       emailVerificationCode: verificationCode,
       emailVerificationCodeExpires: expires,
+      emailVerified: false,
     });
+    try {
+      await setEmailVerificationInAuthMeta(user.id, {
+        code: verificationCode,
+        expires,
+        verified: false,
+      });
+    } catch (metaErr) {
+      logAuthError('Resend setEmailVerificationInAuthMeta', metaErr);
+    }
     let sent = false;
     try {
       /* שולחים לכתובת מהבקשה (מנורמלת), לא ל-user.email שעלול להיות ישן */
@@ -903,6 +987,9 @@ export const verifyPhone = async (req, res) => {
       phoneVerificationCode: null,
       phoneVerificationCodeExpires: null,
     });
+    try {
+      await setEmailVerificationInAuthMeta(user.id, { verified: true });
+    } catch (_) {}
     let refreshed = await findUserById(user.id);
     if (!refreshed) {
       return res.status(500).json({ error: ERROR_MESSAGES?.SERVER?.LOGIN || 'שגיאת שרת בהתחברות' });
@@ -957,6 +1044,11 @@ export const requestPasswordReset = async (req, res) => {
         /* מסנכרנים אימייל אם העמודה/JSON היו לא עקביים */
         email: recipientEmail,
       });
+      try {
+        await setPasswordResetInAuthMeta(user.id, { code, expires });
+      } catch (metaErr) {
+        logAuthError('Password reset setPasswordResetInAuthMeta', metaErr);
+      }
       const sent = await sendPasswordResetCodeEmail(recipientEmail, user.name, code);
       console.log(
         '[Auth] Password reset requested for',
@@ -1001,10 +1093,11 @@ export const resetPassword = async (req, res) => {
     }
 
     const now = new Date().toISOString();
-    const storedCode = (user.passwordResetCode || '').toString().trim();
-    const expires = user.passwordResetCodeExpires || '';
+    const stored = await resolveStoredPasswordReset(user);
+    const storedCode = stored.code;
+    const expires = stored.expires;
 
-    if (!secureCompare(storedCode, code) || expires < now) {
+    if (!storedCode || !secureCompare(storedCode, code) || (expires && expires < now)) {
       return res.status(400).json({ error: ERROR_MESSAGES.AUTH.PASSWORD_RESET_CODE_INVALID });
     }
 
@@ -1033,6 +1126,9 @@ export const resetPassword = async (req, res) => {
         passwordResetCodeExpires: null,
       });
     }
+    try {
+      await setPasswordResetInAuthMeta(user.id, { code: null, expires: null });
+    } catch (_) {}
 
     const message = SUCCESS_MESSAGES.AUTH.PASSWORD_RESET_SUCCESS || 'הסיסמה עודכנה בהצלחה. התחבר עם הסיסמה החדשה.';
     return res.json({ message });

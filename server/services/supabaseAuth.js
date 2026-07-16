@@ -120,6 +120,93 @@ export async function deleteAuthUser(userId) {
   if (error) throw error;
 }
 
+/** קריאת משתמש Auth לפי מזהה (למטא־דאטה של קודי אימות) */
+export async function getAuthUserById(userId) {
+  const sb = getSupabaseAdmin();
+  const { data, error } = await sb.auth.admin.getUserById(String(userId || ''));
+  if (error) throw error;
+  return data?.user || null;
+}
+
+/**
+ * שומר/מעדכן שדות אימות ב-user_metadata של Supabase Auth.
+ * נחוץ כש-app_users בסכמה שטוחה בלי JSONB data – אחרת הקוד נשלח במייל אבל לא נשמר במסד.
+ */
+export async function patchAuthUserMetadata(userId, patch) {
+  const id = String(userId || '');
+  if (!id) return null;
+  const sb = getSupabaseAdmin();
+  const existing = await getAuthUserById(id);
+  const prev =
+    existing?.user_metadata && typeof existing.user_metadata === 'object' ? { ...existing.user_metadata } : {};
+  const next = { ...prev, ...patch };
+  for (const [k, v] of Object.entries(patch)) {
+    if (v === null) delete next[k];
+  }
+  const { data, error } = await sb.auth.admin.updateUserById(id, { user_metadata: next });
+  if (error) throw error;
+  return data?.user || null;
+}
+
+export async function setEmailVerificationInAuthMeta(userId, { code, expires, verified }) {
+  const patch = {};
+  if (verified === true) {
+    patch.appEmailVerified = true;
+    patch.emailVerificationCode = null;
+    patch.emailVerificationCodeExpires = null;
+  } else if (verified === false) {
+    patch.appEmailVerified = false;
+  }
+  if (code !== undefined) patch.emailVerificationCode = code == null ? null : String(code);
+  if (expires !== undefined) patch.emailVerificationCodeExpires = expires == null ? null : String(expires);
+  return patchAuthUserMetadata(userId, patch);
+}
+
+export async function getEmailVerificationFromAuthMeta(userId) {
+  try {
+    const user = await getAuthUserById(userId);
+    const meta = user?.user_metadata && typeof user.user_metadata === 'object' ? user.user_metadata : {};
+    return {
+      appEmailVerified: meta.appEmailVerified,
+      emailVerificationCode:
+        meta.emailVerificationCode != null ? String(meta.emailVerificationCode).trim() : '',
+      emailVerificationCodeExpires: meta.emailVerificationCodeExpires
+        ? String(meta.emailVerificationCodeExpires)
+        : '',
+    };
+  } catch (err) {
+    console.error('[Auth] getEmailVerificationFromAuthMeta:', err?.message || err);
+    return {
+      appEmailVerified: undefined,
+      emailVerificationCode: '',
+      emailVerificationCodeExpires: '',
+    };
+  }
+}
+
+export async function setPasswordResetInAuthMeta(userId, { code, expires }) {
+  return patchAuthUserMetadata(userId, {
+    passwordResetCode: code == null ? null : String(code),
+    passwordResetCodeExpires: expires == null ? null : String(expires),
+  });
+}
+
+export async function getPasswordResetFromAuthMeta(userId) {
+  try {
+    const user = await getAuthUserById(userId);
+    const meta = user?.user_metadata && typeof user.user_metadata === 'object' ? user.user_metadata : {};
+    return {
+      passwordResetCode: meta.passwordResetCode != null ? String(meta.passwordResetCode).trim() : '',
+      passwordResetCodeExpires: meta.passwordResetCodeExpires
+        ? String(meta.passwordResetCodeExpires)
+        : '',
+    };
+  } catch (err) {
+    console.error('[Auth] getPasswordResetFromAuthMeta:', err?.message || err);
+    return { passwordResetCode: '', passwordResetCodeExpires: '' };
+  }
+}
+
 /** הודעת שגיאה מ-goTrue – לזיהוי כפילות אימייל */
 export function isSupabaseAuthUserExistsError(err) {
   const msg = String(err?.message || err || '').toLowerCase();
