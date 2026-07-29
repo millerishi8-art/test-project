@@ -1,0 +1,410 @@
+/* מעקב כייסי מנהלים – משלים את AdminPanel.css */
+
+.emp-cases-page .payouts-stats-top {
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+}
+
+.emp-cases-add-btn {
+  padding: 0.55rem 1.1rem;
+  min-height: var(--touch-min, 44px);
+  font-size: clamp(0.85rem, 2vw, 0.95rem);
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, #1e6bb8 0%, #0d47a1 100%);
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 3px 10px rgba(13, 71, 161, 0.25);
+}
+
+.emp-cases-add-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 5px 14px rgba(13, 71, 161, 0.35);
+}
+
+.emp-cases-add-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.emp-cases-reset-btn {
+  padding: 0.55rem 1.1rem;
+  min-height: var(--touch-min, 44px);
+  font-size: clamp(0.85rem, 2vw, 0.95rem);
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, #c62828 0%, #8e0000 100%);
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 3px 10px rgba(198, 40, 40, 0.25);
+}
+
+.emp-cases-reset-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 5px 14px rgba(198, 40, 40, 0.35);
+}
+
+.emp-cases-reset-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.emp-cases-error {
+  background: #ffebee;
+  color: #c62828;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  margin-bottom: 1rem;
+  font-weight: 600;
+  direction: rtl;
+}
+
+.emp-managers-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 340px), 1fr));
+  gap: 1.25rem;
+  margin-bottom: 2rem;
+}
+
+.emp-manager-card {
+  background: #fff;
+  border: 1px solid #e3eaf2;
+  border-radius: 16px;
+  padding: 1.15rem 1.2rem 1.25rem;
+  box-shadow: 0 4px 18px rgba(13, 71, 161, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  min-height: 180px;
+}
+
+.emp-manager-card-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid #eef2f7;
+}
+
+.emp-manager-identity {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.emp-manager-name {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #0d47a1;
+  line-height: 1.25;
+}
+
+.emp-manager-email {
+  margin: 0.15rem 0 0;
+  font-size: 0.8rem;
+  color: #78909c;
+  direction: ltr;
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 200px;
+}
+
+.emp-manager-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.emp-meta-chip {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.25rem 0.55rem;
+  border-radius: 999px;
+  background: #e3f2fd;
+  color: #1565c0;
+}
+
+.emp-meta-chip--warn {
+  background: #fff3e0;
+  color: #e65100;
+}
+
+.emp-initials-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 10px;
+  background: linear-gradient(145deg, #1e6bb8, #0d47a1);
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+  direction: ltr;
+}
+
+.emp-initials-badge--lg {
+  width: 2.75rem;
+  height: 2.75rem;
+  font-size: 1rem;
+  border-radius: 12px;
+}
+
+.emp-cases-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  flex: 1;
+}
+
+.emp-no-cases,
+.emp-empty-state {
+  margin: 0;
+  padding: 1rem;
+  text-align: center;
+  color: #90a4ae;
+  font-weight: 600;
+  background: #f8fafc;
+  border-radius: 12px;
+}
+
+.emp-case-box {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+  padding: 0.75rem 0.85rem;
+  border-radius: 12px;
+  background: #f5f9fc;
+  border: 1px solid #e3eaf2;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.emp-case-box--paid {
+  background: #e8f5e9;
+  border-color: #c8e6c9;
+}
+
+.emp-case-box-main {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.emp-case-details {
+  min-width: 0;
+}
+
+.emp-case-number {
+  font-weight: 800;
+  font-size: 1rem;
+  color: #263238;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.emp-case-category {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #1565c0;
+  margin-top: 0.1rem;
+}
+
+.emp-case-date {
+  font-size: 0.72rem;
+  color: #90a4ae;
+  margin-top: 0.15rem;
+}
+
+.emp-case-box-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.emp-completed-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.65rem;
+  height: 1.65rem;
+  border-radius: 50%;
+  background: #2e7d32;
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+.emp-paid-badge {
+  font-size: 0.78rem;
+  font-weight: 800;
+  padding: 0.28rem 0.55rem;
+  border-radius: 8px;
+  white-space: nowrap;
+}
+
+.emp-paid-badge--yes {
+  background: #c8e6c9;
+  color: #1b5e20;
+}
+
+.emp-paid-badge--no {
+  background: #ffe0b2;
+  color: #e65100;
+}
+
+.emp-pay-toggle {
+  padding: 0.35rem 0.65rem;
+  min-height: 36px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #fff;
+  background: #2e7d32;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.emp-pay-toggle:hover:not(:disabled) {
+  background: #1b5e20;
+}
+
+.emp-pay-toggle--undo {
+  background: #78909c;
+}
+
+.emp-pay-toggle--undo:hover:not(:disabled) {
+  background: #546e7a;
+}
+
+.emp-pay-toggle:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+/* Modal */
+.emp-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  backdrop-filter: blur(2px);
+}
+
+.emp-modal {
+  width: min(100%, 420px);
+  background: #fff;
+  border-radius: 16px;
+  padding: 1.4rem 1.35rem 1.25rem;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+  direction: rtl;
+}
+
+.emp-modal h2 {
+  margin: 0 0 0.35rem;
+  font-size: 1.25rem;
+  color: #0d47a1;
+}
+
+.emp-modal-sub {
+  margin: 0 0 1.1rem;
+  font-size: 0.85rem;
+  color: #78909c;
+}
+
+.emp-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 0.9rem;
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: #37474f;
+}
+
+.emp-field input,
+.emp-field select {
+  padding: 0.65rem 0.75rem;
+  border: 1px solid #cfd8dc;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-family: inherit;
+  background: #fafbfc;
+}
+
+.emp-field input:focus,
+.emp-field select:focus {
+  outline: none;
+  border-color: #1e6bb8;
+  box-shadow: 0 0 0 3px rgba(30, 107, 184, 0.15);
+}
+
+.emp-form-error {
+  margin: 0 0 0.75rem;
+  color: #c62828;
+  font-weight: 700;
+  font-size: 0.88rem;
+}
+
+.emp-modal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin-top: 0.35rem;
+}
+
+.emp-modal-cancel {
+  padding: 0.55rem 1.1rem;
+  min-height: var(--touch-min, 44px);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #455a64;
+  background: #eceff1;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.emp-modal-cancel:hover:not(:disabled) {
+  background: #cfd8dc;
+}
+
+@media (max-width: 640px) {
+  .emp-case-box {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .emp-case-box-status {
+    justify-content: flex-start;
+  }
+
+  .emp-pay-toggle {
+    flex: 1;
+    text-align: center;
+  }
+
+  .emp-manager-email {
+    max-width: 160px;
+  }
+}

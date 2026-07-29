@@ -2,6 +2,7 @@
  * משתמש מנהל ראשי: ברירת מחדל millerbitoach@gmail.com + סיסמה מ-ADMIN_PASSWORD (או admin123).
  * הרצה מתוך server: node seed-user.js
  * - מעדכן role=admin, emailVerified, וסיסמה (ב-app_users וב-Supabase Auth כש-relevant).
+ * - מחפש גם aliases חלופיים כדי לא לכפות הרשמה מחדש.
  */
 import bcrypt from 'bcryptjs';
 import dotenv from 'dotenv';
@@ -11,7 +12,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { connectToDatabase } from './db/database.js';
 import { createUser, findUserByEmail, updateUserById } from './models/User.js';
 import { ROLES } from './components/constants.js';
-import { DEFAULT_PRIMARY_ADMIN_EMAIL } from './utils/adminEmails.js';
+import { DEFAULT_PRIMARY_ADMIN_EMAIL, getSuperAdminEmailAliases } from './utils/adminEmails.js';
 import {
   isSupabasePasswordAuthEnabled,
   registerAuthUserWithAdminApi,
@@ -34,7 +35,10 @@ async function run() {
 
   let existing;
   try {
-    existing = await findUserByEmail(SEED_EMAIL);
+    for (const email of getSuperAdminEmailAliases()) {
+      existing = await findUserByEmail(email);
+      if (existing) break;
+    }
   } catch (err) {
     console.error('Failed to look up user:', err?.message || err);
     process.exit(1);
@@ -59,9 +63,10 @@ async function run() {
         if (!updated) throw new Error('updateUserById returned null');
       }
       console.log('✅ משתמש מנהל עודכן.');
-      console.log('   אימייל:', SEED_EMAIL);
+      console.log('   אימייל:', existing.email || SEED_EMAIL);
       console.log('   סיסמה:', SEED_PASSWORD);
       console.log('   role: admin — גישה לפאנל הניהולי ולפעולות מנהל באתר.');
+      console.log('   (חשבון קיים – אין צורך בהרשמה מחדש)');
     } catch (e) {
       console.error('❌ עדכון נכשל:', e?.message || e);
       process.exit(1);

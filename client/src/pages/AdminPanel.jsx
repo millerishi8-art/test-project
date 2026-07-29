@@ -340,6 +340,13 @@ const AdminPanel = () => {
           >
             תשלומי עובדים
           </button>
+          <button
+            type="button"
+            className="admin-employee-cases-nav-btn"
+            onClick={() => navigate('/admin/employee-cases')}
+          >
+            מעקב כייסים ותשלומים
+          </button>
         </div>
       </div>
 

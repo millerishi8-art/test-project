@@ -11,7 +11,24 @@ import {
   updateAuthUserPassword,
   isSupabaseAuthUserExistsError,
 } from './services/supabaseAuth.js';
-import { getSuperAdminEmail, DEFAULT_PRIMARY_ADMIN_EMAIL } from './utils/adminEmails.js';
+import {
+  getSuperAdminEmail,
+  getSuperAdminEmailAliases,
+  isSuperAdminEmail,
+  DEFAULT_PRIMARY_ADMIN_EMAIL,
+} from './utils/adminEmails.js';
+
+async function findExistingSuperAdmin(preferredEmail) {
+  const candidates = [
+    preferredEmail,
+    ...getSuperAdminEmailAliases().filter((e) => e !== preferredEmail),
+  ];
+  for (const email of candidates) {
+    const user = await findUserByEmail(email);
+    if (user) return user;
+  }
+  return null;
+}
 
 async function run() {
   try {
@@ -24,7 +41,7 @@ async function run() {
   const adminEmailRaw = process.argv[2] || process.env.ADMIN_EMAIL || process.env.SUPER_ADMIN_EMAIL;
   const adminEmail = String(adminEmailRaw || DEFAULT_PRIMARY_ADMIN_EMAIL).trim().toLowerCase();
   const soleAdmin = getSuperAdminEmail();
-  if (adminEmail !== soleAdmin) {
+  if (!isSuperAdminEmail(adminEmail)) {
     console.error(
       `ניתן לנהל רק את מנהל המערכת היחיד (${soleAdmin}). עדכן SUPER_ADMIN_EMAIL / ADMIN_EMAIL. ניסית: ${adminEmail}`
     );
@@ -34,21 +51,23 @@ async function run() {
 
   let existingByEmail;
   try {
-    existingByEmail = await findUserByEmail(adminEmail);
+    existingByEmail = await findExistingSuperAdmin(adminEmail);
   } catch (err) {
     console.error('שגיאה בחיפוש משתמש:', err?.message || err);
     process.exit(1);
   }
   if (existingByEmail) {
+    const existingEmail = String(existingByEmail.email || adminEmail).trim().toLowerCase();
     if (isUserRoleAdmin(existingByEmail.role)) {
       console.log('משתמש מנהל כבר קיים עם אימייל זה:', existingByEmail.email);
-      console.log('אימייל:', adminEmail);
+      console.log('אימייל:', existingEmail);
+      console.log('(אין צורך בהרשמה מחדש – אפשר להתחבר עם החשבון הקיים)');
       process.exit(0);
       return;
     }
     const updates = {
       role: ROLES.ADMIN,
-      email: adminEmail,
+      email: existingEmail,
       emailVerified: true,
     };
     if (cliPassword) {
@@ -58,9 +77,9 @@ async function run() {
         updates.password = await bcrypt.hash(cliPassword, 10);
       }
     }
-    await updateUserByEmail(adminEmail, updates);
+    await updateUserByEmail(existingEmail, updates);
     console.log('✅ חשבון קיים עודכן למנהל בהצלחה!');
-    console.log('אימייל:', adminEmail);
+    console.log('אימייל:', existingEmail);
     if (cliPassword) {
       console.log('סיסמה: עודכנה לפי הארגומנט בשורת הפקודה.');
       console.log('\n⚠️  חשוב לשנות את הסיסמה לאחר ההתחברות הראשונה!');

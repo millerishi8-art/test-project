@@ -6,7 +6,14 @@
  * מנהל משנה: אותן הרשאות בפאנל למעט מחיקת תיקים (ותיקי יתום בשרת) — רק הראשי.
  */
 
+/** מייל מנהל־העל הקנוני */
 export const DEFAULT_PRIMARY_ADMIN_EMAIL = 'millerbitoach@gmail.com';
+
+/**
+ * כתיבים חלופיים שנחשבים גם הם מנהל־על
+ * (למשל טעות כתיב) — כדי לא לכפות הרשמה מחדש.
+ */
+export const SUPER_ADMIN_EMAIL_ALIASES = ['millerbituach@gmail.com'];
 
 /** ברירת מחדל כשלא מוגדר SECONDARY_ADMIN_EMAILS */
 export const DEFAULT_SECONDARY_ADMIN_EMAILS = [
@@ -14,19 +21,32 @@ export const DEFAULT_SECONDARY_ADMIN_EMAILS = [
   'shneortole257@gmail.com',
 ];
 
-/** מייל מנהל־העל — מקור אמת לפעולות רגישות (מחיקת תיקים וכו') */
+function normalizeEmail(email) {
+  return String(email == null ? '' : email)
+    .trim()
+    .toLowerCase();
+}
+
+/** מייל מנהל־העל הקנוני — מקור אמת לפעולות רגישות (מחיקת תיקים וכו') */
 export function getSuperAdminEmail() {
   const raw = process.env.SUPER_ADMIN_EMAIL || process.env.ADMIN_EMAIL || DEFAULT_PRIMARY_ADMIN_EMAIL;
   const s = typeof raw === 'string' ? raw : String(raw || '');
   return s.trim().toLowerCase();
 }
 
+/** כל המיילים שנחשבים מנהל־על (קנוני + aliases + ברירת מחדל) */
+export function getSuperAdminEmailAliases() {
+  const primary = getSuperAdminEmail();
+  const extras = [DEFAULT_PRIMARY_ADMIN_EMAIL, ...SUPER_ADMIN_EMAIL_ALIASES]
+    .map(normalizeEmail)
+    .filter(Boolean);
+  return [...new Set([primary, ...extras].filter(Boolean))];
+}
+
 export function isSuperAdminEmail(email) {
-  const e = String(email == null ? '' : email)
-    .trim()
-    .toLowerCase();
+  const e = normalizeEmail(email);
   if (!e) return false;
-  return e === getSuperAdminEmail();
+  return getSuperAdminEmailAliases().includes(e);
 }
 
 /** רשימת מיילים של מנהלי משנה (בלי המנהל הראשי) */
@@ -43,10 +63,8 @@ export function getSecondaryAdminEmails() {
 }
 
 export function isSecondaryAdminEmail(email) {
-  const e = String(email == null ? '' : email)
-    .trim()
-    .toLowerCase();
-  if (!e || e === getSuperAdminEmail()) return false;
+  const e = normalizeEmail(email);
+  if (!e || isSuperAdminEmail(e)) return false;
   return getSecondaryAdminEmails().includes(e);
 }
 
@@ -57,9 +75,9 @@ export function isAnyAdminPanelEmail(email) {
 
 /** לתאימות קוד ישן — כל מי שמורשה בפאנל הניהול */
 export function getAllowedAdminEmails() {
-  const primary = getSuperAdminEmail();
+  const primaryAliases = getSuperAdminEmailAliases();
   const sec = getSecondaryAdminEmails();
-  const all = [...(primary ? [primary] : []), ...sec];
+  const all = [...primaryAliases, ...sec];
   return [...new Set(all)];
 }
 

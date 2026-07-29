@@ -8,9 +8,25 @@ import './loadEnv.js';
 import { connectToDatabase } from './db/database.js';
 import { findUserByEmail, updateUserByEmail } from './models/User.js';
 import { ROLES, isUserRoleAdmin } from './components/constants.js';
-import { getSuperAdminEmail } from './utils/adminEmails.js';
+import {
+  getSuperAdminEmail,
+  getSuperAdminEmailAliases,
+  isSuperAdminEmail,
+} from './utils/adminEmails.js';
 
 const EMAIL = getSuperAdminEmail();
+
+async function findExistingSuperAdmin(preferredEmail) {
+  const candidates = [
+    preferredEmail,
+    ...getSuperAdminEmailAliases().filter((e) => e !== preferredEmail),
+  ];
+  for (const email of candidates) {
+    const user = await findUserByEmail(email);
+    if (user) return user;
+  }
+  return null;
+}
 
 async function main() {
   if (!EMAIL) {
@@ -19,7 +35,7 @@ async function main() {
   }
 
   const arg = (process.argv[2] || '').trim().toLowerCase();
-  if (arg && arg !== EMAIL) {
+  if (arg && !isSuperAdminEmail(arg)) {
     console.error(`רק מנהל מערכת אחד (${EMAIL}). לא ניתן להגדיר מייל אחר.`);
     process.exit(1);
   }
@@ -32,13 +48,18 @@ async function main() {
   }
 
   try {
-    const user = await findUserByEmail(EMAIL);
+    const user = await findExistingSuperAdmin(arg || EMAIL);
     if (!user) {
-      console.error('User not found for', EMAIL, '- register or run create-admin.js first.');
+      console.error(
+        'User not found for',
+        getSuperAdminEmailAliases().join(' / '),
+        '- register or run create-admin.js first.'
+      );
       process.exit(1);
     }
 
-    const updated = await updateUserByEmail(EMAIL, { role: ROLES.ADMIN });
+    const existingEmail = String(user.email || EMAIL).trim().toLowerCase();
+    const updated = await updateUserByEmail(existingEmail, { role: ROLES.ADMIN });
     if (!updated || !isUserRoleAdmin(updated.role)) {
       console.error('Update failed: could not set role to admin.');
       process.exit(1);
@@ -48,7 +69,7 @@ async function main() {
       'Updated user:',
       JSON.stringify({ id: updated.id, email: updated.email, name: updated.name, role: updated.role }, null, 2)
     );
-    console.log('Success: sole super admin role for', EMAIL);
+    console.log('Success: sole super admin role for', existingEmail);
   } catch (err) {
     console.error('Database error:', err.message);
     if (err.code) console.error('Error code:', err.code);

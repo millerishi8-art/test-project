@@ -23,6 +23,7 @@ const AdminPanel = lazy(() => import('./pages/AdminPanel'));
 const AdminCaseDetail = lazy(() => import('./pages/AdminCaseDetail'));
 const AdminCaseProcessing = lazy(() => import('./pages/AdminCaseProcessing'));
 const AdminPayouts = lazy(() => import('./pages/AdminPayouts'));
+const AdminEmployeeCases = lazy(() => import('./pages/AdminEmployeeCases'));
 const AccessibilityStatement = lazy(() => import('./pages/AccessibilityStatement'));
 
 const LoadingFallback = () => (
@@ -116,6 +117,14 @@ function App() {
                 element={
                   <ProtectedRoute adminOnly>
                     <AdminPayouts />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/employee-cases"
+                element={
+                  <ProtectedRoute adminOnly>
+                    <AdminEmployeeCases />
                   </ProtectedRoute>
                 }
               />

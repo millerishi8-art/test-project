@@ -1,5 +1,5 @@
 /**
- * Delete user(s) with email millerbitoach@gmail.com from Supabase app_users.
+ * Delete super-admin user(s) from Supabase app_users (canonical + aliases).
  * Run from project root: node server/cleanup-user.js
  * Use this to remove the test user so you can register again with a fresh bcrypt-hashed password.
  */
@@ -8,11 +8,12 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { connectToDatabase } from './db/database.js';
 import { deleteUserByEmail } from './models/User.js';
+import { getSuperAdminEmailAliases } from './utils/adminEmails.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.join(__dirname, '.env') });
 
-const EMAIL_TO_DELETE = 'millerbitoach@gmail.com';
+const EMAILS_TO_DELETE = getSuperAdminEmailAliases();
 
 async function run() {
   try {
@@ -22,12 +23,18 @@ async function run() {
     process.exit(1);
   }
 
-  const deletedCount = await deleteUserByEmail(EMAIL_TO_DELETE);
-  if (deletedCount > 0) {
-    console.log('✅ Deleted', deletedCount, 'user(s) with email:', EMAIL_TO_DELETE);
+  let deletedTotal = 0;
+  for (const email of EMAILS_TO_DELETE) {
+    const deletedCount = await deleteUserByEmail(email);
+    if (deletedCount > 0) {
+      deletedTotal += deletedCount;
+      console.log('✅ Deleted', deletedCount, 'user(s) with email:', email);
+    }
+  }
+  if (deletedTotal > 0) {
     console.log('   You can now register again with this email.');
   } else {
-    console.log('   No user found with email:', EMAIL_TO_DELETE);
+    console.log('   No user found with email(s):', EMAILS_TO_DELETE.join(', '));
   }
 
   process.exit(0);

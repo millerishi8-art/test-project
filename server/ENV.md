@@ -19,6 +19,9 @@
 
 הרץ ב-Supabase → SQL Editor את התוכן מ-`server/db/supabase_schema.sql`.
 
+למעקב כייסי מנהלים (ראיונות / הגשת טפסים) — אם הטבלה עדיין לא קיימת, הרץ גם את  
+`server/db/employee_cases_schema.sql`.
+
 ## Vercel
 
 Project → Settings → Environment Variables: הוסף את המשתנים, סמן Production + Preview, בצע **Redeploy**.
