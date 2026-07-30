@@ -43,8 +43,12 @@ function addOriginWithWwwVariants(set, rawOrigin) {
 function buildAllowedOrigins() {
   const set = new Set();
   [
+    'https://www.miller-bitoach.com',
+    'https://miller-bitoach.com',
     'https://test-project-tan-chi.vercel.app',
     'https://original-project-tan-chi.vercel.app',
+    'https://insurance-agent.vercel.app',
+    'https://insurance-agent-nine.vercel.app',
     'http://localhost:3000',
     'http://localhost:5000',
   ].forEach((o) => addOriginWithWwwVariants(set, o));
