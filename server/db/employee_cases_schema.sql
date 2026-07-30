@@ -1,9 +1,10 @@
 -- הרץ ב-Supabase → SQL Editor אם הטבלה עדיין לא קיימת.
 -- מעקב כייסים של מנהלים/עובדים (ראיונות / הגשת טפסים) + סטטוס תשלום.
+-- חשוב: ב-production שלנו app_users.id הוא UUID (לא TEXT).
 
 CREATE TABLE IF NOT EXISTS public.employee_cases (
   id TEXT PRIMARY KEY,
-  user_id TEXT NOT NULL REFERENCES public.app_users (id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES public.app_users (id) ON DELETE CASCADE,
   case_number TEXT NOT NULL,
   category TEXT NOT NULL
     CHECK (category IN ('ראיונות', 'הגשת טפסים', 'Interviews', 'Form Submissions')),

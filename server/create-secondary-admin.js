@@ -56,6 +56,7 @@ async function run() {
     console.error('חובה סיסמה כארגומן שני (לפחות 6 תווים).');
     process.exit(1);
   }
+  const displayName = String(process.argv[4] || '').trim() || 'מנהל משנה';
 
   let existingByEmail;
   try {
@@ -73,6 +74,7 @@ async function run() {
       role: ROLES.ADMIN,
       email: targetEmail,
       emailVerified: true,
+      name: displayName,
     };
     if (existingByEmail.authProvider === 'supabase') {
       await updateAuthUserPassword(existingByEmail.id, cliPassword);
@@ -82,6 +84,7 @@ async function run() {
     await updateUserByEmail(targetEmail, updates);
     console.log('✅ חשבון מנהל משנה עודכן.');
     console.log('אימייל:', targetEmail);
+    console.log('שם:', displayName);
     console.log('סיסמה: עודכנה לפי הארגומנט (שמור בסוד).');
     process.exit(0);
     return;
@@ -93,7 +96,7 @@ async function run() {
       authUser = await registerAuthUserWithAdminApi({
         email: targetEmail,
         password: cliPassword,
-        name: 'מנהל משנה',
+        name: displayName,
         phone: '0500000001',
       });
     } catch (authErr) {
@@ -114,13 +117,14 @@ async function run() {
       await updateUserByEmail(targetEmail, {
         role: ROLES.ADMIN,
         email: targetEmail,
+        name: displayName,
         emailVerified: true,
         authProvider: 'supabase',
       });
     } else {
       await createUser({
         id: authUser.id,
-        name: 'מנהל משנה',
+        name: displayName,
         email: targetEmail,
         phone: '0500000001',
         role: ROLES.ADMIN,
@@ -133,7 +137,7 @@ async function run() {
     const hashedPassword = await bcrypt.hash(cliPassword, 10);
     await createUser({
       id: uuidv4(),
-      name: 'מנהל משנה',
+      name: displayName,
       email: targetEmail,
       phone: '0500000001',
       password: hashedPassword,
@@ -145,6 +149,7 @@ async function run() {
 
   console.log('✅ משתמש מנהל משנה נוצר.');
   console.log('אימייל:', targetEmail);
+  console.log('שם:', displayName);
   process.exit(0);
 }
 

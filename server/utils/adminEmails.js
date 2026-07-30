@@ -19,6 +19,7 @@ export const SUPER_ADMIN_EMAIL_ALIASES = ['millerbituach@gmail.com'];
 export const DEFAULT_SECONDARY_ADMIN_EMAILS = [
   'abergelyuda7@gmail.com',
   'shneortole257@gmail.com',
+  'lapidwoldenberg@gmail.com',
 ];
 
 function normalizeEmail(email) {

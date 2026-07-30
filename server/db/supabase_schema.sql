@@ -81,9 +81,10 @@ COMMENT ON TABLE public.app_cases IS 'תיקים – user_id לשאילתות, d
 COMMENT ON TABLE public.app_payouts IS 'היסטוריית תשלומים לעובדים על כייסים שהושלמו';
 
 -- מעקב כייסים של מנהלים/עובדים (ראיונות / הגשת טפסים) + סטטוס תשלום
+-- בפרודקשן app_users.id הוא UUID
 CREATE TABLE IF NOT EXISTS public.employee_cases (
   id TEXT PRIMARY KEY,
-  user_id TEXT NOT NULL REFERENCES public.app_users (id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES public.app_users (id) ON DELETE CASCADE,
   case_number TEXT NOT NULL,
   category TEXT NOT NULL
     CHECK (category IN ('ראיונות', 'הגשת טפסים', 'Interviews', 'Form Submissions')),
