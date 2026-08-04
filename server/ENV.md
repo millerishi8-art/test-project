@@ -25,3 +25,6 @@
 ## Vercel
 
 Project → Settings → Environment Variables: הוסף את המשתנים, סמן Production + Preview, בצע **Redeploy**.
+
+**חשוב למיילים:** הגדר `APP_BASE_URL=https://www.miller-bitoach.com`  
+בלי זה קישורי המייל עלולים להצביע ל־`localhost` והנמען לא יוכל לפתוח אותם.

@@ -10,7 +10,27 @@ function getConfig() {
   const SMTP_USER = (process.env.SMTP_USER || '').trim();
   const SMTP_PASS = (process.env.SMTP_PASS || '').trim();
   const EMAIL_FROM = (process.env.EMAIL_FROM || '').trim() || EMAIL_USER || SMTP_USER;
-  const APP_BASE_URL = (process.env.APP_BASE_URL || '').trim() || 'http://localhost:3000';
+  // קישורי מייל חייבים לדומיין הציבורי — לא localhost (אחרת הנמען לא יכול לפתוח).
+  const PRODUCTION_SITE_URL = 'https://www.miller-bitoach.com';
+  const rawBase = (process.env.APP_BASE_URL || '').trim();
+  const vercelUrl = (process.env.VERCEL_URL || '').trim();
+  let APP_BASE_URL = rawBase;
+  if (!APP_BASE_URL && vercelUrl) {
+    APP_BASE_URL = vercelUrl.startsWith('http') ? vercelUrl : `https://${vercelUrl}`;
+  }
+  if (!APP_BASE_URL) {
+    APP_BASE_URL =
+      process.env.NODE_ENV === 'production' || process.env.VERCEL === '1'
+        ? PRODUCTION_SITE_URL
+        : 'http://localhost:3000';
+  }
+  // אם בטעות הוגדר localhost בפרודקשן — דורסים לדומיין החי
+  if (
+    (process.env.NODE_ENV === 'production' || process.env.VERCEL === '1') &&
+    /localhost|127\.0\.0\.1/i.test(APP_BASE_URL)
+  ) {
+    APP_BASE_URL = PRODUCTION_SITE_URL;
+  }
 
   const useGmail = Boolean(EMAIL_USER && EMAIL_PASS);
   const useSmtp = Boolean(SMTP_HOST && SMTP_USER && SMTP_PASS);
