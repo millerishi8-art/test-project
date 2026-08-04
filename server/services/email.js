@@ -540,7 +540,13 @@ async function sendStaffCaseStageEmail(toList, { subject, title, bodyHtml, bodyT
   const transport = getTransporter();
   if (!transport) return false;
   const fromAddress = config.EMAIL_FROM || config.EMAIL_USER || config.SMTP_USER;
-  const recipients = [...new Set((toList || []).map((e) => String(e || '').trim().toLowerCase()).filter(Boolean))];
+  const recipients = [
+    ...new Set(
+      (toList || [])
+        .map((e) => String(e || '').trim().toLowerCase())
+        .filter(Boolean)
+    ),
+  ];
   if (!fromAddress || recipients.length === 0) return false;
 
   const clientName = (caseInfo?.clientName || '').trim() || 'לקוח';

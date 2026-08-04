@@ -342,12 +342,21 @@ const INTERVIEW_STAFF_EMAILS = ['lapidwoldenberg@gmail.com', 'abergelyuda7@gmail
 /** מנהל טפסים – מקבל מייל אחרי שנעשה ראיון ומחכים להגשת טפסים */
 const FORMS_STAFF_EMAILS = ['shneortole257@gmail.com'];
 
+/** ניסוח ישן לפני תיקון (נפתח → נפתחה) – עדיין קיים בתיקים ישנים */
+const LEGACY_STAGE1_LABEL = 'נפתח הבקשה באתר מחכה לראיון אישי';
+
+/**
+ * מחזיר את מספר שלב העיבוד הנוכחי (1–5) או 0 אם אין שלב.
+ * מזהה גם את תווית השלב הקנונית וגם את הניסוח הישן של שלב 1.
+ */
 function previousProcessingStageNumber(caseData) {
   const d = String(caseData?.detailedAdminStatus || '').trim();
+  if (!d) return 0;
   for (const [num, label] of Object.entries(PROCESSING_STAGES)) {
     if (d === label) return Number(num);
   }
-  if (d === 'נפתח הבקשה באתר מחכה לראיון אישי') return 1;
+  /* תאימות לאחור: תיקים שנשמרו עם "נפתח" במקום "נפתחה" */
+  if (d === LEGACY_STAGE1_LABEL) return 1;
   return 0;
 }
 
