@@ -22,7 +22,6 @@ const CaseStatus = lazy(() => import('./pages/CaseStatus'));
 const AdminPanel = lazy(() => import('./pages/AdminPanel'));
 const AdminCaseDetail = lazy(() => import('./pages/AdminCaseDetail'));
 const AdminCaseProcessing = lazy(() => import('./pages/AdminCaseProcessing'));
-const AdminPayouts = lazy(() => import('./pages/AdminPayouts'));
 const AdminEmployeeCases = lazy(() => import('./pages/AdminEmployeeCases'));
 const OrderCard = lazy(() => import('./pages/OrderCard'));
 const AccessibilityStatement = lazy(() => import('./pages/AccessibilityStatement'));
@@ -118,14 +117,6 @@ function App() {
                 element={
                   <ProtectedRoute adminOnly>
                     <AdminCaseProcessing />
-                  </ProtectedRoute>
-                }
-              />
-              <Route
-                path="/admin/payouts"
-                element={
-                  <ProtectedRoute adminOnly>
-                    <AdminPayouts />
                   </ProtectedRoute>
                 }
               />

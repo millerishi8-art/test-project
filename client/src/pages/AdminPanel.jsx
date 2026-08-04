@@ -336,13 +336,6 @@ const AdminPanel = () => {
           </button>
           <button
             type="button"
-            className="admin-payouts-nav-btn"
-            onClick={() => navigate('/admin/payouts')}
-          >
-            תשלומי עובדים
-          </button>
-          <button
-            type="button"
             className="admin-employee-cases-nav-btn"
             onClick={() => navigate('/admin/employee-cases')}
           >

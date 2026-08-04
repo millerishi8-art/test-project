@@ -7,6 +7,8 @@ import {
   sendDeferredPaymentApprovedToClient,
   sendDeferredPaymentRequestApprovedAwaitingDate,
   sendDeferredPaymentRequireEarlierDateEmail,
+  sendAwaitingInterviewEmail,
+  sendAwaitingFormsEmail,
 } from '../services/email.js';
 import {
   parseYyyyMmDd,
@@ -335,10 +337,35 @@ const PROCESSING_STAGES = {
   5: 'אושר על ידי הממשלה',
 };
 
+/** מנהלי ראיונות – מקבלים מייל כשתיק ממתין לראיון אישי */
+const INTERVIEW_STAFF_EMAILS = ['lapidwoldenberg@gmail.com', 'abergelyuda7@gmail.com'];
+/** מנהל טפסים – מקבל מייל אחרי שנעשה ראיון ומחכים להגשת טפסים */
+const FORMS_STAFF_EMAILS = ['shneortole257@gmail.com'];
+
+function previousProcessingStageNumber(caseData) {
+  const d = String(caseData?.detailedAdminStatus || '').trim();
+  for (const [num, label] of Object.entries(PROCESSING_STAGES)) {
+    if (d === label) return Number(num);
+  }
+  if (d === 'נפתח הבקשה באתר מחכה לראיון אישי') return 1;
+  return 0;
+}
+
+function benefitTypeLabelHe(type) {
+  const map = {
+    family: 'משפחה',
+    individual: 'בגיר מעל 21',
+    minor: 'צעיר',
+    card_order: 'הזמנת כרטיס',
+  };
+  return map[type] || type || '—';
+}
+
 /**
  * מנהל מעדכן שלב עיבוד תיק (עמוד "עובדים לך על הכייס")
  * Body: { stage: 1|2|3|4|5, rejectionReason?: string, approvedBenefits?: Object }
  * ב-stage 4 חובה rejectionReason. ב-stage 5 מומלץ approvedBenefits (מוצג ללקוח בשלב 3).
+ * מעבר לשלב 1/2 שולח מייל אוטומטי לעובדים הרלוונטיים.
  */
 export const updateCaseProcessing = async (req, res) => {
   try {
@@ -352,6 +379,7 @@ export const updateCaseProcessing = async (req, res) => {
     if (!caseData) {
       return res.status(404).json({ error: 'תיק לא נמצא' });
     }
+    const prevStage = previousProcessingStageNumber(caseData);
     const detailedAdminStatus = PROCESSING_STAGES[stageNum];
     const updates = { detailedAdminStatus };
     if (stageNum === 4) {
@@ -381,6 +409,28 @@ export const updateCaseProcessing = async (req, res) => {
       updates.approvedBenefits = null;
     }
     const updated = await updateCase(id, updates);
+
+    /* מיילים רק כשעוברים לשלב חדש (לא בלחיצה חוזרת על אותו שלב) */
+    if (stageNum !== prevStage && (stageNum === 1 || stageNum === 2)) {
+      try {
+        const user = caseData.userId ? await findUserById(caseData.userId) : null;
+        const caseInfo = {
+          caseId: id,
+          clientName: user?.name || caseData.personalDetails?.fullName || '',
+          clientEmail: user?.email || '',
+          clientPhone: user?.phone || caseData.personalDetails?.phone || '',
+          benefitType: benefitTypeLabelHe(caseData.benefitType),
+        };
+        if (stageNum === 1) {
+          await sendAwaitingInterviewEmail(INTERVIEW_STAFF_EMAILS, caseInfo);
+        } else if (stageNum === 2) {
+          await sendAwaitingFormsEmail(FORMS_STAFF_EMAILS, caseInfo);
+        }
+      } catch (mailErr) {
+        console.error('updateCaseProcessing staff email error:', mailErr?.message || mailErr);
+      }
+    }
+
     return res.json({ message: 'סטטוס העיבוד עודכן', case: updated });
   } catch (error) {
     console.error('updateCaseProcessing error:', error);

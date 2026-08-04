@@ -530,3 +530,87 @@ export async function sendDeferredPaymentDueDateFinalWarningEmail(to, name, dead
     return false;
   }
 }
+
+async function sendStaffCaseStageEmail(toList, { subject, title, bodyHtml, bodyText, caseInfo }) {
+  const config = getConfig();
+  if (!config.isConfigured) {
+    console.warn('[Email] Not configured. Cannot send case-stage staff email.');
+    return false;
+  }
+  const transport = getTransporter();
+  if (!transport) return false;
+  const fromAddress = config.EMAIL_FROM || config.EMAIL_USER || config.SMTP_USER;
+  const recipients = [...new Set((toList || []).map((e) => String(e || '').trim().toLowerCase()).filter(Boolean))];
+  if (!fromAddress || recipients.length === 0) return false;
+
+  const clientName = (caseInfo?.clientName || '').trim() || 'לקוח';
+  const clientEmail = (caseInfo?.clientEmail || '').trim() || '—';
+  const clientPhone = (caseInfo?.clientPhone || '').trim() || '—';
+  const caseId = (caseInfo?.caseId || '').trim() || '—';
+  const benefitType = (caseInfo?.benefitType || '').trim() || '—';
+  const panelUrl = `${config.APP_BASE_URL.replace(/\/+$/, '')}/admin/case-processing`;
+
+  const detailsHtml = `
+    <ul style="padding-right: 20px;">
+      <li><strong>שם לקוח:</strong> ${clientName}</li>
+      <li><strong>אימייל לקוח:</strong> ${clientEmail}</li>
+      <li><strong>טלפון:</strong> ${clientPhone}</li>
+      <li><strong>סוג תיק:</strong> ${benefitType}</li>
+      <li><strong>מזהה תיק:</strong> ${caseId}</li>
+    </ul>
+  `;
+  const html = `
+    <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 560px;">
+      <h2>${title}</h2>
+      ${bodyHtml}
+      ${detailsHtml}
+      <p><a href="${panelUrl}" style="display:inline-block;padding:10px 16px;background:#1e6bb8;color:#fff;text-decoration:none;border-radius:8px;font-weight:700;">לפאנל עיבוד תיקים</a></p>
+      <hr style="border: none; border-top: 1px solid #eee;" />
+      <p style="color: #888; font-size: 12px;">סוכן ביטוח – הודעה אוטומטית</p>
+    </div>
+  `;
+  const text = `${title}\n\n${bodyText}\n\nשם: ${clientName}\nאימייל: ${clientEmail}\nטלפון: ${clientPhone}\nסוג: ${benefitType}\nמזהה: ${caseId}\n\n${panelUrl}`;
+
+  try {
+    await transport.sendMail({
+      from: fromAddress,
+      to: recipients.join(', '),
+      subject,
+      text,
+      html,
+    });
+    console.log('[Email] Case-stage staff email sent to', recipients.join(', '));
+    return true;
+  } catch (err) {
+    console.error('[Email] Case-stage staff email failed:', err?.message || err);
+    return false;
+  }
+}
+
+/**
+ * שלב 1 – מחכה לראיון אישי → מייל ללפיד ויהודה.
+ */
+export async function sendAwaitingInterviewEmail(toList, caseInfo) {
+  return sendStaffCaseStageEmail(toList, {
+    subject: 'תיק ממתין לראיון אישי',
+    title: 'תיק ממתין לראיון אישי',
+    bodyHtml:
+      '<p>התיק התקדם לשלב <strong>מחכה לראיון אישי</strong>.</p><p>נא לתאם ולבצע ראיון אישי עם הלקוח.</p>',
+    bodyText: 'התיק ממתין לראיון אישי. נא לתאם ולבצע ראיון עם הלקוח.',
+    caseInfo,
+  });
+}
+
+/**
+ * שלב 2 – נעשה ראיון, מחכה להגשת טפסים → מייל לשנאור.
+ */
+export async function sendAwaitingFormsEmail(toList, caseInfo) {
+  return sendStaffCaseStageEmail(toList, {
+    subject: 'תיק ממתין להגשת טפסים',
+    title: 'נעשה ראיון – יש למלא / להגיש טפסים',
+    bodyHtml:
+      '<p>עודכן שבוצע <strong>ראיון אישי</strong>.</p><p>התיק ממתין כעת ל<strong>הגשת טפסים</strong> – נא להשלים את מילוי והגשת הטפסים מול הלקוח.</p>',
+    bodyText: 'נעשה ראיון. התיק ממתין להגשת טפסים – נא להשלים מילוי והגשה מול הלקוח.',
+    caseInfo,
+  });
+}

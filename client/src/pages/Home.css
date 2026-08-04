@@ -65,9 +65,11 @@
 .home-header-actions {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.85rem;
   margin-top: var(--space-5);
   width: 100%;
+  max-width: 42rem;
+  margin-inline: auto;
 }
 
 .home-case-status-btn,
@@ -76,16 +78,17 @@
   align-items: center;
   justify-content: center;
   width: 100%;
-  max-width: 100%;
-  padding: var(--space-4) var(--space-5);
-  min-height: var(--touch-min);
-  font-size: clamp(1rem, 2.8vw, 1.1rem);
-  font-weight: 600;
+  flex: 1 1 0;
+  padding: 1.1rem 1.35rem;
+  min-height: 56px;
+  font-size: clamp(1.05rem, 2.8vw, 1.2rem);
+  font-weight: 700;
   color: white;
   border: none;
-  border-radius: 14px;
+  border-radius: 16px;
   cursor: pointer;
   transition: all 0.25s ease;
+  box-sizing: border-box;
 }
 
 .home-case-status-btn {
@@ -113,12 +116,15 @@
 @media (min-width: 640px) {
   .home-header-actions {
     flex-direction: row;
-    justify-content: center;
+    align-items: stretch;
+    max-width: 100%;
   }
 
   .home-case-status-btn,
   .home-order-card-btn {
-    max-width: 280px;
+    min-height: 64px;
+    padding: 1.25rem 1.5rem;
+    font-size: 1.2rem;
   }
 }
 
