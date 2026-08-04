@@ -2,9 +2,9 @@
 node_modules/
 
 # Environment and local data (never commit credentials)
+# חשוב: שלילות (!…) חייבות לבוא אחרי כללי ההתעלמות — האחרון שמתאים מנצח.
 .env
-.env.local
-.env.*.local
+.env.*
 server/.env
 !.env.example
 !server/.env.example
@@ -24,4 +24,3 @@ Thumbs.db
 *.swp
 *.swo
 .vercel
-.env*
