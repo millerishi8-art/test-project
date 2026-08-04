@@ -8,6 +8,14 @@ const benefitTitles = {
   family: 'משפחה (כולל הורה וילדים מתחת לגיל 18)',
   individual: 'בגיר מעל 21',
   minor: 'צעיר',
+  card_order: 'הזמנת כרטיס ($150)',
+};
+
+const cardIssueLabels = {
+  none: 'בקשת כרטיס חדש / החלפה',
+  stolen: 'דווח כגנוב',
+  lost: 'דווח כנאבד',
+  not_working: 'הגיע אבל לא עובד',
 };
 
 const STATUS_OPTIONS = [
@@ -174,6 +182,8 @@ const AdminCaseDetail = () => {
     passport: [],
     marriage_certificate_us: [],
     payment: [],
+    id_doc: [],
+    card_photo: [],
     general: [],
   };
   const spouseDocs = { passport: [], ssn: [] };
@@ -387,12 +397,64 @@ const AdminCaseDetail = () => {
           </div>
         </section>
 
+        {c.benefitType === 'card_order' && c.personalDetails?.cardOrder && (
+          <section className="admin-case-detail-section">
+            <h2>הזמנת כרטיס — פרטי השאלון</h2>
+            <div className="admin-case-detail-grid">
+              <div className="admin-case-detail-field">
+                <span className="admin-case-detail-label">שם מלא</span>
+                <span className="admin-case-detail-value">{c.personalDetails.fullName || '–'}</span>
+              </div>
+              <div className="admin-case-detail-field">
+                <span className="admin-case-detail-label">טלפון</span>
+                <span className="admin-case-detail-value">{c.personalDetails.phone || '–'}</span>
+              </div>
+              <div className="admin-case-detail-field">
+                <span className="admin-case-detail-label">עלות</span>
+                <span className="admin-case-detail-value">${c.personalDetails.cardOrder.feeUsd || 150}</span>
+              </div>
+              <div className="admin-case-detail-field">
+                <span className="admin-case-detail-label">הכרטיס הגיע ליעד</span>
+                <span className="admin-case-detail-value">
+                  {c.personalDetails.cardOrder.cardReceivedByMail ? 'כן' : 'לא'}
+                </span>
+              </div>
+              {c.personalDetails.cardOrder.cardReceivedByMail && (
+                <>
+                  <div className="admin-case-detail-field">
+                    <span className="admin-case-detail-label">הכרטיס פעיל</span>
+                    <span className="admin-case-detail-value">
+                      {c.personalDetails.cardOrder.cardActive ? 'כן' : 'לא'}
+                    </span>
+                  </div>
+                  <div className="admin-case-detail-field">
+                    <span className="admin-case-detail-label">מצב הכרטיס</span>
+                    <span className="admin-case-detail-value">
+                      {cardIssueLabels[c.personalDetails.cardOrder.cardIssue] ||
+                        c.personalDetails.cardOrder.cardIssue ||
+                        '–'}
+                    </span>
+                  </div>
+                  <div className="admin-case-detail-field">
+                    <span className="admin-case-detail-label">צילום כרטיס הועלה</span>
+                    <span className="admin-case-detail-value">
+                      {c.personalDetails.cardOrder.hasCardPhoto ? 'כן' : 'לא'}
+                    </span>
+                  </div>
+                </>
+              )}
+            </div>
+          </section>
+        )}
+
         <section className="admin-case-detail-section">
           <h2>תוכן הטופס</h2>
+          {c.benefitType !== 'card_order' && (
           <div className="admin-case-detail-field admin-case-detail-field-block">
             <span className="admin-case-detail-label">כתובת מגורים</span>
             <p className="admin-case-detail-value admin-case-detail-text">{c.address || '–'}</p>
           </div>
+          )}
           {typeof c.personalDetails === 'object' &&
             c.personalDetails !== null &&
             c.personalDetails.form === 'food_stamps_eligibility' &&
@@ -493,13 +555,19 @@ const AdminCaseDetail = () => {
                 mainDocs.passport.length > 0 ||
                 mainDocs.marriage_certificate_us.length > 0 ||
                 mainDocs.payment.length > 0 ||
+                mainDocs.id_doc.length > 0 ||
+                mainDocs.card_photo.length > 0 ||
                 mainDocs.general.length > 0) && (
                 <div className="admin-case-detail-field admin-case-detail-field-block">
                   <span className="admin-case-detail-label">מסמכים כלליים</span>
                   <div className="admin-case-detail-attachments">
                     {mainDocs.birth.map((r, i) => renderMediaCard(r, `תעודת לידה ${i + 1}`, i))}
+                    {mainDocs.id_doc.map((r, i) =>
+                      renderMediaCard(r, `זיהוי (דרכון/ת״ז/רישיון) ${i + 1}`, i)
+                    )}
                     {mainDocs.ssn.map((r, i) => renderMediaCard(r, `כרטיס סושיאל ${i + 1}`, i))}
                     {mainDocs.passport.map((r, i) => renderMediaCard(r, `דרכון ${i + 1}`, i))}
+                    {mainDocs.card_photo.map((r, i) => renderMediaCard(r, `צילום כרטיס ${i + 1}`, i))}
                     {mainDocs.marriage_certificate_us.map((r, i) =>
                       renderMediaCard(r, `תעודת נישואין ${i + 1}`, i)
                     )}

@@ -85,6 +85,7 @@ const AdminPanel = () => {
     const titles = {
       family: '  (כולל הורה וילדים מתחת לגיל 18) משפחה',
       individual: 'בגיר מעל 21',
+      card_order: 'הזמנת כרטיס ($150)',
       minor: 'צעיר'
     };
     return titles[type] || type;

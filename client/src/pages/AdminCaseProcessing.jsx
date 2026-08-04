@@ -39,7 +39,7 @@ const AdminCaseProcessing = () => {
   };
 
   const getBenefitTitle = (type) => {
-    const t = { family: 'משפחה', individual: 'בגיר מעל 21', minor: 'צעיר' };
+    const t = { family: 'משפחה', individual: 'בגיר מעל 21', minor: 'צעיר', card_order: 'הזמנת כרטיס' };
     return t[(type || '').toLowerCase()] || type;
   };
 

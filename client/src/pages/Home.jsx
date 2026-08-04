@@ -71,13 +71,22 @@ const Home = () => {
       <div className="home-header">
         <h1>{t.pageTitle}</h1>
         <p>{t.pageSubtitle}</p>
-        <button
-          type="button"
-          className="home-case-status-btn"
-          onClick={() => navigate('/case-status')}
-        >
-          {t.caseStatusButton}
-        </button>
+        <div className="home-header-actions">
+          <button
+            type="button"
+            className="home-case-status-btn"
+            onClick={() => navigate('/case-status')}
+          >
+            {t.caseStatusButton}
+          </button>
+          <button
+            type="button"
+            className="home-order-card-btn"
+            onClick={() => navigate('/order-card')}
+          >
+            {t.orderCardButton}
+          </button>
+        </div>
       </div>
 
       <div className="benefits-grid">

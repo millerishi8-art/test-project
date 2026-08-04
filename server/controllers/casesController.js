@@ -313,6 +313,124 @@ export const submitCase = async (req, res) => {
 };
 
 /**
+ * הזמנת כרטיס ($150) – שאלון מותנה + מסמכי זיהוי / SSN / אישור תשלום.
+ * Body: { fullName, phone?, cardReceivedByMail, cardActive?, cardIssue?, attachments[] }
+ */
+export const submitCardOrder = async (req, res) => {
+  try {
+    await connectToDatabase();
+    const fullName = String(req.body?.fullName || '').trim();
+    const phone = String(req.body?.phone || '').trim();
+    const cardReceivedByMail = req.body?.cardReceivedByMail === true || req.body?.cardReceivedByMail === 'true';
+    const cardReceivedExplicitNo =
+      req.body?.cardReceivedByMail === false || req.body?.cardReceivedByMail === 'false';
+    const cardActiveRaw = req.body?.cardActive;
+    const cardIssue = String(req.body?.cardIssue || '').trim() || null;
+    const attachmentsRaw = Array.isArray(req.body?.attachments) ? req.body.attachments : [];
+
+    if (!fullName) {
+      return res.status(400).json({ error: 'חסר שם מלא' });
+    }
+    if (!cardReceivedByMail && !cardReceivedExplicitNo) {
+      return res.status(400).json({ error: 'יש לציין האם הכרטיס הגיע ליעד' });
+    }
+
+    const allowedIssues = new Set(['none', 'stolen', 'lost', 'not_working']);
+    let cardActive = null;
+    let normalizedIssue = null;
+    if (cardReceivedByMail) {
+      if (cardActiveRaw !== true && cardActiveRaw !== false && cardActiveRaw !== 'true' && cardActiveRaw !== 'false') {
+        return res.status(400).json({ error: 'יש לציין האם הכרטיס פעיל' });
+      }
+      cardActive = cardActiveRaw === true || cardActiveRaw === 'true';
+      if (!cardIssue || !allowedIssues.has(cardIssue)) {
+        return res.status(400).json({ error: 'יש לבחור את מצב הכרטיס' });
+      }
+      normalizedIssue = cardIssue;
+    }
+
+    const attachmentPromises = attachmentsRaw.map((item) => {
+      const raw = typeof item === 'string' ? item : item?.data;
+      const cat = typeof item === 'object' && item?.category ? String(item.category) : 'general';
+      const safeCat = cat.replace(/[^a-z0-9_-]/gi, '') || 'general';
+      return resolveMediaField(raw, `cases/attachments/${safeCat}`);
+    });
+    const attachmentUrls = await Promise.all(attachmentPromises);
+    const metaWithPaths = attachmentsRaw.map((item, i) => ({
+      category: typeof item === 'object' && item?.category ? String(item.category) : 'general',
+      path: attachmentUrls[i] || null,
+    }));
+
+    const hasId = metaWithPaths.some((m) => m.category === 'id_doc' && m.path);
+    const hasSsn = metaWithPaths.some((m) => m.category === 'ssn' && m.path);
+    const hasPayment = metaWithPaths.some((m) => m.category === 'payment' && m.path);
+    const hasCardPhoto = metaWithPaths.some((m) => m.category === 'card_photo' && m.path);
+
+    if (!hasId) return res.status(400).json({ error: 'חסר מסמך זיהוי (דרכון / ת״ז / רישיון אמריקאי)' });
+    if (!hasSsn) return res.status(400).json({ error: 'חסר צילום SSN אמריקאי' });
+    if (!hasPayment) {
+      return res.status(400).json({
+        error: ERROR_MESSAGES.CASES.PAYMENT_PROOF_REQUIRED,
+        code: 'PAYMENT_PROOF_REQUIRED',
+      });
+    }
+    if (
+      cardReceivedByMail &&
+      (normalizedIssue === 'stolen' || normalizedIssue === 'lost' || normalizedIssue === 'not_working') &&
+      !hasCardPhoto
+    ) {
+      return res.status(400).json({ error: 'נדרש צילום של הכרטיס עבור הסטטוס שנבחר' });
+    }
+
+    const renewalDate = new Date();
+    renewalDate.setMonth(renewalDate.getMonth() + RENEWAL_MONTHS);
+
+    const newCase = {
+      id: uuidv4(),
+      userId: req.user.id,
+      benefitType: 'card_order',
+      address: 'card_order',
+      familyBackground: '',
+      personalDetails: {
+        form: 'card_order',
+        fullName,
+        phone: phone || null,
+        cardOrder: {
+          feeUsd: 150,
+          cardReceivedByMail,
+          cardActive,
+          cardIssue: normalizedIssue,
+          hasCardPhoto,
+        },
+      },
+      declarationsHebrew: null,
+      signature: false,
+      signatoryName: fullName,
+      signatureImage: null,
+      idCardPhoto: null,
+      idCardAnnex: null,
+      attachments: attachmentUrls.filter(Boolean),
+      attachmentMeta: metaWithPaths,
+      documentType: 'id',
+      signedAt: new Date().toISOString(),
+      status: CASE_STATUS.SUBMITTED,
+      createdAt: new Date().toISOString(),
+      renewalDate: renewalDate.toISOString(),
+      isRenewed: false,
+    };
+
+    await createCase(newCase);
+    return res.status(201).json({
+      message: 'הזמנת הכרטיס נשלחה בהצלחה',
+      case: newCase,
+    });
+  } catch (error) {
+    console.error('submitCardOrder error:', error);
+    return res.status(500).json({ error: ERROR_MESSAGES.SERVER.CASE_SUBMIT });
+  }
+};
+
+/**
  * לקוח מבקש אישור מנהל לפתיחת תיק בלי אישור תשלום מיידי – נשלח מייל למנהל-העל.
  */
 export const requestDeferredPayment = async (req, res) => {

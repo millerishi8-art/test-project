@@ -40,6 +40,7 @@ export const BENEFIT_TYPES = {
   FAMILY: 'family',
   INDIVIDUAL: 'individual',
   MINOR: 'minor',
+  CARD_ORDER: 'card_order',
 };
 
 /** הודעות שגיאה (עברית) */

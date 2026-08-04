@@ -1,0 +1,370 @@
+/* דף הזמנת כרטיס */
+
+.order-card-page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: var(--space-6, 1.5rem) var(--space-4, 1rem) 3rem;
+  position: relative;
+}
+
+.order-card-translate-btn {
+  position: absolute;
+  top: 0.75rem;
+  inset-inline-start: 1rem;
+  padding: 0.4rem 0.85rem;
+  border-radius: 999px;
+  border: 1px solid #90caf9;
+  background: #fff;
+  color: #1565c0;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.order-card-header {
+  text-align: center;
+  margin-bottom: 1.75rem;
+  padding-top: 2.25rem;
+}
+
+.order-card-back {
+  display: inline-block;
+  margin-bottom: 0.85rem;
+  background: none;
+  border: none;
+  color: #1565c0;
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  font-family: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.order-card-price-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 4.5rem;
+  padding: 0.35rem 0.9rem;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #1e6bb8, #0d47a1);
+  color: #fff;
+  font-weight: 800;
+  font-size: 1.05rem;
+  letter-spacing: 0.02em;
+  margin-bottom: 0.75rem;
+  box-shadow: 0 4px 14px rgba(13, 71, 161, 0.28);
+}
+
+.order-card-header h1 {
+  margin: 0 0 0.5rem;
+  font-size: clamp(1.45rem, 4vw, 1.85rem);
+  color: #0d47a1;
+  font-weight: 800;
+}
+
+.order-card-sub {
+  margin: 0 auto 0.5rem;
+  max-width: 36rem;
+  color: #455a64;
+  line-height: 1.55;
+  font-size: 1rem;
+}
+
+.order-card-price-note {
+  margin: 0 auto;
+  max-width: 34rem;
+  color: #78909c;
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.order-card-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+}
+
+.order-card-section {
+  background: #fff;
+  border: 1px solid #e3eaf2;
+  border-radius: 16px;
+  padding: 1.25rem 1.2rem 1.35rem;
+  box-shadow: 0 4px 18px rgba(13, 71, 161, 0.05);
+}
+
+.order-card-section h2 {
+  margin: 0 0 1rem;
+  font-size: 1.15rem;
+  color: #0d47a1;
+  font-weight: 800;
+}
+
+.order-card-docs-intro {
+  margin: -0.35rem 0 1rem;
+  color: #607d8b;
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.order-card-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 0.9rem;
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: #37474f;
+}
+
+.order-card-field input[type='text'],
+.order-card-field input[type='tel'] {
+  padding: 0.7rem 0.85rem;
+  border: 1px solid #cfd8dc;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-family: inherit;
+  font-weight: 500;
+  background: #fafbfc;
+}
+
+.order-card-field input:focus {
+  outline: none;
+  border-color: #1e6bb8;
+  box-shadow: 0 0 0 3px rgba(30, 107, 184, 0.14);
+}
+
+.order-card-fieldset {
+  border: none;
+  margin: 0 0 1.1rem;
+  padding: 0;
+}
+
+.order-card-fieldset legend {
+  padding: 0;
+  margin-bottom: 0.65rem;
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #37474f;
+}
+
+.order-card-choice-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.order-card-choice {
+  flex: 1 1 120px;
+  min-height: var(--touch-min, 44px);
+  padding: 0.6rem 1rem;
+  border-radius: 12px;
+  border: 2px solid #cfd8dc;
+  background: #f8fafc;
+  font-weight: 700;
+  font-size: 1rem;
+  font-family: inherit;
+  color: #455a64;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.order-card-choice.active {
+  border-color: #1e6bb8;
+  background: #e3f2fd;
+  color: #0d47a1;
+}
+
+.order-card-choice:hover {
+  border-color: #90caf9;
+}
+
+.order-card-hint {
+  margin: 0.65rem 0 0;
+  padding: 0.65rem 0.8rem;
+  background: #eef6fc;
+  border-radius: 10px;
+  color: #1565c0;
+  font-size: 0.88rem;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.order-card-radio-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.order-card-radio {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  padding: 0.7rem 0.85rem;
+  border-radius: 12px;
+  border: 1px solid #e0e6ed;
+  background: #fafbfc;
+  cursor: pointer;
+  font-weight: 600;
+  color: #37474f;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.order-card-radio.active {
+  border-color: #1e6bb8;
+  background: #e3f2fd;
+}
+
+.order-card-radio input {
+  margin-top: 0.2rem;
+  accent-color: #1e6bb8;
+}
+
+.order-card-upload {
+  margin-top: 0.85rem;
+  padding: 0.9rem 0.95rem;
+  border-radius: 12px;
+  background: #f5f9fc;
+  border: 1px solid #e3eaf2;
+}
+
+.order-card-upload.has-error {
+  border-color: #ef9a9a;
+  background: #fff5f5;
+}
+
+.order-card-upload-head {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  margin-bottom: 0.65rem;
+}
+
+.order-card-upload-head strong {
+  color: #263238;
+  font-size: 0.95rem;
+}
+
+.order-card-upload-hint {
+  font-size: 0.82rem;
+  color: #78909c;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.order-card-upload-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.order-card-file-btn {
+  padding: 0.55rem 1rem;
+  min-height: 42px;
+  border: none;
+  border-radius: 10px;
+  background: #1e6bb8;
+  color: #fff;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.order-card-file-btn:hover:not(:disabled) {
+  background: #1565c0;
+}
+
+.order-card-file-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.order-card-remove-btn {
+  padding: 0.55rem 0.9rem;
+  min-height: 42px;
+  border: none;
+  border-radius: 10px;
+  background: #eceff1;
+  color: #455a64;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.order-card-preview {
+  margin-top: 0.65rem;
+}
+
+.order-card-preview img {
+  max-width: 100%;
+  max-height: 180px;
+  border-radius: 10px;
+  border: 1px solid #cfd8dc;
+  object-fit: contain;
+  background: #fff;
+}
+
+.order-card-file-ready {
+  display: inline-block;
+  padding: 0.35rem 0.7rem;
+  border-radius: 8px;
+  background: #c8e6c9;
+  color: #1b5e20;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.order-card-field-error {
+  display: block;
+  margin: 0.35rem 0 0;
+  color: #c62828;
+  font-size: 0.85rem;
+  font-weight: 700;
+  font-style: normal;
+}
+
+.order-card-error {
+  background: #ffebee;
+  color: #c62828;
+  padding: 0.8rem 1rem;
+  border-radius: 12px;
+  font-weight: 700;
+}
+
+.order-card-submit {
+  width: 100%;
+  min-height: var(--touch-min, 48px);
+  padding: 0.85rem 1.25rem;
+  border: none;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #2e7d32, #1b5e20);
+  color: #fff;
+  font-size: 1.1rem;
+  font-weight: 800;
+  font-family: inherit;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(27, 94, 32, 0.28);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.order-card-submit:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(27, 94, 32, 0.35);
+}
+
+.order-card-submit:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+@media (min-width: 768px) {
+  .order-card-page {
+    padding-top: 2rem;
+  }
+
+  .order-card-section {
+    padding: 1.45rem 1.5rem 1.55rem;
+  }
+}

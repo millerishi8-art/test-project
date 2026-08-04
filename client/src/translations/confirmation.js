@@ -29,6 +29,7 @@ export const confirmationTranslations = {
       family: 'משפחה',
       individual: 'בן אדם יחיד',
       minor: 'צעיר',
+      card_order: 'הזמנת כרטיס ($150)',
     },
   },
   en: {
@@ -58,6 +59,7 @@ export const confirmationTranslations = {
       family: 'Family',
       individual: 'Single person',
       minor: 'Youth',
+      card_order: 'Card order ($150)',
     },
   },
 };

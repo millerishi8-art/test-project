@@ -62,11 +62,19 @@
   margin-inline: auto;
 }
 
-.home-case-status-btn {
+.home-header-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: var(--space-5);
+  width: 100%;
+}
+
+.home-case-status-btn,
+.home-order-card-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  margin-top: var(--space-5);
   width: 100%;
   max-width: 100%;
   padding: var(--space-4) var(--space-5);
@@ -74,18 +82,44 @@
   font-size: clamp(1rem, 2.8vw, 1.1rem);
   font-weight: 600;
   color: white;
-  background: #1e6bb8;
   border: none;
   border-radius: 14px;
   cursor: pointer;
-  box-shadow: 0 4px 15px rgba(30, 107, 184, 0.35);
   transition: all 0.25s ease;
+}
+
+.home-case-status-btn {
+  background: #1e6bb8;
+  box-shadow: 0 4px 15px rgba(30, 107, 184, 0.35);
 }
 
 .home-case-status-btn:hover {
   background: #1565c0;
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(30, 107, 184, 0.4);
+}
+
+.home-order-card-btn {
+  background: linear-gradient(135deg, #00838f 0%, #006064 100%);
+  box-shadow: 0 4px 15px rgba(0, 96, 100, 0.3);
+}
+
+.home-order-card-btn:hover {
+  background: linear-gradient(135deg, #0097a7 0%, #00838f 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0, 96, 100, 0.4);
+}
+
+@media (min-width: 640px) {
+  .home-header-actions {
+    flex-direction: row;
+    justify-content: center;
+  }
+
+  .home-case-status-btn,
+  .home-order-card-btn {
+    max-width: 280px;
+  }
 }
 
 .benefits-grid {

@@ -60,6 +60,7 @@ const AdminPayouts = () => {
       family: 'משפחה',
       individual: 'בגיר מעל 21',
       minor: 'צעיר',
+      card_order: 'הזמנת כרטיס',
     };
     return titles[type] || type || '–';
   };
