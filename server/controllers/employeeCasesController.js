@@ -7,69 +7,101 @@ import {
   archivePaidEmployeeCases,
   normalizeEmployeeCaseCategory,
 } from '../models/EmployeeCase.js';
-import { isSuperAdminEmail, isAnyAdminPanelEmail } from '../utils/adminEmails.js';
+import {
+  isSuperAdminEmail,
+  isSecondaryAdminEmail,
+  getSecondaryAdminEmails,
+} from '../utils/adminEmails.js';
 import { getInitials } from '../utils/initials.js';
-import { isUserRoleAdmin } from '../components/constants.js';
+
+/** שמות תצוגה קבועים לעובדים (לא כולל מנהל ראשי) */
+const STAFF_DISPLAY_NAMES = {
+  'abergelyuda7@gmail.com': 'יהודה אברגל',
+  'lapidwoldenberg@gmail.com': 'לפיד וולדנברג',
+  'shneortole257@gmail.com': 'שניאור טולדנו',
+};
+
+function staffDisplayName(email, fallbackName = '') {
+  const e = String(email || '').trim().toLowerCase();
+  if (STAFF_DISPLAY_NAMES[e]) return STAFF_DISPLAY_NAMES[e];
+  return String(fallbackName || '').trim() || e;
+}
 
 function isLockedCase(employeeCase) {
   return employeeCase?.isArchived === true;
 }
 
 function enrichCase(employeeCase, user) {
-  const name = user?.name || '';
+  const email = user?.email || '';
+  const name = staffDisplayName(email, user?.name || '');
   return {
     ...employeeCase,
-    userName: name || user?.email || '',
-    userEmail: user?.email || '',
-    initials: getInitials(name || user?.email || ''),
+    userName: name || email || '',
+    userEmail: email || '',
+    initials: getInitials(name || email || ''),
   };
 }
 
 /**
- * רשימת מנהלים (ראשי + משנה) עם הכייסים הפעילים שלהם.
+ * רשימת מנהלי משנה בלבד (בלי המנהל הראשי) עם הכייסים הפעילים שלהם.
  * GET /admin/employee-cases
  */
 export const listEmployeeCases = async (req, res) => {
   try {
     const [cases, users] = await Promise.all([readEmployeeCases({ includeArchived: false }), readUsers()]);
     const userById = new Map(users.map((u) => [String(u.id), u]));
+    const userByEmail = new Map(
+      users.map((u) => [String(u.email || '').trim().toLowerCase(), u])
+    );
 
-    const managers = users
-      .filter((u) => isUserRoleAdmin(u.role) && isAnyAdminPanelEmail(u.email))
-      .map((u) => ({
-        id: u.id,
-        name: u.name || '',
-        email: u.email || '',
-        initials: getInitials(u.name || u.email || ''),
-        isPrimaryAdmin: isSuperAdminEmail(u.email),
+    /* רק שלושת העובדים – לא מציגים את כרטיס המנהל הראשי */
+    const managers = getSecondaryAdminEmails().map((email) => {
+      const u = userByEmail.get(email);
+      const name = staffDisplayName(email, u?.name || '');
+      return {
+        id: u?.id || email,
+        name,
+        email,
+        initials: getInitials(name || email),
+        isPrimaryAdmin: false,
         cases: [],
-      }));
+      };
+    });
 
-    const managerByUserId = new Map(managers.map((m) => [String(m.id), m]));
+    const managerByUserId = new Map();
+    const managerByEmail = new Map();
+    for (const m of managers) {
+      managerByEmail.set(String(m.email).toLowerCase(), m);
+      if (m.id != null) managerByUserId.set(String(m.id), m);
+    }
 
     for (const c of cases) {
       const user = userById.get(String(c.userId));
+      const email = String(user?.email || '').trim().toLowerCase();
+      /* כייסים של המנהל הראשי לא מוצגים במעקב תשלומים לעובדים */
+      if (isSuperAdminEmail(email)) continue;
+
       const enriched = enrichCase(c, user);
-      const manager = managerByUserId.get(String(c.userId));
+      const manager =
+        managerByUserId.get(String(c.userId)) ||
+        (email ? managerByEmail.get(email) : null);
+
       if (manager) {
         manager.cases.push(enriched);
-      } else {
-        /* כייס של משתמש שלא ברשימת המנהלים הנוכחית – מוצג תחת קבוצה נפרדת */
-        const orphanKey = `orphan:${c.userId}`;
-        if (!managerByUserId.has(orphanKey)) {
-          const orphan = {
-            id: c.userId,
-            name: enriched.userName || 'לא ידוע',
-            email: enriched.userEmail || '',
-            initials: enriched.initials,
-            isPrimaryAdmin: false,
-            cases: [],
-          };
-          managers.push(orphan);
-          managerByUserId.set(orphanKey, orphan);
-          managerByUserId.set(String(c.userId), orphan);
-        }
-        managerByUserId.get(String(c.userId)).cases.push(enriched);
+      } else if (isSecondaryAdminEmail(email)) {
+        /* fallback – לא אמור לקרות אם המייל ברשימה */
+        const name = staffDisplayName(email, enriched.userName);
+        const orphan = {
+          id: c.userId,
+          name,
+          email,
+          initials: getInitials(name),
+          isPrimaryAdmin: false,
+          cases: [enriched],
+        };
+        managers.push(orphan);
+        managerByUserId.set(String(c.userId), orphan);
+        managerByEmail.set(email, orphan);
       }
     }
 
@@ -85,13 +117,15 @@ export const listEmployeeCases = async (req, res) => {
       return String(a.name || a.email).localeCompare(String(b.name || b.email), 'he');
     });
 
-    const unpaidTotal = cases.filter((c) => !c.isPaid).length;
-    const paidPendingArchive = cases.filter((c) => c.isPaid).length;
+    /* סיכומים רק לפי כייסים שמוצגים (עובדים) – בלי כייסי המנהל הראשי */
+    const visibleCases = managers.flatMap((m) => m.cases);
+    const unpaidTotal = visibleCases.filter((c) => !c.isPaid).length;
+    const paidPendingArchive = visibleCases.filter((c) => c.isPaid).length;
 
     return res.json({
       managers,
       totals: {
-        casesCount: cases.length,
+        casesCount: visibleCases.length,
         unpaidCount: unpaidTotal,
         paidPendingArchive,
       },

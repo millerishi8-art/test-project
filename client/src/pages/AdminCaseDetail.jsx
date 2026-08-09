@@ -238,11 +238,81 @@ const AdminCaseDetail = () => {
     }
   };
 
+  const yesNoBadge = (val) => {
+    if (val == null) return <span className="admin-case-detail-value">–</span>;
+    const yes = val === true || val === 'true' || val === 'כן';
+    return (
+      <span className={`admin-case-yn ${yes ? 'is-yes' : 'is-no'}`}>
+        {yes ? 'כן' : 'לא'}
+      </span>
+    );
+  };
+
+  const renderCardOrderDetails = (pd) => {
+    const order = pd?.cardOrder && typeof pd.cardOrder === 'object' ? pd.cardOrder : {};
+    const received = order.cardReceivedByMail === true || order.cardReceivedByMail === 'true';
+    return (
+      <div className="admin-case-detail-pd-structured admin-case-card-order">
+        <div className="admin-case-detail-grid admin-case-card-order-grid">
+          <div className="admin-case-detail-field">
+            <span className="admin-case-detail-label">סוג בקשה</span>
+            <span className="admin-case-detail-value">הזמנת כרטיס</span>
+          </div>
+          <div className="admin-case-detail-field">
+            <span className="admin-case-detail-label">שם מלא</span>
+            <span className="admin-case-detail-value">{pd?.fullName || '–'}</span>
+          </div>
+          <div className="admin-case-detail-field">
+            <span className="admin-case-detail-label">טלפון</span>
+            <span className="admin-case-detail-value" dir="ltr">{pd?.phone || '–'}</span>
+          </div>
+          <div className="admin-case-detail-field">
+            <span className="admin-case-detail-label">עלות הזמנה</span>
+            <span className="admin-case-detail-value admin-case-fee">${order.feeUsd || 150}</span>
+          </div>
+          <div className="admin-case-detail-field">
+            <span className="admin-case-detail-label">הכרטיס הגיע בדואר</span>
+            {yesNoBadge(order.cardReceivedByMail)}
+          </div>
+          {received ? (
+            <>
+              <div className="admin-case-detail-field">
+                <span className="admin-case-detail-label">הכרטיס פעיל</span>
+                {yesNoBadge(order.cardActive)}
+              </div>
+              <div className="admin-case-detail-field">
+                <span className="admin-case-detail-label">מצב / תקלה בכרטיס</span>
+                <span className="admin-case-detail-value">
+                  {cardIssueLabels[order.cardIssue] || order.cardIssue || '–'}
+                </span>
+              </div>
+              <div className="admin-case-detail-field">
+                <span className="admin-case-detail-label">צילום כרטיס הועלה</span>
+                {yesNoBadge(order.hasCardPhoto)}
+              </div>
+            </>
+          ) : (
+            <div className="admin-case-detail-field admin-case-detail-field-block">
+              <span className="admin-case-detail-label">הערה</span>
+              <span className="admin-case-detail-value">
+                הכרטיס עדיין לא הגיע – בקשה להזמנה / מעקב משלוח.
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   /** personalDetails נשמר כאובייקט (caseEmail, declarationsAccepted וכו') – לא ניתן לרנדר אובייקט ישירות ב-React */
   const renderPersonalDetailsContent = (pd) => {
     if (pd == null || pd === '') return '–';
     if (typeof pd === 'string') return pd;
     if (typeof pd !== 'object' || Array.isArray(pd)) return String(pd);
+
+    if (pd.form === 'card_order' || pd.cardOrder) {
+      return renderCardOrderDetails(pd);
+    }
 
     if (pd.form === 'food_stamps_eligibility') {
       const dec = pd.declarationsAccepted;
@@ -310,6 +380,11 @@ const AdminCaseDetail = () => {
 
     return <pre className="admin-case-detail-json">{JSON.stringify(pd, null, 2)}</pre>;
   };
+
+  const isCardOrderCase =
+    c?.benefitType === 'card_order' ||
+    c?.personalDetails?.form === 'card_order' ||
+    Boolean(c?.personalDetails?.cardOrder);
 
   return (
     <div className="admin-case-detail-container">
@@ -434,59 +509,16 @@ const AdminCaseDetail = () => {
           </div>
         </section>
 
-        {c.benefitType === 'card_order' && c.personalDetails?.cardOrder && (
-          <section className="admin-case-detail-section">
+        {isCardOrderCase && (
+          <section className="admin-case-detail-section admin-case-card-order-section">
             <h2>הזמנת כרטיס — פרטי השאלון</h2>
-            <div className="admin-case-detail-grid">
-              <div className="admin-case-detail-field">
-                <span className="admin-case-detail-label">שם מלא</span>
-                <span className="admin-case-detail-value">{c.personalDetails.fullName || '–'}</span>
-              </div>
-              <div className="admin-case-detail-field">
-                <span className="admin-case-detail-label">טלפון</span>
-                <span className="admin-case-detail-value">{c.personalDetails.phone || '–'}</span>
-              </div>
-              <div className="admin-case-detail-field">
-                <span className="admin-case-detail-label">עלות</span>
-                <span className="admin-case-detail-value">${c.personalDetails.cardOrder.feeUsd || 150}</span>
-              </div>
-              <div className="admin-case-detail-field">
-                <span className="admin-case-detail-label">הכרטיס הגיע ליעד</span>
-                <span className="admin-case-detail-value">
-                  {c.personalDetails.cardOrder.cardReceivedByMail ? 'כן' : 'לא'}
-                </span>
-              </div>
-              {c.personalDetails.cardOrder.cardReceivedByMail && (
-                <>
-                  <div className="admin-case-detail-field">
-                    <span className="admin-case-detail-label">הכרטיס פעיל</span>
-                    <span className="admin-case-detail-value">
-                      {c.personalDetails.cardOrder.cardActive ? 'כן' : 'לא'}
-                    </span>
-                  </div>
-                  <div className="admin-case-detail-field">
-                    <span className="admin-case-detail-label">מצב הכרטיס</span>
-                    <span className="admin-case-detail-value">
-                      {cardIssueLabels[c.personalDetails.cardOrder.cardIssue] ||
-                        c.personalDetails.cardOrder.cardIssue ||
-                        '–'}
-                    </span>
-                  </div>
-                  <div className="admin-case-detail-field">
-                    <span className="admin-case-detail-label">צילום כרטיס הועלה</span>
-                    <span className="admin-case-detail-value">
-                      {c.personalDetails.cardOrder.hasCardPhoto ? 'כן' : 'לא'}
-                    </span>
-                  </div>
-                </>
-              )}
-            </div>
+            {renderCardOrderDetails(c.personalDetails || {})}
           </section>
         )}
 
         <section className="admin-case-detail-section">
           <h2>תוכן הטופס</h2>
-          {c.benefitType !== 'card_order' && (
+          {!isCardOrderCase && (
           <div className="admin-case-detail-field admin-case-detail-field-block">
             <span className="admin-case-detail-label">כתובת מגורים</span>
             <p className="admin-case-detail-value admin-case-detail-text">{c.address || '–'}</p>
@@ -512,12 +544,14 @@ const AdminCaseDetail = () => {
               <p className="admin-case-detail-value admin-case-detail-text">{c.familyBackground}</p>
             </div>
           )}
+          {!isCardOrderCase && (
           <div className="admin-case-detail-field admin-case-detail-field-block">
             <span className="admin-case-detail-label">פרטים נוספים</span>
             <div className="admin-case-detail-value admin-case-detail-text">
               {renderPersonalDetailsContent(c.personalDetails)}
             </div>
           </div>
+          )}
           {typeof c.personalDetails === 'object' &&
             c.personalDetails !== null &&
             String(c.personalDetails?.spouse?.healthStatus || '').trim() !== '' && (
