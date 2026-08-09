@@ -54,7 +54,21 @@ const AdminCaseProcessing = () => {
     });
   };
 
+  const isStageActive = (caseItem, stageNum, label) => {
+    const cur = (caseItem.detailedAdminStatus || '').trim();
+    return cur === label || (stageNum === 1 && cur === LEGACY_HE_STAGE1);
+  };
+
   const handleStageClick = (caseItem, stageNum) => {
+    const stageDef = STAGES.find((s) => s.stage === stageNum);
+    const active = stageDef ? isStageActive(caseItem, stageNum, stageDef.label) : false;
+
+    /* לחיצה שנייה על אותו שלב – ביטול מלא (בלי מייל) */
+    if (active) {
+      submitProcessing(caseItem.id, null, '', null, true);
+      return;
+    }
+
     if (stageNum === 4) {
       setRejectionModal({ caseItem, stage: 4 });
       return;
@@ -66,18 +80,26 @@ const AdminCaseProcessing = () => {
     submitProcessing(caseItem.id, stageNum);
   };
 
-  const submitProcessing = async (caseId, stage, rejectionReason = '', approvedBenefits = null) => {
+  const submitProcessing = async (
+    caseId,
+    stage,
+    rejectionReason = '',
+    approvedBenefits = null,
+    clearStage = false
+  ) => {
     setUpdatingId(caseId);
-    setUpdatingStage(stage);
+    setUpdatingStage(clearStage ? 'clear' : stage);
     setSuccessMessage('');
     try {
-      await axios.patch(`/admin/cases/${caseId}/processing`, {
-        stage,
+      const res = await axios.patch(`/admin/cases/${caseId}/processing`, {
+        ...(clearStage ? { clearStage: true, stage: null } : { stage }),
         ...(rejectionReason ? { rejectionReason } : {}),
         ...(approvedBenefits && typeof approvedBenefits === 'object' ? { approvedBenefits } : {}),
       });
       await fetchCases();
-      setSuccessMessage('סטטוס העיבוד עודכן בהצלחה.');
+      setSuccessMessage(
+        res.data?.cleared ? 'שלב העיבוד בוטל.' : 'סטטוס העיבוד עודכן בהצלחה.'
+      );
       setTimeout(() => setSuccessMessage(''), 4000);
     } catch (err) {
       const msg = err.response?.data?.error || 'שגיאה בעדכון הסטטוס';
@@ -125,7 +147,9 @@ const AdminCaseProcessing = () => {
     <div className="admin-case-processing-container">
       <div className="admin-case-processing-header">
         <h1>עובדים לך על הכייס</h1>
-        <p className="admin-case-processing-sub">עדכון שלבי עיבוד לכל תיק. הלקוח רואה סטטוס בהתאם לשלב שנבחר.</p>
+        <p className="admin-case-processing-sub">
+          עדכון שלבי עיבוד לכל תיק. לחיצה שנייה על שלב פעיל מבטלת אותו (בלי שליחת מייל).
+        </p>
         <button
           type="button"
           className="admin-case-processing-back"
@@ -177,9 +201,10 @@ const AdminCaseProcessing = () => {
                   <td>
                     <div className="admin-processing-buttons">
                       {STAGES.map(({ stage, label, isRejection, isApproval }) => {
-                        const cur = (caseItem.detailedAdminStatus || '').trim();
-                        const isActive =
-                          cur === label || (stage === 1 && cur === LEGACY_HE_STAGE1);
+                        const isActive = isStageActive(caseItem, stage, label);
+                        const busy =
+                          updatingId === caseItem.id &&
+                          (updatingStage === stage || (updatingStage === 'clear' && isActive));
                         return (
                           <button
                             key={stage}
@@ -187,9 +212,9 @@ const AdminCaseProcessing = () => {
                             className={`admin-processing-stage-btn ${isActive ? 'active-stage' : ''} ${isRejection ? 'stage-rejection' : ''} ${isApproval ? 'stage-approval' : ''}`}
                             onClick={() => handleStageClick(caseItem, stage)}
                             disabled={updatingId === caseItem.id}
-                            title={label}
+                            title={isActive ? `${label} (לחיצה לביטול)` : label}
                           >
-                            {updatingId === caseItem.id && updatingStage === stage ? '...' : label}
+                            {busy ? '...' : label}
                           </button>
                         );
                       })}

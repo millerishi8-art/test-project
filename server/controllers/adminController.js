@@ -522,23 +522,60 @@ async function notifyStaffOnCaseStageChange({ stageNum, stageLabel, caseInfo }) 
 
 /**
  * מנהל מעדכן שלב עיבוד תיק (עמוד "עובדים לך על הכייס")
- * Body: { stage: 1|2|3|4|5, rejectionReason?: string, approvedBenefits?: Object }
- * ב-stage 4 חובה rejectionReason. ב-stage 5 מומלץ approvedBenefits (מוצג ללקוח בשלב 3).
- * בכל מעבר שלב נשלחים מייל ו-WhatsApp אישיים לכל העובדים (מנהלי משנה).
+ * Body: { stage: 1|2|3|4|5 | null, clearStage?: boolean, rejectionReason?, approvedBenefits? }
+ * לחיצה שנייה על אותו שלב / clearStage:true – מבטל את השלב לגמרי (בלי מייל).
+ * בכל מעבר לשלב חדש נשלחים מייל ו-WhatsApp לעובדים.
  */
 export const updateCaseProcessing = async (req, res) => {
   try {
     const { id } = req.params;
-    const { stage, rejectionReason, approvedBenefits: approvedBenefitsRaw } = req.body;
-    const stageNum = typeof stage === 'string' ? parseInt(stage, 10) : stage;
-    if (!Number.isInteger(stageNum) || stageNum < 1 || stageNum > 5) {
-      return res.status(400).json({ error: 'סטטוס לא תקין. שלב חייב להיות 1–5.' });
-    }
+    const {
+      stage,
+      clearStage,
+      rejectionReason,
+      approvedBenefits: approvedBenefitsRaw,
+    } = req.body || {};
     const caseData = await findCaseById(id);
     if (!caseData) {
       return res.status(404).json({ error: 'תיק לא נמצא' });
     }
+
     const prevStage = previousProcessingStageNumber(caseData);
+    const wantsClear =
+      clearStage === true ||
+      stage === null ||
+      stage === '' ||
+      stage === 0 ||
+      stage === '0' ||
+      String(stage || '').toLowerCase() === 'clear';
+
+    /* ביטול שלב פעיל – ללא שליחת מייל/התראה */
+    if (wantsClear) {
+      const updated = await updateCase(id, {
+        detailedAdminStatus: null,
+        rejectionReason: null,
+        approvedBenefits: null,
+        status: CASE_STATUS.PENDING,
+      });
+      return res.json({ message: 'שלב העיבוד בוטל', case: updated, cleared: true });
+    }
+
+    const stageNum = typeof stage === 'string' ? parseInt(stage, 10) : stage;
+    if (!Number.isInteger(stageNum) || stageNum < 1 || stageNum > 5) {
+      return res.status(400).json({ error: 'סטטוס לא תקין. שלב חייב להיות 1–5.' });
+    }
+
+    /* לחיצה שנייה על אותו שלב פעיל – ביטול מלא בלי מייל */
+    if (stageNum === prevStage) {
+      const updated = await updateCase(id, {
+        detailedAdminStatus: null,
+        rejectionReason: null,
+        approvedBenefits: null,
+        status: CASE_STATUS.PENDING,
+      });
+      return res.json({ message: 'שלב העיבוד בוטל', case: updated, cleared: true });
+    }
+
     const detailedAdminStatus = PROCESSING_STAGES[stageNum];
     const updates = { detailedAdminStatus };
     if (stageNum === 4) {
@@ -564,30 +601,28 @@ export const updateCaseProcessing = async (req, res) => {
       }
     } else {
       updates.status = CASE_STATUS.PENDING;
-      if (stageNum !== 4) updates.rejectionReason = null;
+      updates.rejectionReason = null;
       updates.approvedBenefits = null;
     }
     const updated = await updateCase(id, updates);
 
-    /* התראות רק כשעוברים לשלב חדש (לא בלחיצה חוזרת על אותו שלב) */
-    if (stageNum !== prevStage) {
-      try {
-        const user = caseData.userId ? await findUserById(caseData.userId) : null;
-        const caseInfo = {
-          caseId: id,
-          clientName: user?.name || caseData.personalDetails?.fullName || '',
-          clientEmail: user?.email || '',
-          clientPhone: user?.phone || caseData.personalDetails?.phone || '',
-          benefitType: benefitTypeLabelHe(caseData.benefitType),
-        };
-        await notifyStaffOnCaseStageChange({
-          stageNum,
-          stageLabel: detailedAdminStatus,
-          caseInfo,
-        });
-      } catch (notifyErr) {
-        console.error('updateCaseProcessing staff notify error:', notifyErr?.message || notifyErr);
-      }
+    /* התראות רק במעבר לשלב חדש (לא בביטול) */
+    try {
+      const user = caseData.userId ? await findUserById(caseData.userId) : null;
+      const caseInfo = {
+        caseId: id,
+        clientName: user?.name || caseData.personalDetails?.fullName || '',
+        clientEmail: user?.email || '',
+        clientPhone: user?.phone || caseData.personalDetails?.phone || '',
+        benefitType: benefitTypeLabelHe(caseData.benefitType),
+      };
+      await notifyStaffOnCaseStageChange({
+        stageNum,
+        stageLabel: detailedAdminStatus,
+        caseInfo,
+      });
+    } catch (notifyErr) {
+      console.error('updateCaseProcessing staff notify error:', notifyErr?.message || notifyErr);
     }
 
     return res.json({ message: 'סטטוס העיבוד עודכן', case: updated });

@@ -53,6 +53,22 @@
   cursor: not-allowed;
 }
 
+.emp-cases-reset-btn--per-manager {
+  padding: 0.35rem 0.7rem;
+  min-height: 36px;
+  font-size: 0.78rem;
+  border-radius: 8px;
+  box-shadow: none;
+  width: 100%;
+  margin-top: 0.15rem;
+}
+
+.emp-meta-chip--paid {
+  background: #e8f5e9;
+  color: #2e7d32;
+  border-color: #a5d6a7;
+}
+
 .emp-cases-error {
   background: #ffebee;
   color: #c62828;
@@ -123,6 +139,8 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
+  align-items: center;
+  max-width: 100%;
 }
 
 .emp-meta-chip {

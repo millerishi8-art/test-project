@@ -6,9 +6,12 @@ import './AdminPanel.css';
 import './AdminEmployeeCases.css';
 
 const CATEGORIES = [
+  { value: 'תשלום על פתיחת כייס', label: 'תשלום על פתיחת כייס' },
   { value: 'ראיונות', label: 'ראיונות' },
   { value: 'הגשת טפסים', label: 'הגשת טפסים' },
 ];
+
+const DEFAULT_CATEGORY = CATEGORIES[0].value;
 
 const AdminEmployeeCases = () => {
   const { user: sessionUser } = useAuth();
@@ -21,11 +24,11 @@ const AdminEmployeeCases = () => {
   const [loadError, setLoadError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
   const [busyId, setBusyId] = useState(null);
-  const [resetting, setResetting] = useState(false);
+  const [resettingManagerId, setResettingManagerId] = useState(null);
 
   const [showModal, setShowModal] = useState(false);
-  const [caseNumber, setCaseNumber] = useState('');
-  const [category, setCategory] = useState('ראיונות');
+  const [ownerName, setOwnerName] = useState('');
+  const [category, setCategory] = useState(DEFAULT_CATEGORY);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
 
@@ -64,8 +67,8 @@ const AdminEmployeeCases = () => {
   };
 
   const openModal = () => {
-    setCaseNumber('');
-    setCategory('ראיונות');
+    setOwnerName('');
+    setCategory(DEFAULT_CATEGORY);
     setFormError('');
     setShowModal(true);
   };
@@ -73,15 +76,15 @@ const AdminEmployeeCases = () => {
   const handleCreate = async (e) => {
     e.preventDefault();
     if (submitting) return;
-    const trimmed = caseNumber.trim();
+    const trimmed = ownerName.trim();
     if (!trimmed) {
-      setFormError('חובה להזין מספר כייס');
+      setFormError('חובה להזין שם בעל הכייס');
       return;
     }
     setSubmitting(true);
     setFormError('');
     try {
-      await axios.post('/admin/employee-cases', { caseNumber: trimmed, category });
+      await axios.post('/admin/employee-cases', { ownerName: trimmed, caseNumber: trimmed, category });
       setShowModal(false);
       await fetchData();
       flashSuccess('הכייס נרשם בהצלחה');
@@ -96,8 +99,8 @@ const AdminEmployeeCases = () => {
     if (!isPrimaryAdmin || busyId) return;
     const nextPaid = !caseItem.isPaid;
     const confirmText = nextPaid
-      ? `לסמן את כייס ${caseItem.caseNumber} כשולם?`
-      : `לבטל סימון תשלום עבור כייס ${caseItem.caseNumber}?`;
+      ? `לסמן כשולם את הכייס של ${caseItem.caseNumber}?`
+      : `לבטל סימון תשלום עבור הכייס של ${caseItem.caseNumber}?`;
     if (!window.confirm(confirmText)) return;
 
     setBusyId(caseItem.id);
@@ -112,28 +115,33 @@ const AdminEmployeeCases = () => {
     }
   };
 
-  const handleResetPaid = async () => {
-    if (!isPrimaryAdmin || resetting) return;
-    const count = totals.paidPendingArchive || 0;
-    if (count === 0) {
-      alert('אין כייסים ששולמו לאיפוס');
+  const handleResetPaidForManager = async (manager) => {
+    if (!isPrimaryAdmin || resettingManagerId) return;
+    const managerKey = manager.id || manager.email;
+    const paidCount = manager.paidCount || manager.cases.filter((c) => c.isPaid).length;
+    if (paidCount === 0) {
+      alert(`אין כייסים ששולמו לאיפוס עבור ${manager.name || manager.email}`);
+      return;
+    }
+    if (!manager.id) {
+      alert('לא נמצא מזהה מנהל לאיפוס');
       return;
     }
     const ok = window.confirm(
-      `לאפס/לארכב ${count} כייסים שסומנו כשולמו?\n\n` +
-        'הם יוסרו מהרשימה הפעילה ויינעלו לצמיתות – לא ניתן יהיה לשנות או למחוק אותם.'
+      `לאפס/לארכב ${paidCount} כייסים ששולמו של ${manager.name || manager.email}?\n\n` +
+        'רק הכייסים של מנהל זה יוסרו מהרשימה הפעילה ויינעלו. שאר המנהלים לא יושפעו.'
     );
     if (!ok) return;
 
-    setResetting(true);
+    setResettingManagerId(managerKey);
     try {
-      const res = await axios.post('/admin/employee-cases/reset-paid');
+      const res = await axios.post('/admin/employee-cases/reset-paid', { userId: manager.id });
       await fetchData();
-      flashSuccess(res.data?.message || 'הכייסים ששולמו אופסו בהצלחה');
+      flashSuccess(res.data?.message || `הכייסים ששולמו של ${manager.name} אופסו`);
     } catch (err) {
       alert(err.response?.data?.error || 'שגיאה באיפוס הכייסים');
     } finally {
-      setResetting(false);
+      setResettingManagerId(null);
     }
   };
 
@@ -151,27 +159,17 @@ const AdminEmployeeCases = () => {
         <h1>מעקב כייסים ותשלומים</h1>
         <p className="admin-welcome">
           רישום כייסים לפי מנהל — <strong>ראיונות</strong> ו<strong>הגשת טפסים</strong>.
-          סימון תשלום ואיפוס — רק למנהל הראשי.
+          סימון תשלום ואיפוס פרטני לכל מנהל — רק למנהל הראשי.
         </p>
         {!isPrimaryAdmin && (
           <p className="admin-secondary-notice" role="status">
-            מנהל משנה: ניתן לרשום כייסים חדשים ולצפות בסטטוס. שינוי תשלום / איפוס — רק למנהל הראשי.
+            מנהל משנה: ניתן לרשום כייסים חדשים ולצפות בסטטוס. שינוי תשלום / איפוס פרטני — רק למנהל הראשי.
           </p>
         )}
         <div className="admin-header-actions">
           <button type="button" className="emp-cases-add-btn" onClick={openModal}>
             רישום כייס חדש
           </button>
-          {isPrimaryAdmin && (
-            <button
-              type="button"
-              className="emp-cases-reset-btn"
-              onClick={handleResetPaid}
-              disabled={resetting || (totals.paidPendingArchive || 0) === 0}
-            >
-              {resetting ? 'מאפס...' : 'איפוס / ארכוב כייסים ששולמו'}
-            </button>
-          )}
           <button
             type="button"
             className="admin-case-processing-btn"
@@ -231,6 +229,25 @@ const AdminEmployeeCases = () => {
                 <div className="emp-manager-meta">
                   <span className="emp-meta-chip">{manager.casesCount} כייסים</span>
                   <span className="emp-meta-chip emp-meta-chip--warn">{manager.unpaidCount} לא שולם</span>
+                  {manager.paidCount > 0 ? (
+                    <span className="emp-meta-chip emp-meta-chip--paid">{manager.paidCount} שולם</span>
+                  ) : null}
+                  {isPrimaryAdmin && (
+                    <button
+                      type="button"
+                      className="emp-cases-reset-btn emp-cases-reset-btn--per-manager"
+                      onClick={() => handleResetPaidForManager(manager)}
+                      disabled={
+                        resettingManagerId != null ||
+                        (manager.paidCount || 0) === 0
+                      }
+                      title="איפוס רק לכייסים ששולמו של מנהל זה"
+                    >
+                      {resettingManagerId === (manager.id || manager.email)
+                        ? 'מאפס...'
+                        : 'איפוס ששולמו'}
+                    </button>
+                  )}
                 </div>
               </header>
 
@@ -248,7 +265,7 @@ const AdminEmployeeCases = () => {
                           {c.initials}
                         </span>
                         <div className="emp-case-details">
-                          <div className="emp-case-number" dir="ltr">
+                          <div className="emp-case-number" title="שם בעל הכייס">
                             {c.caseNumber}
                           </div>
                           <div className="emp-case-category">{c.category}</div>
@@ -304,14 +321,13 @@ const AdminEmployeeCases = () => {
             <p className="emp-modal-sub">הכייס ישויך אליך ({sessionUser?.name || sessionUser?.email})</p>
             <form onSubmit={handleCreate}>
               <label className="emp-field">
-                <span>מספר כייס</span>
+                <span>שם בעל הכייס</span>
                 <input
                   type="text"
-                  value={caseNumber}
-                  onChange={(e) => setCaseNumber(e.target.value)}
-                  placeholder="לדוגמה: 12345"
+                  value={ownerName}
+                  onChange={(e) => setOwnerName(e.target.value)}
+                  placeholder="לדוגמה: ישראל ישראלי"
                   autoFocus
-                  dir="ltr"
                 />
               </label>
               <label className="emp-field">

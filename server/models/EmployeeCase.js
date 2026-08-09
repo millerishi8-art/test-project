@@ -4,8 +4,10 @@ import { getSupabaseAdmin } from '../db/supabaseClient.js';
 const TABLE = 'employee_cases';
 
 export const EMPLOYEE_CASE_CATEGORIES = Object.freeze({
+  OPENING_PAYMENT_HE: 'תשלום על פתיחת כייס',
   INTERVIEWS_HE: 'ראיונות',
   FORMS_HE: 'הגשת טפסים',
+  OPENING_PAYMENT_EN: 'Case Opening Payment',
   INTERVIEWS_EN: 'Interviews',
   FORMS_EN: 'Form Submissions',
 });
@@ -15,6 +17,12 @@ const ALLOWED_CATEGORIES = new Set(Object.values(EMPLOYEE_CASE_CATEGORIES));
 /** מנרמל קטגוריה לערך עברי קנוני */
 export function normalizeEmployeeCaseCategory(raw) {
   const s = String(raw || '').trim();
+  if (
+    s === EMPLOYEE_CASE_CATEGORIES.OPENING_PAYMENT_EN ||
+    s === EMPLOYEE_CASE_CATEGORIES.OPENING_PAYMENT_HE
+  ) {
+    return EMPLOYEE_CASE_CATEGORIES.OPENING_PAYMENT_HE;
+  }
   if (s === EMPLOYEE_CASE_CATEGORIES.INTERVIEWS_EN || s === EMPLOYEE_CASE_CATEGORIES.INTERVIEWS_HE) {
     return EMPLOYEE_CASE_CATEGORIES.INTERVIEWS_HE;
   }
@@ -107,17 +115,21 @@ export const updateEmployeeCasePaid = async (id, { isPaid, paidAt = null }) => {
 };
 
 /**
- * ארכוב כל הכייסים ששולמו ועדיין פעילים – אחרי זה הרשומות נעולות (is_archived).
+ * ארכוב כייסים ששולמו ועדיין פעילים – אחרי זה הרשומות נעולות (is_archived).
+ * @param {{ userId?: string }} [opts] – אם מועבר userId, מאפס רק את הכייסים של אותו מנהל.
  */
-export const archivePaidEmployeeCases = async () => {
+export const archivePaidEmployeeCases = async ({ userId } = {}) => {
   const sb = getSupabaseAdmin();
   const now = new Date().toISOString();
-  const { data, error } = await sb
+  let query = sb
     .from(TABLE)
     .update({ is_archived: true, archived_at: now })
     .eq('is_paid', true)
-    .eq('is_archived', false)
-    .select('*');
+    .eq('is_archived', false);
+  if (userId) {
+    query = query.eq('user_id', String(userId));
+  }
+  const { data, error } = await query.select('*');
   if (error) throw error;
   return (data || []).map(rowToEmployeeCase);
 };

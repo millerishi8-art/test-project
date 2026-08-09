@@ -145,8 +145,8 @@ export const listEmployeeCases = async (req, res) => {
 };
 
 /**
- * מנהל רושם כייס חדש (מספר + קטגוריה).
- * POST /admin/employee-cases  body: { caseNumber, category }
+ * מנהל רושם כייס חדש (שם בעל הכייס + קטגוריה).
+ * POST /admin/employee-cases  body: { ownerName | caseNumber, category }
  */
 export const createEmployeeCaseEntry = async (req, res) => {
   try {
@@ -155,14 +155,14 @@ export const createEmployeeCaseEntry = async (req, res) => {
       return res.status(401).json({ error: 'משתמש לא מאומת' });
     }
 
-    const caseNumber = String(req.body?.caseNumber || '').trim();
+    const caseNumber = String(req.body?.ownerName || req.body?.caseNumber || '').trim();
     const category = normalizeEmployeeCaseCategory(req.body?.category);
     if (!caseNumber) {
-      return res.status(400).json({ error: 'חובה להזין מספר כייס' });
+      return res.status(400).json({ error: 'חובה להזין שם בעל הכייס' });
     }
     if (!category) {
       return res.status(400).json({
-        error: 'קטגוריה לא תקינה. בחר: ראיונות או הגשת טפסים',
+        error: 'קטגוריה לא תקינה. בחר: תשלום על פתיחת כייס, ראיונות או הגשת טפסים',
       });
     }
 
@@ -184,7 +184,7 @@ export const createEmployeeCaseEntry = async (req, res) => {
       return res.status(400).json({ error: 'קטגוריה לא תקינה' });
     }
     if (error?.message === 'MISSING_CASE_NUMBER') {
-      return res.status(400).json({ error: 'חובה להזין מספר כייס' });
+      return res.status(400).json({ error: 'חובה להזין שם בעל הכייס' });
     }
     const msg = String(error?.message || '');
     if (msg.includes('employee_cases') || error?.code === '42P01' || error?.code === 'PGRST205') {
@@ -238,8 +238,9 @@ export const setEmployeeCasePaid = async (req, res) => {
 };
 
 /**
- * מנהל-על מאפס/מארכב את כל הכייסים שסומנו כשולמו – מוציא אותם מהרשימה הפעילה ונועל אותם.
+ * מנהל-על מאפס/מארכב כייסים ששולמו של מנהל ספציפי (לא את כולם יחד).
  * POST /admin/employee-cases/reset-paid
+ * Body: { userId: string } – מזהה המנהל (עובד) שאת כייסיו לאפס.
  */
 export const resetPaidEmployeeCases = async (req, res) => {
   try {
@@ -250,14 +251,22 @@ export const resetPaidEmployeeCases = async (req, res) => {
       });
     }
 
-    const archived = await archivePaidEmployeeCases();
+    const userId = String(req.body?.userId || '').trim();
+    if (!userId) {
+      return res.status(400).json({
+        error: 'חובה לבחור מנהל לאיפוס. שלח userId של המנהל.',
+      });
+    }
+
+    const archived = await archivePaidEmployeeCases({ userId });
     return res.json({
       message:
         archived.length === 0
-          ? 'אין כייסים ששולמו לאיפוס'
-          : `${archived.length} כייסים ששולמו הועברו לארכיון וננעלו`,
+          ? 'אין כייסים ששולמו לאיפוס עבור מנהל זה'
+          : `${archived.length} כייסים ששולמו של המנהל הועברו לארכיון וננעלו`,
       archivedCount: archived.length,
       archivedIds: archived.map((c) => c.id),
+      userId,
     });
   } catch (error) {
     console.error('resetPaidEmployeeCases error:', error);

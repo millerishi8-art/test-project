@@ -87,7 +87,14 @@ CREATE TABLE IF NOT EXISTS public.employee_cases (
   user_id UUID NOT NULL REFERENCES public.app_users (id) ON DELETE CASCADE,
   case_number TEXT NOT NULL,
   category TEXT NOT NULL
-    CHECK (category IN ('ראיונות', 'הגשת טפסים', 'Interviews', 'Form Submissions')),
+    CHECK (category IN (
+      'תשלום על פתיחת כייס',
+      'ראיונות',
+      'הגשת טפסים',
+      'Case Opening Payment',
+      'Interviews',
+      'Form Submissions'
+    )),
   is_completed BOOLEAN NOT NULL DEFAULT true,
   is_paid BOOLEAN NOT NULL DEFAULT false,
   is_archived BOOLEAN NOT NULL DEFAULT false,
