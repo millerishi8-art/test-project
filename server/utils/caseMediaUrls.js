@@ -64,5 +64,19 @@ export async function withSignedCaseMediaForAdmin(caseData, expiresSec = ADMIN_M
     );
   }
 
+  /* פרטי HRA – נתיבי storage נשארים; imageUrl/fileUrl לחתימה זמנית לתצוגה */
+  if (caseData.hraDetails && typeof caseData.hraDetails === 'object') {
+    const h = caseData.hraDetails;
+    const [imageUrl, fileUrl] = await Promise.all([
+      h.imagePath ? signMediaIfStoragePath(h.imagePath, expiresSec) : Promise.resolve(null),
+      h.filePath ? signMediaIfStoragePath(h.filePath, expiresSec) : Promise.resolve(null),
+    ]);
+    out.hraDetails = {
+      ...h,
+      imageUrl: imageUrl || null,
+      fileUrl: fileUrl || null,
+    };
+  }
+
   return out;
 }

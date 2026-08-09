@@ -2,6 +2,7 @@ import { useState, useEffect, Fragment } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext.jsx';
+import HraDetailsModal, { hasHraContent } from '../components/HraDetailsModal.jsx';
 import './AdminPanel.css';
 
 const RENEWAL_NEEDS_NOW = 'needs_renewal';
@@ -45,6 +46,7 @@ const AdminPanel = () => {
   const [statusUpdatingId, setStatusUpdatingId] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
   const [casesPanelUserId, setCasesPanelUserId] = useState(null);
+  const [hraModalCase, setHraModalCase] = useState(null);
 
   useEffect(() => {
     fetchData();
@@ -685,6 +687,20 @@ const AdminPanel = () => {
                                         >
                                           צפה בטופס
                                         </button>
+                                        <button
+                                          type="button"
+                                          className={`admin-hra-btn${hasHraContent(caseItem.hraDetails) ? ' is-filled' : ''}`}
+                                          onClick={() =>
+                                            setHraModalCase({
+                                              id: caseItem.id,
+                                              label: `${user.name || ''} · ${getBenefitTitle(caseItem.benefitType)}`,
+                                            })
+                                          }
+                                        >
+                                          {hasHraContent(caseItem.hraDetails)
+                                            ? 'פרטים מהאתר HRA לכייס'
+                                            : 'העלת פרטים לכייס'}
+                                        </button>
                                         {canDeleteCases ? (
                                           <button
                                             type="button"
@@ -767,6 +783,20 @@ const AdminPanel = () => {
                           >
                             צפה בטופס
                           </button>
+                          <button
+                            type="button"
+                            className={`admin-hra-btn${hasHraContent(caseItem.hraDetails) ? ' is-filled' : ''}`}
+                            onClick={() =>
+                              setHraModalCase({
+                                id: caseItem.id,
+                                label: `${caseItem.userName || ''} · ${getBenefitTitle(caseItem.benefitType)}`,
+                              })
+                            }
+                          >
+                            {hasHraContent(caseItem.hraDetails)
+                              ? 'פרטים מהאתר HRA לכייס'
+                              : 'העלת פרטים לכייס'}
+                          </button>
                           {canDeleteCases ? (
                             <button
                               type="button"
@@ -787,6 +817,18 @@ const AdminPanel = () => {
           </div>
         </>
       )}
+
+      {hraModalCase ? (
+        <HraDetailsModal
+          caseId={hraModalCase.id}
+          caseLabel={hraModalCase.label}
+          onClose={() => setHraModalCase(null)}
+          onSaved={async () => {
+            setSuccessMessage('פרטי HRA נשמרו לתיק');
+            await fetchData();
+          }}
+        />
+      ) : null}
 
       <div className="admin-stats">
         <div className="stat-card">

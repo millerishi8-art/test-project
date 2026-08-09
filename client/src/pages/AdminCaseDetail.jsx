@@ -359,6 +359,43 @@ const AdminCaseDetail = () => {
           </div>
         </section>
 
+        {c.hraDetails &&
+        (c.hraDetails.username ||
+          c.hraDetails.password ||
+          c.hraDetails.imageUrl ||
+          c.hraDetails.fileUrl) ? (
+          <section className="admin-case-detail-section admin-case-detail-hra">
+            <h2>פרטים מהאתר HRA לכייס</h2>
+            <div className="admin-case-detail-grid">
+              <div className="admin-case-detail-field">
+                <span className="admin-case-detail-label">שם משתמש</span>
+                <span className="admin-case-detail-value">{c.hraDetails.username || '–'}</span>
+              </div>
+              <div className="admin-case-detail-field">
+                <span className="admin-case-detail-label">סיסמה</span>
+                <span className="admin-case-detail-value">{c.hraDetails.password || '–'}</span>
+              </div>
+            </div>
+            {c.hraDetails.imageUrl ? (
+              <div className="admin-case-detail-img-wrap admin-case-detail-img-clickable" onClick={() => setEnlargedImage(c.hraDetails.imageUrl)}>
+                <img src={c.hraDetails.imageUrl} alt="תמונת HRA" className="admin-case-detail-uploaded-img" />
+              </div>
+            ) : null}
+            {c.hraDetails.fileUrl ? (
+              <div className="admin-case-detail-attachment-card" style={{ marginTop: '0.75rem' }}>
+                <a
+                  className="admin-case-detail-pdf-open-link"
+                  href={c.hraDetails.fileUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {c.hraDetails.fileName || 'קובץ HRA'} – פתח / הורד
+                </a>
+              </div>
+            ) : null}
+          </section>
+        ) : null}
+
         <section className="admin-case-detail-section">
           <h2>סיכום תיק</h2>
           <div className="admin-case-detail-grid">

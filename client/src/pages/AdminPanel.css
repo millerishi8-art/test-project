@@ -256,6 +256,39 @@
   transform: translateY(-1px);
 }
 
+.admin-hra-btn {
+  padding: 0.4rem 0.7rem;
+  min-height: calc(var(--touch-min) - 4px);
+  font-size: clamp(0.75rem, 1.8vw, 0.82rem);
+  font-weight: 700;
+  color: #0f766e;
+  background: #ecfdf5;
+  border: 2px solid #0f766e;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+  max-width: 11.5rem;
+  line-height: 1.25;
+  white-space: normal;
+}
+
+.admin-hra-btn:hover {
+  background: #0f766e;
+  color: white;
+  transform: translateY(-1px);
+}
+
+.admin-hra-btn.is-filled {
+  color: #1e3a8a;
+  background: #eef2ff;
+  border-color: #3730a3;
+}
+
+.admin-hra-btn.is-filled:hover {
+  background: #3730a3;
+  color: white;
+}
+
 .admin-table tbody tr:hover {
   background: #e3f2fd;
 }

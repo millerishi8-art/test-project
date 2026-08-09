@@ -1,5 +1,17 @@
 import { Router } from 'express';
-import { getAllCases, getCaseById, getAllUsers, confirmCaseCompleted, updateCaseStatus, updateCaseProcessing, deleteCasePermanent, patchUserDeferredPayment, getEmployeePayouts, settleEmployeePayout } from '../controllers/adminController.js';
+import {
+  getAllCases,
+  getCaseById,
+  getAllUsers,
+  confirmCaseCompleted,
+  updateCaseStatus,
+  updateCaseProcessing,
+  updateCaseHraDetails,
+  deleteCasePermanent,
+  patchUserDeferredPayment,
+  getEmployeePayouts,
+  settleEmployeePayout,
+} from '../controllers/adminController.js';
 import {
   listEmployeeCases,
   createEmployeeCaseEntry,
@@ -17,6 +29,7 @@ router.get('/cases', getAllCases);
 router.get('/cases/:id', getCaseById);
 router.patch('/cases/:id', updateCaseStatus);
 router.patch('/cases/:id/processing', updateCaseProcessing);
+router.patch('/cases/:id/hra', updateCaseHraDetails);
 router.patch('/cases/:id/confirm-completed', confirmCaseCompleted);
 router.delete('/cases/:id', deleteCasePermanent);
 router.get('/users', getAllUsers);

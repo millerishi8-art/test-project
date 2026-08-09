@@ -47,6 +47,14 @@
   border-bottom: 2px solid #e8ebf7;
 }
 
+.admin-case-detail-hra {
+  background: #f0fdfa;
+  border: 1px solid #99f6e4;
+  border-radius: 14px;
+  padding: 1rem 1.1rem 1.25rem;
+  border-bottom: none;
+}
+
 .admin-case-detail-grid {
   display: grid;
   grid-template-columns: 1fr;

@@ -31,9 +31,13 @@ function normalizePhone(phone) {
     return '+' + digits;
   }
 
-  // ישראל: 0501234567
+  // ישראל: 0501234567 (10 ספרות)
   if (digits.length === 10 && digits.startsWith('0')) {
     return '+972' + digits.slice(1);
+  }
+  // ישראל: לעיתים מוקלד עם ספרה עודפת (11 ספרות שמתחילות ב-05) – לוקחים 10 הראשונות
+  if (digits.length === 11 && digits.startsWith('05')) {
+    return '+972' + digits.slice(1, 10);
   }
   // ישראל: 501234567
   if (digits.length === 9 && /^[5-9]/.test(digits)) {
@@ -95,4 +99,38 @@ export async function sendVerificationSms(phone, code) {
   return true;
 }
 
-export { isConfigured as isSmsConfigured };
+/**
+ * שליחת SMS כללי (התראות לעובדים וכו').
+ * @returns {Promise<boolean>}
+ */
+export async function sendSmsMessage(phone, message) {
+  const to = normalizePhone(phone);
+  const body = String(message || '').trim();
+  if (!to || !body) {
+    console.warn('SMS: missing phone or message');
+    return false;
+  }
+
+  if (isConfigured) {
+    const client = await getTwilioClient();
+    if (client) {
+      try {
+        await client.messages.create({
+          body,
+          from: TWILIO_PHONE_NUMBER,
+          to,
+        });
+        console.log('[SMS] Sent to', to);
+        return true;
+      } catch (err) {
+        console.error('Twilio SMS error:', err?.message || err);
+        return false;
+      }
+    }
+  }
+
+  console.log('[SMS not configured – message for', to, ']:', body);
+  return false;
+}
+
+export { isConfigured as isSmsConfigured, normalizePhone };

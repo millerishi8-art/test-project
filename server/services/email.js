@@ -551,7 +551,10 @@ export async function sendDeferredPaymentDueDateFinalWarningEmail(to, name, dead
   }
 }
 
-async function sendStaffCaseStageEmail(toList, { subject, title, bodyHtml, bodyText, caseInfo }) {
+/**
+ * שולח מייל נפרד לכל נמען (הודעה אישית) – לא בקבוצה אחת.
+ */
+async function sendStaffCaseStageEmail(toList, { subject, title, bodyHtml, bodyText, caseInfo, actionNote }) {
   const config = getConfig();
   if (!config.isConfigured) {
     console.warn('[Email] Not configured. Cannot send case-stage staff email.');
@@ -575,6 +578,7 @@ async function sendStaffCaseStageEmail(toList, { subject, title, bodyHtml, bodyT
   const caseId = (caseInfo?.caseId || '').trim() || '—';
   const benefitType = (caseInfo?.benefitType || '').trim() || '—';
   const panelUrl = `${config.APP_BASE_URL.replace(/\/+$/, '')}/admin/case-processing`;
+  const note = String(actionNote || '').trim();
 
   const detailsHtml = `
     <ul style="padding-right: 20px;">
@@ -585,32 +589,39 @@ async function sendStaffCaseStageEmail(toList, { subject, title, bodyHtml, bodyT
       <li><strong>מזהה תיק:</strong> ${caseId}</li>
     </ul>
   `;
+  const actionHtml = note
+    ? `<p style="background:#e3f2fd;padding:10px 12px;border-radius:8px;"><strong>פעולה עבורך:</strong> ${note}</p>`
+    : '';
   const html = `
     <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 560px;">
       <h2>${title}</h2>
       ${bodyHtml}
+      ${actionHtml}
       ${detailsHtml}
       <p><a href="${panelUrl}" style="display:inline-block;padding:10px 16px;background:#1e6bb8;color:#fff;text-decoration:none;border-radius:8px;font-weight:700;">לפאנל עיבוד תיקים</a></p>
       <hr style="border: none; border-top: 1px solid #eee;" />
-      <p style="color: #888; font-size: 12px;">סוכן ביטוח – הודעה אוטומטית</p>
+      <p style="color: #888; font-size: 12px;">סוכן ביטוח – הודעה אוטומטית אישית</p>
     </div>
   `;
-  const text = `${title}\n\n${bodyText}\n\nשם: ${clientName}\nאימייל: ${clientEmail}\nטלפון: ${clientPhone}\nסוג: ${benefitType}\nמזהה: ${caseId}\n\n${panelUrl}`;
+  const text = `${title}\n\n${bodyText}\n${note ? `\nפעולה עבורך: ${note}\n` : ''}\nשם: ${clientName}\nאימייל: ${clientEmail}\nטלפון: ${clientPhone}\nסוג: ${benefitType}\nמזהה: ${caseId}\n\n${panelUrl}`;
 
-  try {
-    await transport.sendMail({
-      from: fromAddress,
-      to: recipients.join(', '),
-      subject,
-      text,
-      html,
-    });
-    console.log('[Email] Case-stage staff email sent to', recipients.join(', '));
-    return true;
-  } catch (err) {
-    console.error('[Email] Case-stage staff email failed:', err?.message || err);
-    return false;
+  let anyOk = false;
+  for (const to of recipients) {
+    try {
+      await transport.sendMail({
+        from: fromAddress,
+        to,
+        subject,
+        text,
+        html,
+      });
+      console.log('[Email] Case-stage staff email sent to', to);
+      anyOk = true;
+    } catch (err) {
+      console.error('[Email] Case-stage staff email failed for', to, err?.message || err);
+    }
   }
+  return anyOk;
 }
 
 /**
@@ -623,6 +634,7 @@ export async function sendAwaitingInterviewEmail(toList, caseInfo) {
     bodyHtml:
       '<p>התיק התקדם לשלב <strong>מחכה לראיון אישי</strong>.</p><p>נא לתאם ולבצע ראיון אישי עם הלקוח.</p>',
     bodyText: 'התיק ממתין לראיון אישי. נא לתאם ולבצע ראיון עם הלקוח.',
+    actionNote: 'נא לתאם ולבצע ראיון אישי עם הלקוח.',
     caseInfo,
   });
 }
@@ -637,6 +649,22 @@ export async function sendAwaitingFormsEmail(toList, caseInfo) {
     bodyHtml:
       '<p>עודכן שבוצע <strong>ראיון אישי</strong>.</p><p>התיק ממתין כעת ל<strong>הגשת טפסים</strong> – נא להשלים את מילוי והגשת הטפסים מול הלקוח.</p>',
     bodyText: 'נעשה ראיון. התיק ממתין להגשת טפסים – נא להשלים מילוי והגשה מול הלקוח.',
+    actionNote: 'נא להשלים מילוי והגשת טפסים מול הלקוח.',
+    caseInfo,
+  });
+}
+
+/**
+ * עדכון סטטוס כללי לכל עובד (כל שלב) – מייל אישי לכל נמען.
+ */
+export async function sendCaseStageUpdateEmail(toList, caseInfo, { stageNum, stageLabel, actionNote }) {
+  const label = String(stageLabel || '').trim() || `שלב ${stageNum}`;
+  return sendStaffCaseStageEmail(toList, {
+    subject: `עדכון סטטוס תיק – ${label}`,
+    title: 'עדכון סטטוס תיק',
+    bodyHtml: `<p>התיק עבר לשלב: <strong>${label}</strong>.</p>`,
+    bodyText: `התיק עבר לשלב: ${label}.`,
+    actionNote,
     caseInfo,
   });
 }

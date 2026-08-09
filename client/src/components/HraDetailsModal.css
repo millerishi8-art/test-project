@@ -1,0 +1,241 @@
+.hra-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.hra-modal {
+  width: min(640px, 100%);
+  max-height: min(90vh, 900px);
+  overflow: auto;
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 18px 50px rgba(15, 23, 42, 0.22);
+  display: flex;
+  flex-direction: column;
+}
+
+.hra-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1.1rem 1.25rem 0.75rem;
+  border-bottom: 1px solid #e8eef5;
+}
+
+.hra-modal-header h2 {
+  margin: 0;
+  font-size: 1.2rem;
+  color: #0f3d6e;
+}
+
+.hra-modal-sub {
+  margin: 0.25rem 0 0;
+  color: #64748b;
+  font-size: 0.9rem;
+}
+
+.hra-modal-close {
+  border: none;
+  background: #f1f5f9;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  font-size: 1.4rem;
+  line-height: 1;
+  cursor: pointer;
+  color: #334155;
+}
+
+.hra-modal-body {
+  padding: 1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.hra-modal-status,
+.hra-empty {
+  color: #64748b;
+  margin: 0.5rem 0;
+}
+
+.hra-modal-error {
+  margin: 0;
+  padding: 0.7rem 0.85rem;
+  background: #fee2e2;
+  color: #b91c1c;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+.hra-section {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 0.95rem 1rem;
+}
+
+.hra-section h3 {
+  margin: 0 0 0.35rem;
+  font-size: 1rem;
+  color: #0f172a;
+}
+
+.hra-hint {
+  margin: 0 0 0.75rem;
+  color: #64748b;
+  font-size: 0.88rem;
+}
+
+.hra-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 0.75rem;
+  font-weight: 600;
+  color: #334155;
+  font-size: 0.9rem;
+}
+
+.hra-field input {
+  border: 1.5px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 0.65rem 0.8rem;
+  font-size: 1rem;
+  font-weight: 500;
+}
+
+.hra-password-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.hra-password-row input {
+  flex: 1;
+}
+
+.hra-upload-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.hra-file-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0.45rem 0.9rem;
+  border-radius: 10px;
+  background: #e3f2fd;
+  color: #1e6bb8;
+  border: 2px solid #1e6bb8;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.hra-text-btn {
+  border: none;
+  background: transparent;
+  color: #1e6bb8;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 0.35rem 0.5rem;
+}
+
+.hra-text-btn.danger {
+  color: #b91c1c;
+}
+
+.hra-image-preview {
+  border-radius: 12px;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+}
+
+.hra-image-preview img {
+  display: block;
+  width: 100%;
+  max-height: 320px;
+  object-fit: contain;
+  background: #fff;
+}
+
+.hra-file-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 0.85rem;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+}
+
+.hra-file-card a {
+  color: #1e6bb8;
+  font-weight: 700;
+  width: fit-content;
+}
+
+.hra-file-frame {
+  width: 100%;
+  height: 280px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.hra-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  padding: 0.9rem 1.25rem 1.15rem;
+  border-top: 1px solid #e8eef5;
+}
+
+.hra-btn {
+  min-height: 42px;
+  padding: 0.5rem 1.1rem;
+  border-radius: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 2px solid transparent;
+}
+
+.hra-btn.secondary {
+  background: #f1f5f9;
+  color: #334155;
+  border-color: #cbd5e1;
+}
+
+.hra-btn.primary {
+  background: #1e6bb8;
+  color: #fff;
+  border-color: #1e6bb8;
+}
+
+.hra-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+@media (max-width: 560px) {
+  .hra-modal-overlay {
+    padding: 0.5rem;
+  }
+
+  .hra-modal-header h2 {
+    font-size: 1.05rem;
+  }
+}

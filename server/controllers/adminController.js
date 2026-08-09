@@ -1,15 +1,19 @@
-import { readUsers, findUserById, updateUserById, deleteUserById } from '../models/User.js';
+import { readUsers, findUserById, findUserByEmail, updateUserById, deleteUserById } from '../models/User.js';
 import { readCases, findCaseById, findCasesByUserId, updateCase, deleteCase, deleteCasesByIds } from '../models/Case.js';
 import { readPayouts, createPayout } from '../models/Payout.js';
 import { DEFAULT_UNKNOWN, CASE_STATUS } from '../components/constants.js';
-import { isAnyAdminPanelEmail, isSuperAdminEmail } from '../utils/adminEmails.js';
+import {
+  isAnyAdminPanelEmail,
+  isSuperAdminEmail,
+  getSecondaryAdminEmails,
+} from '../utils/adminEmails.js';
 import {
   sendDeferredPaymentApprovedToClient,
   sendDeferredPaymentRequestApprovedAwaitingDate,
   sendDeferredPaymentRequireEarlierDateEmail,
-  sendAwaitingInterviewEmail,
-  sendAwaitingFormsEmail,
+  sendCaseStageUpdateEmail,
 } from '../services/email.js';
+import { sendWhatsAppMessage } from '../services/whatsapp.js';
 import {
   parseYyyyMmDd,
   utcTodayYyyyMmDd,
@@ -275,6 +279,72 @@ export const patchUserDeferredPayment = async (req, res) => {
 
 const ALLOWED_STATUSES = [CASE_STATUS.SUBMITTED, CASE_STATUS.PENDING, CASE_STATUS.APPROVED, CASE_STATUS.REJECTED, 'closed'];
 
+function isStoragePath(val) {
+  const s = String(val || '').trim();
+  if (!s) return false;
+  if (/^https?:\/\//i.test(s) || /^data:/i.test(s)) return false;
+  return true;
+}
+
+/**
+ * מנהל שומר פרטי HRA לתיק: תמונה אחת, קובץ אחד, שם משתמש וסיסמה.
+ * Body: { username?, password?, imagePath?, filePath?, fileName?, clearImage?, clearFile? }
+ */
+export const updateCaseHraDetails = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const caseData = await findCaseById(id);
+    if (!caseData) {
+      return res.status(404).json({ error: 'תיק לא נמצא' });
+    }
+
+    const prev =
+      caseData.hraDetails && typeof caseData.hraDetails === 'object' ? caseData.hraDetails : {};
+    const {
+      username,
+      password,
+      imagePath,
+      filePath,
+      fileName,
+      clearImage,
+      clearFile,
+    } = req.body || {};
+
+    const next = {
+      username: username != null ? String(username).trim() : String(prev.username || ''),
+      password: password != null ? String(password) : String(prev.password || ''),
+      imagePath: prev.imagePath || null,
+      filePath: prev.filePath || null,
+      fileName: prev.fileName || null,
+      updatedAt: new Date().toISOString(),
+      updatedBy: (req.user?.email || '').trim().toLowerCase(),
+    };
+
+    if (clearImage === true) {
+      next.imagePath = null;
+    } else if (isStoragePath(imagePath)) {
+      next.imagePath = String(imagePath).trim();
+    }
+
+    if (clearFile === true) {
+      next.filePath = null;
+      next.fileName = null;
+    } else if (isStoragePath(filePath)) {
+      next.filePath = String(filePath).trim();
+      if (fileName != null) next.fileName = String(fileName).trim().slice(0, 180) || null;
+    } else if (fileName != null && next.filePath) {
+      next.fileName = String(fileName).trim().slice(0, 180) || next.fileName;
+    }
+
+    const updated = await updateCase(id, { hraDetails: next });
+    const withUrls = await withSignedCaseMediaForAdmin(updated);
+    return res.json({ message: 'פרטי HRA נשמרו', case: withUrls });
+  } catch (error) {
+    console.error('updateCaseHraDetails error:', error);
+    return res.status(500).json({ error: 'שגיאה בשמירת פרטי HRA' });
+  }
+};
+
 /**
  * מנהל מעדכן סטטוס תיק (נשלח / בתהליך / אושר מחכים לממשלה)
  */
@@ -342,6 +412,13 @@ const INTERVIEW_STAFF_EMAILS = ['lapidwoldenberg@gmail.com', 'abergelyuda7@gmail
 /** מנהל טפסים – מקבל מייל אחרי שנעשה ראיון ומחכים להגשת טפסים */
 const FORMS_STAFF_EMAILS = ['shneortole257@gmail.com'];
 
+/** טלפונים ישראליים של העובדים להתראות SMS (ניתן לדרוס ב-STAFF_PHONE_OVERRIDES) */
+const DEFAULT_STAFF_PHONES = {
+  'abergelyuda7@gmail.com': '0515770516', // יהודה אברגל
+  'lapidwoldenberg@gmail.com': '0545882718', // לפיד וולדנברג
+  'shneortole257@gmail.com': '0586770584', // שניאור טולדנו
+};
+
 /** ניסוח ישן לפני תיקון (נפתח → נפתחה) – עדיין קיים בתיקים ישנים */
 const LEGACY_STAGE1_LABEL = 'נפתח הבקשה באתר מחכה לראיון אישי';
 
@@ -371,10 +448,83 @@ function benefitTypeLabelHe(type) {
 }
 
 /**
+ * טלפון לעובד: STAFF_PHONE_OVERRIDES → ברירת מחדל בקוד → פרופיל משתמש.
+ * STAFF_PHONE_OVERRIDES=email:+9725...,email2:05...
+ */
+function getStaffPhoneOverrides() {
+  const map = new Map(Object.entries(DEFAULT_STAFF_PHONES));
+  const raw = process.env.STAFF_PHONE_OVERRIDES || '';
+  for (const part of String(raw).split(',')) {
+    const idx = part.indexOf(':');
+    if (idx <= 0) continue;
+    const email = part.slice(0, idx).trim().toLowerCase();
+    const phone = part.slice(idx + 1).trim();
+    if (email && phone) map.set(email, phone);
+  }
+  return map;
+}
+
+function staffActionNoteFor(stageNum, email) {
+  const e = String(email || '').trim().toLowerCase();
+  if (stageNum === 1 && INTERVIEW_STAFF_EMAILS.includes(e)) {
+    return 'נא לתאם ולבצע ראיון אישי עם הלקוח.';
+  }
+  if (stageNum === 2 && FORMS_STAFF_EMAILS.includes(e)) {
+    return 'נא להשלים מילוי והגשת טפסים מול הלקוח.';
+  }
+  return '';
+}
+
+/**
+ * מייל + WhatsApp אישי לכל עובד במעבר שלב.
+ */
+async function notifyStaffOnCaseStageChange({ stageNum, stageLabel, caseInfo }) {
+  const staffEmails = getSecondaryAdminEmails();
+  if (staffEmails.length === 0) return;
+
+  const phoneOverrides = getStaffPhoneOverrides();
+  const clientName = (caseInfo.clientName || '').trim() || 'לקוח';
+  const waBase = `סוכן ביטוח: תיק של ${clientName} עבר לשלב "${stageLabel}".`;
+
+  for (const email of staffEmails) {
+    const actionNote = staffActionNoteFor(stageNum, email);
+    try {
+      await sendCaseStageUpdateEmail([email], caseInfo, {
+        stageNum,
+        stageLabel,
+        actionNote,
+      });
+    } catch (err) {
+      console.error('notifyStaff email error for', email, err?.message || err);
+    }
+
+    try {
+      let phone = phoneOverrides.get(email) || '';
+      if (!phone) {
+        const staffUser = await findUserByEmail(email);
+        phone = (staffUser?.phone || '').trim();
+      }
+      if (phone) {
+        const waBody = actionNote ? `${waBase} ${actionNote}` : waBase;
+        await sendWhatsAppMessage(phone, waBody, {
+          clientName,
+          stageLabel,
+          actionNote,
+        });
+      } else {
+        console.warn('[WhatsApp] No phone for staff', email, '– skipped');
+      }
+    } catch (err) {
+      console.error('notifyStaff WhatsApp error for', email, err?.message || err);
+    }
+  }
+}
+
+/**
  * מנהל מעדכן שלב עיבוד תיק (עמוד "עובדים לך על הכייס")
  * Body: { stage: 1|2|3|4|5, rejectionReason?: string, approvedBenefits?: Object }
  * ב-stage 4 חובה rejectionReason. ב-stage 5 מומלץ approvedBenefits (מוצג ללקוח בשלב 3).
- * מעבר לשלב 1/2 שולח מייל אוטומטי לעובדים הרלוונטיים.
+ * בכל מעבר שלב נשלחים מייל ו-WhatsApp אישיים לכל העובדים (מנהלי משנה).
  */
 export const updateCaseProcessing = async (req, res) => {
   try {
@@ -419,8 +569,8 @@ export const updateCaseProcessing = async (req, res) => {
     }
     const updated = await updateCase(id, updates);
 
-    /* מיילים רק כשעוברים לשלב חדש (לא בלחיצה חוזרת על אותו שלב) */
-    if (stageNum !== prevStage && (stageNum === 1 || stageNum === 2)) {
+    /* התראות רק כשעוברים לשלב חדש (לא בלחיצה חוזרת על אותו שלב) */
+    if (stageNum !== prevStage) {
       try {
         const user = caseData.userId ? await findUserById(caseData.userId) : null;
         const caseInfo = {
@@ -430,13 +580,13 @@ export const updateCaseProcessing = async (req, res) => {
           clientPhone: user?.phone || caseData.personalDetails?.phone || '',
           benefitType: benefitTypeLabelHe(caseData.benefitType),
         };
-        if (stageNum === 1) {
-          await sendAwaitingInterviewEmail(INTERVIEW_STAFF_EMAILS, caseInfo);
-        } else if (stageNum === 2) {
-          await sendAwaitingFormsEmail(FORMS_STAFF_EMAILS, caseInfo);
-        }
-      } catch (mailErr) {
-        console.error('updateCaseProcessing staff email error:', mailErr?.message || mailErr);
+        await notifyStaffOnCaseStageChange({
+          stageNum,
+          stageLabel: detailedAdminStatus,
+          caseInfo,
+        });
+      } catch (notifyErr) {
+        console.error('updateCaseProcessing staff notify error:', notifyErr?.message || notifyErr);
       }
     }
 
