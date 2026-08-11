@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext.jsx';
 import HraDetailsModal, { hasHraContent } from '../components/HraDetailsModal.jsx';
+import { CaseInterimNotesButton } from '../components/CaseInterimNotes.jsx';
 import './AdminPanel.css';
 
 const RENEWAL_NEEDS_NOW = 'needs_renewal';
@@ -47,6 +48,20 @@ const AdminPanel = () => {
   const [successMessage, setSuccessMessage] = useState('');
   const [casesPanelUserId, setCasesPanelUserId] = useState(null);
   const [hraModalCase, setHraModalCase] = useState(null);
+
+  const handleInterimNotesChange = (caseId, interimNotes) => {
+    setCases((prev) =>
+      prev.map((c) => (c.id === caseId ? { ...c, interimNotes } : c))
+    );
+    setUsers((prev) =>
+      prev.map((u) => ({
+        ...u,
+        cases: Array.isArray(u.cases)
+          ? u.cases.map((c) => (c.id === caseId ? { ...c, interimNotes } : c))
+          : u.cases,
+      }))
+    );
+  };
 
   useEffect(() => {
     fetchData();
@@ -687,6 +702,12 @@ const AdminPanel = () => {
                                         >
                                           צפה בטופס
                                         </button>
+                                        <CaseInterimNotesButton
+                                          caseId={caseItem.id}
+                                          caseLabel={`${user.name || ''} · ${getBenefitTitle(caseItem.benefitType)}`}
+                                          notes={caseItem.interimNotes}
+                                          onNotesChange={handleInterimNotesChange}
+                                        />
                                         <button
                                           type="button"
                                           className={`admin-hra-btn${hasHraContent(caseItem.hraDetails) ? ' is-filled' : ''}`}
@@ -783,6 +804,12 @@ const AdminPanel = () => {
                           >
                             צפה בטופס
                           </button>
+                          <CaseInterimNotesButton
+                            caseId={caseItem.id}
+                            caseLabel={`${caseItem.userName || ''} · ${getBenefitTitle(caseItem.benefitType)}`}
+                            notes={caseItem.interimNotes}
+                            onNotesChange={handleInterimNotesChange}
+                          />
                           <button
                             type="button"
                             className={`admin-hra-btn${hasHraContent(caseItem.hraDetails) ? ' is-filled' : ''}`}

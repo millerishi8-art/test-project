@@ -7,6 +7,7 @@ import {
   updateCaseStatus,
   updateCaseProcessing,
   updateCaseHraDetails,
+  addCaseInterimNote,
   deleteCasePermanent,
   patchUserDeferredPayment,
   getEmployeePayouts,
@@ -30,6 +31,7 @@ router.get('/cases/:id', getCaseById);
 router.patch('/cases/:id', updateCaseStatus);
 router.patch('/cases/:id/processing', updateCaseProcessing);
 router.patch('/cases/:id/hra', updateCaseHraDetails);
+router.post('/cases/:id/notes', addCaseInterimNote);
 router.patch('/cases/:id/confirm-completed', confirmCaseCompleted);
 router.delete('/cases/:id', deleteCasePermanent);
 router.get('/users', getAllUsers);

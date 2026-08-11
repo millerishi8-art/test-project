@@ -20,6 +20,7 @@ import {
   subtractOneDayYmd,
 } from '../utils/deferredPaymentDates.js';
 import { withSignedCaseMediaForAdmin } from '../utils/caseMediaUrls.js';
+import crypto from 'crypto';
 
 /**
  * קבלת תיק בודד לפי מזהה (מנהל בלבד) – כולל כל פרטי הטופס
@@ -342,6 +343,76 @@ export const updateCaseHraDetails = async (req, res) => {
   } catch (error) {
     console.error('updateCaseHraDetails error:', error);
     return res.status(500).json({ error: 'שגיאה בשמירת פרטי HRA' });
+  }
+};
+
+function normalizeInterimNotes(raw) {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .filter((n) => n && typeof n === 'object' && String(n.text || '').trim())
+    .map((n) => ({
+      id: String(n.id || crypto.randomUUID()),
+      text: String(n.text || '').trim(),
+      createdAt: n.createdAt || null,
+      authorName: String(n.authorName || '').trim(),
+      authorEmail: String(n.authorEmail || '').trim().toLowerCase(),
+    }));
+}
+
+/**
+ * הוספת הערת ביניים לתיק (צוות בלבד).
+ * POST /admin/cases/:id/notes  Body: { text: string }
+ */
+export const addCaseInterimNote = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const text = String(req.body?.text || '').trim();
+    if (!text) {
+      return res.status(400).json({ error: 'נא להזין טקסט להערה' });
+    }
+    if (text.length > 4000) {
+      return res.status(400).json({ error: 'ההערה ארוכה מדי (מקסימום 4000 תווים)' });
+    }
+
+    const caseData = await findCaseById(id);
+    if (!caseData) {
+      return res.status(404).json({ error: 'תיק לא נמצא' });
+    }
+
+    const authorEmail = (req.user?.email || '').trim().toLowerCase();
+    let authorName = String(req.user?.name || '').trim();
+    if (!authorName && req.user?.id) {
+      try {
+        const actor = await findUserById(req.user.id);
+        authorName = String(actor?.name || '').trim();
+      } catch {
+        /* ignore */
+      }
+    }
+    if (!authorName) authorName = authorEmail || 'מנהל';
+
+    const note = {
+      id: crypto.randomUUID(),
+      text,
+      createdAt: new Date().toISOString(),
+      authorName,
+      authorEmail,
+    };
+
+    const prev = normalizeInterimNotes(caseData.interimNotes);
+    /* הערה חדשה בראש הרשימה (האחרונה קודם) */
+    const interimNotes = [note, ...prev];
+    const updated = await updateCase(id, { interimNotes });
+
+    return res.status(201).json({
+      message: 'ההערה נוספה',
+      note,
+      interimNotes: normalizeInterimNotes(updated?.interimNotes),
+      case: updated,
+    });
+  } catch (error) {
+    console.error('addCaseInterimNote error:', error);
+    return res.status(500).json({ error: 'שגיאה בהוספת הערה' });
   }
 };
 
