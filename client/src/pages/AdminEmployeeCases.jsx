@@ -115,6 +115,14 @@ const AdminEmployeeCases = () => {
     }
   };
 
+  const hasValidManagerUserId = (manager) => {
+    const id = String(manager?.id || '').trim();
+    if (!id || manager?.userAccountMissing) return false;
+    /* מייל כ-id אינו תקף מול עמודת user_id (UUID) */
+    if (id.includes('@')) return false;
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id);
+  };
+
   const handleResetPaidForManager = async (manager) => {
     if (!isPrimaryAdmin || resettingManagerId) return;
     const managerKey = manager.id || manager.email;
@@ -123,8 +131,11 @@ const AdminEmployeeCases = () => {
       alert(`אין כייסים ששולמו לאיפוס עבור ${manager.name || manager.email}`);
       return;
     }
-    if (!manager.id) {
-      alert('לא נמצא מזהה מנהל לאיפוס');
+    if (!hasValidManagerUserId(manager)) {
+      alert(
+        `לא נמצא חשבון משתמש למנהל ${manager.name || manager.email} במערכת.\n` +
+          'יש ליצור/לקשר את המשתמש לפני איפוס כייסים.'
+      );
       return;
     }
     const ok = window.confirm(
@@ -135,7 +146,10 @@ const AdminEmployeeCases = () => {
 
     setResettingManagerId(managerKey);
     try {
-      const res = await axios.post('/admin/employee-cases/reset-paid', { userId: manager.id });
+      const res = await axios.post('/admin/employee-cases/reset-paid', {
+        userId: manager.id,
+        managerEmail: manager.email,
+      });
       await fetchData();
       flashSuccess(res.data?.message || `הכייסים ששולמו של ${manager.name} אופסו`);
     } catch (err) {
@@ -239,9 +253,14 @@ const AdminEmployeeCases = () => {
                       onClick={() => handleResetPaidForManager(manager)}
                       disabled={
                         resettingManagerId != null ||
-                        (manager.paidCount || 0) === 0
+                        (manager.paidCount || 0) === 0 ||
+                        !hasValidManagerUserId(manager)
                       }
-                      title="איפוס רק לכייסים ששולמו של מנהל זה"
+                      title={
+                        !hasValidManagerUserId(manager)
+                          ? 'חסר חשבון משתמש למנהל זה במערכת'
+                          : 'איפוס רק לכייסים ששולמו של מנהל זה'
+                      }
                     >
                       {resettingManagerId === (manager.id || manager.email)
                         ? 'מאפס...'

@@ -1,4 +1,4 @@
-import { readUsers, findUserById } from '../models/User.js';
+import { readUsers, findUserById, findUserByEmail } from '../models/User.js';
 import {
   readEmployeeCases,
   findEmployeeCaseById,
@@ -13,6 +13,13 @@ import {
   getSecondaryAdminEmails,
 } from '../utils/adminEmails.js';
 import { getInitials } from '../utils/initials.js';
+
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function looksLikeUuid(value) {
+  return UUID_RE.test(String(value || '').trim());
+}
 
 /** שמות תצוגה קבועים לעובדים (לא כולל מנהל ראשי) */
 const STAFF_DISPLAY_NAMES = {
@@ -58,12 +65,15 @@ export const listEmployeeCases = async (req, res) => {
     const managers = getSecondaryAdminEmails().map((email) => {
       const u = userByEmail.get(email);
       const name = staffDisplayName(email, u?.name || '');
+      const userId = u?.id != null ? String(u.id) : null;
       return {
-        id: u?.id || email,
+        /* לעולם לא מחזירים מייל כ-id (user_id הוא UUID) */
+        id: userId,
         name,
         email,
         initials: getInitials(name || email),
         isPrimaryAdmin: false,
+        userAccountMissing: !userId,
         cases: [],
       };
     });
@@ -72,7 +82,7 @@ export const listEmployeeCases = async (req, res) => {
     const managerByEmail = new Map();
     for (const m of managers) {
       managerByEmail.set(String(m.email).toLowerCase(), m);
-      if (m.id != null) managerByUserId.set(String(m.id), m);
+      if (m.id && looksLikeUuid(m.id)) managerByUserId.set(String(m.id), m);
     }
 
     for (const c of cases) {
@@ -240,7 +250,7 @@ export const setEmployeeCasePaid = async (req, res) => {
 /**
  * מנהל-על מאפס/מארכב כייסים ששולמו של מנהל ספציפי (לא את כולם יחד).
  * POST /admin/employee-cases/reset-paid
- * Body: { userId: string } – מזהה המנהל (עובד) שאת כייסיו לאפס.
+ * Body: { userId: UUID } או { managerEmail } – חובה משתמש קיים ב-DB.
  */
 export const resetPaidEmployeeCases = async (req, res) => {
   try {
@@ -251,10 +261,50 @@ export const resetPaidEmployeeCases = async (req, res) => {
       });
     }
 
-    const userId = String(req.body?.userId || '').trim();
-    if (!userId) {
+    let userId = String(req.body?.userId || '').trim();
+    const managerEmail = String(req.body?.managerEmail || '').trim().toLowerCase();
+
+    /* אם נשלח מייל בטעות כ-userId – מנסים לפתור למשתמש; אחרת שגיאה ברורה */
+    if (userId && !looksLikeUuid(userId)) {
+      const maybeEmail = userId.includes('@') ? userId.toLowerCase() : '';
+      const emailToResolve = managerEmail || maybeEmail;
+      if (!emailToResolve) {
+        return res.status(400).json({
+          error: 'מזהה מנהל לא תקין. נדרש userId מסוג UUID.',
+          code: 'INVALID_USER_ID',
+        });
+      }
+      const byEmail = await findUserByEmail(emailToResolve);
+      if (!byEmail?.id) {
+        return res.status(400).json({
+          error: `לא נמצא חשבון משתמש למנהל ${emailToResolve}. יש ליצור את המשתמש לפני איפוס.`,
+          code: 'MANAGER_USER_MISSING',
+        });
+      }
+      userId = String(byEmail.id);
+    } else if (!userId && managerEmail) {
+      const byEmail = await findUserByEmail(managerEmail);
+      if (!byEmail?.id) {
+        return res.status(400).json({
+          error: `לא נמצא חשבון משתמש למנהל ${managerEmail}. יש ליצור את המשתמש לפני איפוס.`,
+          code: 'MANAGER_USER_MISSING',
+        });
+      }
+      userId = String(byEmail.id);
+    }
+
+    if (!userId || !looksLikeUuid(userId)) {
       return res.status(400).json({
-        error: 'חובה לבחור מנהל לאיפוס. שלח userId של המנהל.',
+        error: 'חובה לבחור מנהל לאיפוס עם userId תקין (UUID).',
+        code: 'INVALID_USER_ID',
+      });
+    }
+
+    const managerUser = await findUserById(userId);
+    if (!managerUser) {
+      return res.status(400).json({
+        error: 'לא נמצא חשבון משתמש למנהל זה במערכת. יש ליצור/לקשר את המשתמש לפני איפוס.',
+        code: 'MANAGER_USER_MISSING',
       });
     }
 
