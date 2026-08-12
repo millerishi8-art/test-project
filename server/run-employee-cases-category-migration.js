@@ -1,5 +1,5 @@
 /**
- * מריץ את עדכון CHECK לקטגוריית "תשלום על פתיחת כייס" ב-Supabase.
+ * מריץ את עדכון CHECK לקטגוריית "פתיחת כייס" ב-Supabase.
  * דורש SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY ב-.env
  * או DATABASE_URL / SUPABASE_DB_URL לחיבור Postgres ישיר.
  *
@@ -11,7 +11,7 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const sqlPath = join(__dirname, 'db', 'employee_cases_category_opening_payment.sql');
+const sqlPath = join(__dirname, 'db', 'employee_cases_rename_opening_category.sql');
 const sql = readFileSync(sqlPath, 'utf8');
 
 async function runViaPg(connectionString) {

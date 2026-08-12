@@ -8,9 +8,11 @@ CREATE TABLE IF NOT EXISTS public.employee_cases (
   case_number TEXT NOT NULL,
   category TEXT NOT NULL
     CHECK (category IN (
+      'פתיחת כייס',
       'תשלום על פתיחת כייס',
       'ראיונות',
       'הגשת טפסים',
+      'Case Opening',
       'Case Opening Payment',
       'Interviews',
       'Form Submissions'

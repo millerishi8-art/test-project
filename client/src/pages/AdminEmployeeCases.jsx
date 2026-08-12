@@ -6,7 +6,7 @@ import './AdminPanel.css';
 import './AdminEmployeeCases.css';
 
 const CATEGORIES = [
-  { value: 'תשלום על פתיחת כייס', label: 'תשלום על פתיחת כייס' },
+  { value: 'פתיחת כייס', label: 'פתיחת כייס' },
   { value: 'ראיונות', label: 'ראיונות' },
   { value: 'הגשת טפסים', label: 'הגשת טפסים' },
 ];

@@ -4,10 +4,10 @@ import { getSupabaseAdmin } from '../db/supabaseClient.js';
 const TABLE = 'employee_cases';
 
 export const EMPLOYEE_CASE_CATEGORIES = Object.freeze({
-  OPENING_PAYMENT_HE: 'תשלום על פתיחת כייס',
+  OPENING_PAYMENT_HE: 'פתיחת כייס',
   INTERVIEWS_HE: 'ראיונות',
   FORMS_HE: 'הגשת טפסים',
-  OPENING_PAYMENT_EN: 'Case Opening Payment',
+  OPENING_PAYMENT_EN: 'Case Opening',
   INTERVIEWS_EN: 'Interviews',
   FORMS_EN: 'Form Submissions',
 });
@@ -17,7 +17,10 @@ const ALLOWED_CATEGORIES = new Set(Object.values(EMPLOYEE_CASE_CATEGORIES));
 /** מנרמל קטגוריה לערך עברי קנוני */
 export function normalizeEmployeeCaseCategory(raw) {
   const s = String(raw || '').trim();
+  /* תאימות לאחור לשם הישן */
   if (
+    s === 'תשלום על פתיחת כייס' ||
+    s === 'Case Opening Payment' ||
     s === EMPLOYEE_CASE_CATEGORIES.OPENING_PAYMENT_EN ||
     s === EMPLOYEE_CASE_CATEGORIES.OPENING_PAYMENT_HE
   ) {

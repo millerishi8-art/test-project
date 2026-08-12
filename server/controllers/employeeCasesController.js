@@ -172,7 +172,7 @@ export const createEmployeeCaseEntry = async (req, res) => {
     }
     if (!category) {
       return res.status(400).json({
-        error: 'קטגוריה לא תקינה. בחר: תשלום על פתיחת כייס, ראיונות או הגשת טפסים',
+        error: 'קטגוריה לא תקינה. בחר: פתיחת כייס, ראיונות או הגשת טפסים',
       });
     }
 

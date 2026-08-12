@@ -1,5 +1,5 @@
--- הרץ ב-Supabase → SQL Editor כדי לאפשר קטגוריה: "פתיחת כייס"
--- (גרסה ישנה יותר; להרצה עדכנית השתמש ב-employee_cases_rename_opening_category.sql)
+-- הרץ ב-Supabase → SQL Editor
+-- משנה את שם הקטגוריה מ-"תשלום על פתיחת כייס" ל-"פתיחת כייס"
 
 DO $$
 DECLARE
@@ -15,6 +15,10 @@ BEGIN
     EXECUTE format('ALTER TABLE public.employee_cases DROP CONSTRAINT %I', r.conname);
   END LOOP;
 END $$;
+
+UPDATE public.employee_cases
+SET category = 'פתיחת כייס'
+WHERE category IN ('תשלום על פתיחת כייס', 'Case Opening Payment');
 
 ALTER TABLE public.employee_cases
   ADD CONSTRAINT employee_cases_category_check
