@@ -293,6 +293,25 @@
   background: #e3f2fd;
 }
 
+/* כייס שנסגר – מסגרת אדומה כמו כפתור "הממשלה סגרה את הכייס" */
+.admin-table tbody tr.case-row-closed > td {
+  background: #fff5f5;
+  border-top: 2px solid #e57373;
+  border-bottom: 2px solid #e57373;
+}
+
+.admin-table tbody tr.case-row-closed > td:first-child {
+  border-inline-start: 3px solid #c62828;
+}
+
+.admin-table tbody tr.case-row-closed > td:last-child {
+  border-inline-end: 3px solid #c62828;
+}
+
+.admin-table tbody tr.case-row-closed:hover > td {
+  background: #ffebee;
+}
+
 .empty-state {
   text-align: center;
   color: #999;

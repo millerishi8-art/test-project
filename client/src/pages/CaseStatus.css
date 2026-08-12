@@ -94,6 +94,21 @@
   border-left: 4px solid #94a3b8;
 }
 
+.case-status-item.case-status-item--closed {
+  background: #fff5f5;
+  border-color: #e57373;
+  border-width: 2px;
+  box-shadow: 0 0 0 1px #e57373;
+}
+
+[dir="rtl"] .case-status-item.case-status-item--closed {
+  border-right: 4px solid #c62828;
+}
+
+[dir="ltr"] .case-status-item.case-status-item--closed {
+  border-left: 4px solid #c62828;
+}
+
 .case-status-item-header {
   display: flex;
   flex-wrap: wrap;

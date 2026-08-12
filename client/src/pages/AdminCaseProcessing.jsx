@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { LEGACY_HE_STAGE1 } from '../utils/caseProcessingStages';
+import { LEGACY_HE_STAGE1, isCaseClosed } from '../utils/caseProcessingStages';
 import './AdminCaseProcessing.css';
 
 const STAGES = [
@@ -187,8 +187,10 @@ const AdminCaseProcessing = () => {
               </tr>
             ) : (
               cases.map((caseItem) => (
-                <tr key={caseItem.id}>
-                  <td>{caseItem.userName}</td>
+                <tr
+                  key={caseItem.id}
+                  className={isCaseClosed(caseItem) ? 'case-row-closed' : undefined}
+                >                  <td>{caseItem.userName}</td>
                   <td>{caseItem.userEmail}</td>
                   <td>{caseItem.userPhone}</td>
                   <td>{getBenefitTitle(caseItem.benefitType)}</td>

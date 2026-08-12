@@ -38,3 +38,11 @@ export function isCaseProcessingSuccessfulEnd(c) {
   if (c.adminConfirmedCompleted) return true;
   return getProcessingStageNumber(c) === 5;
 }
+
+/** תיק שנסגר (ממשלה / דחייה / סטטוס סגור) – למסגרת אדומה בפאנל ובסטטוס לקוח */
+export function isCaseClosed(c) {
+  if (!c) return false;
+  const status = String(c.status || '').toLowerCase();
+  if (status === 'closed' || status === 'rejected') return true;
+  return getProcessingStageNumber(c) === 4;
+}

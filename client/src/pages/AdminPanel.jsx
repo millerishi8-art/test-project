@@ -4,6 +4,7 @@ import axios from 'axios';
 import { useAuth } from '../context/AuthContext.jsx';
 import HraDetailsModal, { hasHraContent } from '../components/HraDetailsModal.jsx';
 import { CaseInterimNotesButton } from '../components/CaseInterimNotes.jsx';
+import { isCaseClosed } from '../utils/caseProcessingStages';
 import './AdminPanel.css';
 
 const RENEWAL_NEEDS_NOW = 'needs_renewal';
@@ -778,8 +779,10 @@ const AdminPanel = () => {
                   </tr>
                 ) : (
                   sortedCases.map((caseItem) => (
-                    <tr key={caseItem.id}>
-                      <td>{caseItem.userName}</td>
+                    <tr
+                      key={caseItem.id}
+                      className={isCaseClosed(caseItem) ? 'case-row-closed' : undefined}
+                    >                      <td>{caseItem.userName}</td>
                       <td>{caseItem.userEmail}</td>
                       <td>{caseItem.userPhone}</td>
                       <td>{getBenefitTitle(caseItem.benefitType)}</td>
