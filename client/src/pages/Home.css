@@ -72,8 +72,7 @@
   margin-inline: auto;
 }
 
-.home-case-status-btn,
-.home-order-card-btn {
+.home-case-status-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -89,9 +88,6 @@
   cursor: pointer;
   transition: all 0.25s ease;
   box-sizing: border-box;
-}
-
-.home-case-status-btn {
   background: #1e6bb8;
   box-shadow: 0 4px 15px rgba(30, 107, 184, 0.35);
 }
@@ -102,26 +98,14 @@
   box-shadow: 0 6px 20px rgba(30, 107, 184, 0.4);
 }
 
-.home-order-card-btn {
-  background: linear-gradient(135deg, #00838f 0%, #006064 100%);
-  box-shadow: 0 4px 15px rgba(0, 96, 100, 0.3);
-}
-
-.home-order-card-btn:hover {
-  background: linear-gradient(135deg, #0097a7 0%, #00838f 100%);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(0, 96, 100, 0.4);
-}
-
 @media (min-width: 640px) {
   .home-header-actions {
     flex-direction: row;
     align-items: stretch;
-    max-width: 100%;
+    max-width: 28rem;
   }
 
-  .home-case-status-btn,
-  .home-order-card-btn {
+  .home-case-status-btn {
     min-height: 64px;
     padding: 1.25rem 1.5rem;
     font-size: 1.2rem;
@@ -177,6 +161,24 @@
 .cube-icon {
   font-size: clamp(2.5rem, 10vw, 4rem);
   margin-bottom: var(--space-4);
+}
+
+.benefit-cube-order-card::before {
+  background: linear-gradient(135deg, #00838f 0%, #006064 100%);
+}
+
+.cube-image-wrap {
+  display: flex;
+  justify-content: center;
+  margin-bottom: var(--space-4);
+}
+
+.cube-card-image {
+  width: min(100%, 220px);
+  height: auto;
+  display: block;
+  border-radius: 12px;
+  box-shadow: 0 8px 22px rgba(15, 61, 110, 0.22);
 }
 
 .benefit-cube h2 {

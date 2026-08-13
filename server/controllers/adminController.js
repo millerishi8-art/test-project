@@ -354,9 +354,27 @@ function normalizeInterimNotes(raw) {
       id: String(n.id || crypto.randomUUID()),
       text: String(n.text || '').trim(),
       createdAt: n.createdAt || null,
+      updatedAt: n.updatedAt || null,
+      editedByName: String(n.editedByName || '').trim(),
+      editedByEmail: String(n.editedByEmail || '').trim().toLowerCase(),
       authorName: String(n.authorName || '').trim(),
       authorEmail: String(n.authorEmail || '').trim().toLowerCase(),
     }));
+}
+
+async function resolveActorName(req) {
+  const authorEmail = (req.user?.email || '').trim().toLowerCase();
+  let authorName = String(req.user?.name || '').trim();
+  if (!authorName && req.user?.id) {
+    try {
+      const actor = await findUserById(req.user.id);
+      authorName = String(actor?.name || '').trim();
+    } catch {
+      /* ignore */
+    }
+  }
+  if (!authorName) authorName = authorEmail || 'מנהל';
+  return { authorEmail, authorName };
 }
 
 /**
@@ -379,22 +397,13 @@ export const addCaseInterimNote = async (req, res) => {
       return res.status(404).json({ error: 'תיק לא נמצא' });
     }
 
-    const authorEmail = (req.user?.email || '').trim().toLowerCase();
-    let authorName = String(req.user?.name || '').trim();
-    if (!authorName && req.user?.id) {
-      try {
-        const actor = await findUserById(req.user.id);
-        authorName = String(actor?.name || '').trim();
-      } catch {
-        /* ignore */
-      }
-    }
-    if (!authorName) authorName = authorEmail || 'מנהל';
+    const { authorEmail, authorName } = await resolveActorName(req);
 
     const note = {
       id: crypto.randomUUID(),
       text,
       createdAt: new Date().toISOString(),
+      updatedAt: null,
       authorName,
       authorEmail,
     };
@@ -413,6 +422,59 @@ export const addCaseInterimNote = async (req, res) => {
   } catch (error) {
     console.error('addCaseInterimNote error:', error);
     return res.status(500).json({ error: 'שגיאה בהוספת הערה' });
+  }
+};
+
+/**
+ * עריכת הערת ביניים קיימת (כל מנהל בפאנל).
+ * PATCH /admin/cases/:id/notes/:noteId  Body: { text: string }
+ */
+export const updateCaseInterimNote = async (req, res) => {
+  try {
+    const { id, noteId } = req.params;
+    const text = String(req.body?.text || '').trim();
+    if (!text) {
+      return res.status(400).json({ error: 'נא להזין טקסט להערה' });
+    }
+    if (text.length > 4000) {
+      return res.status(400).json({ error: 'ההערה ארוכה מדי (מקסימום 4000 תווים)' });
+    }
+    if (!noteId) {
+      return res.status(400).json({ error: 'חסר מזהה הערה' });
+    }
+
+    const caseData = await findCaseById(id);
+    if (!caseData) {
+      return res.status(404).json({ error: 'תיק לא נמצא' });
+    }
+
+    const prev = normalizeInterimNotes(caseData.interimNotes);
+    const idx = prev.findIndex((n) => String(n.id) === String(noteId));
+    if (idx < 0) {
+      return res.status(404).json({ error: 'הערה לא נמצאה' });
+    }
+
+    const { authorEmail, authorName } = await resolveActorName(req);
+    const existing = prev[idx];
+    const updatedNote = {
+      ...existing,
+      text,
+      updatedAt: new Date().toISOString(),
+      editedByName: authorName,
+      editedByEmail: authorEmail,
+    };
+    const interimNotes = prev.map((n, i) => (i === idx ? updatedNote : n));
+    const updated = await updateCase(id, { interimNotes });
+
+    return res.json({
+      message: 'ההערה עודכנה',
+      note: updatedNote,
+      interimNotes: normalizeInterimNotes(updated?.interimNotes),
+      case: updated,
+    });
+  } catch (error) {
+    console.error('updateCaseInterimNote error:', error);
+    return res.status(500).json({ error: 'שגיאה בעדכון ההערה' });
   }
 };
 

@@ -214,12 +214,11 @@ const OrderCard = () => {
         <button type="button" className="order-card-back" onClick={() => navigate('/dashboard')}>
           {t.backHome}
         </button>
-        <div className="order-card-price-pill" aria-hidden="true">
-          {t.priceBadge}
+        <div className="order-card-hero-image-wrap">
+          <img src="/food-stamps-card.svg" alt="" className="order-card-hero-image" />
         </div>
         <h1>{t.pageTitle}</h1>
         <p className="order-card-sub">{t.pageSubtitle}</p>
-        <p className="order-card-price-note">{t.priceNote}</p>
       </header>
 
       <form className="order-card-form" onSubmit={handleSubmit} noValidate>
@@ -361,6 +360,14 @@ const OrderCard = () => {
           <p className="order-card-docs-intro">{t.docsIntro}</p>
           {renderUpload('id_doc', t.labelIdDoc, t.idDocHint)}
           {renderUpload('ssn', t.labelSsn, t.ssnHint)}
+        </section>
+
+        <section className="order-card-section order-card-payment-section">
+          <h2>{t.sectionPayment}</h2>
+          <div className="order-card-payment-request" role="region" aria-label={t.paymentRequestTitle}>
+            <p className="order-card-payment-amount">{t.paymentRequestTitle}</p>
+            <p className="order-card-payment-body">{t.paymentRequestBody}</p>
+          </div>
           {renderUpload('payment', t.labelPayment, t.paymentHint)}
         </section>
 

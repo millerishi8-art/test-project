@@ -79,13 +79,6 @@ const Home = () => {
           >
             {t.caseStatusButton}
           </button>
-          <button
-            type="button"
-            className="home-order-card-btn"
-            onClick={() => navigate('/order-card')}
-          >
-            {t.orderCardButton}
-          </button>
         </div>
       </div>
 
@@ -136,6 +129,29 @@ const Home = () => {
           <div style={{ fontSize: '0.75rem', color: '#666', marginTop: '0.5rem', textAlign: 'center' }}>
             *   משוער ותלוי כמה שהמשרד החליט לתקצב ויכול להשתנות לפי סטטוס ההטבה
           </div>
+        </div>
+
+        <div
+          className="benefit-cube benefit-cube-order-card"
+          onClick={() => navigate('/order-card')}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              navigate('/order-card');
+            }
+          }}
+        >
+          <div className="cube-image-wrap">
+            <img
+              src="/food-stamps-card.svg"
+              alt=""
+              className="cube-card-image"
+            />
+          </div>
+          <h2>{t.orderCardTitle}</h2>
+          <p className="cube-description">{t.orderCardDesc}</p>
         </div>
 
         {isAdmin && (

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
-import { MessageSquare } from 'lucide-react';
+import { MessageSquare, Pencil } from 'lucide-react';
 import './CaseInterimNotes.css';
 
 export function normalizeInterimNotes(raw) {
@@ -81,6 +81,8 @@ export function CaseInterimNotesModal({ caseId, caseLabel, initialNotes = [], on
   const [text, setText] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [editingId, setEditingId] = useState(null);
+  const [editText, setEditText] = useState('');
 
   useEffect(() => {
     setNotes(normalizeInterimNotes(initialNotes));
@@ -91,6 +93,12 @@ export function CaseInterimNotesModal({ caseId, caseLabel, initialNotes = [], on
       [...notes].sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)),
     [notes]
   );
+
+  const applyNotes = (nextNotes) => {
+    const normalized = normalizeInterimNotes(nextNotes);
+    setNotes(normalized);
+    onNotesChange?.(caseId, normalized);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -105,11 +113,45 @@ export function CaseInterimNotesModal({ caseId, caseLabel, initialNotes = [], on
         nextNotes.length > 0
           ? nextNotes
           : [res.data?.note, ...notes].filter(Boolean);
-      setNotes(optimistic);
+      applyNotes(optimistic);
       setText('');
-      onNotesChange?.(caseId, optimistic);
     } catch (err) {
       setError(err.response?.data?.error || 'שגיאה בשמירת ההערה');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const startEdit = (note) => {
+    setEditingId(note.id);
+    setEditText(note.text || '');
+    setError('');
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditText('');
+  };
+
+  const handleSaveEdit = async (noteId) => {
+    const trimmed = editText.trim();
+    if (!trimmed || saving) return;
+    setSaving(true);
+    setError('');
+    try {
+      const res = await axios.patch(`/admin/cases/${caseId}/notes/${noteId}`, { text: trimmed });
+      const nextNotes = normalizeInterimNotes(res.data?.interimNotes);
+      if (nextNotes.length > 0) {
+        applyNotes(nextNotes);
+      } else {
+        applyNotes(
+          notes.map((n) => (n.id === noteId ? { ...n, text: trimmed, updatedAt: new Date().toISOString() } : n))
+        );
+      }
+      setEditingId(null);
+      setEditText('');
+    } catch (err) {
+      setError(err.response?.data?.error || 'שגיאה בעדכון ההערה');
     } finally {
       setSaving(false);
     }
@@ -136,9 +178,58 @@ export function CaseInterimNotesModal({ caseId, caseLabel, initialNotes = [], on
               <article key={note.id || `${note.createdAt}_${note.text}`} className="case-notes-item">
                 <div className="case-notes-item-meta">
                   <strong>{note.authorName || note.authorEmail || 'צוות'}</strong>
-                  <time dateTime={note.createdAt || undefined}>{formatNoteDate(note.createdAt)}</time>
+                  <div className="case-notes-item-meta-left">
+                    <time dateTime={note.createdAt || undefined}>{formatNoteDate(note.createdAt)}</time>
+                    {editingId !== note.id ? (
+                      <button
+                        type="button"
+                        className="case-notes-edit-btn"
+                        onClick={() => startEdit(note)}
+                        disabled={saving}
+                        aria-label="עריכת הערה"
+                        title="עריכה מחדש"
+                      >
+                        <Pencil size={15} strokeWidth={2.25} aria-hidden="true" />
+                        עריכה
+                      </button>
+                    ) : null}
+                  </div>
                 </div>
-                <p className="case-notes-item-text">{note.text}</p>
+                {editingId === note.id ? (
+                  <div className="case-notes-edit-form">
+                    <textarea
+                      value={editText}
+                      onChange={(e) => setEditText(e.target.value)}
+                      rows={3}
+                      dir="rtl"
+                      maxLength={4000}
+                      autoFocus
+                    />
+                    <div className="case-notes-actions">
+                      <button type="button" className="case-notes-btn secondary" onClick={cancelEdit} disabled={saving}>
+                        ביטול
+                      </button>
+                      <button
+                        type="button"
+                        className="case-notes-btn primary"
+                        onClick={() => handleSaveEdit(note.id)}
+                        disabled={saving || !editText.trim()}
+                      >
+                        {saving ? 'שומר...' : 'שמור שינוי'}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <p className="case-notes-item-text">{note.text}</p>
+                    {note.updatedAt ? (
+                      <p className="case-notes-edited">
+                        נערך {formatNoteDate(note.updatedAt)}
+                        {note.editedByName ? ` · ${note.editedByName}` : ''}
+                      </p>
+                    ) : null}
+                  </>
+                )}
               </article>
             ))
           )}

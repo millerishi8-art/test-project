@@ -4,7 +4,8 @@ import axios from 'axios';
 import { useAuth } from '../context/AuthContext.jsx';
 import HraDetailsModal, { hasHraContent } from '../components/HraDetailsModal.jsx';
 import { CaseInterimNotesButton } from '../components/CaseInterimNotes.jsx';
-import { isCaseClosed } from '../utils/caseProcessingStages';
+import { getCaseStageToneClass } from '../utils/caseProcessingStages';
+import '../styles/caseStageTones.css';
 import './AdminPanel.css';
 
 const RENEWAL_NEEDS_NOW = 'needs_renewal';
@@ -103,7 +104,7 @@ const AdminPanel = () => {
     const titles = {
       family: '  (כולל הורה וילדים מתחת לגיל 18) משפחה',
       individual: 'בגיר מעל 21',
-      card_order: 'הזמנת כרטיס ($150)',
+      card_order: 'הזמנת כרטיס',
       minor: 'צעיר'
     };
     return titles[type] || type;
@@ -686,7 +687,10 @@ const AdminPanel = () => {
                               </thead>
                               <tbody>
                                 {user.cases.map((caseItem) => (
-                                  <tr key={caseItem.id}>
+                                  <tr
+                                    key={caseItem.id}
+                                    className={getCaseStageToneClass(caseItem) || undefined}
+                                  >
                                     <td>{getBenefitTitle(caseItem.benefitType)}</td>
                                     <td>{formatDate(caseItem.createdAt)}</td>
                                     <td>
@@ -781,8 +785,9 @@ const AdminPanel = () => {
                   sortedCases.map((caseItem) => (
                     <tr
                       key={caseItem.id}
-                      className={isCaseClosed(caseItem) ? 'case-row-closed' : undefined}
-                    >                      <td>{caseItem.userName}</td>
+                      className={getCaseStageToneClass(caseItem) || undefined}
+                    >
+                      <td>{caseItem.userName}</td>
                       <td>{caseItem.userEmail}</td>
                       <td>{caseItem.userPhone}</td>
                       <td>{getBenefitTitle(caseItem.benefitType)}</td>

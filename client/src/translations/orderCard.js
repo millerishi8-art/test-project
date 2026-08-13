@@ -4,9 +4,7 @@
 export const orderCardTranslations = {
   he: {
     pageTitle: 'הזמנת כרטיס',
-    pageSubtitle: 'השירות מיועד להזמנת כרטיס מחדש דרך הנציגים שלנו. עלות השירות: $150.',
-    priceBadge: '$150',
-    priceNote: 'לאחר התשלום לנציגים — העלו צילום של אישור התשלום בטופס זה.',
+    pageSubtitle: 'השירות מיועד להזמנת כרטיס פוד סטאמפס מחדש דרך הנציגים שלנו.',
     backHome: 'חזרה לדף הבית',
     translateButton: 'English',
 
@@ -36,13 +34,18 @@ export const orderCardTranslations = {
     cardPhotoRequired: 'נדרש צילום של הכרטיס במצב שבחרתם',
 
     sectionDocs: 'מסמכים נדרשים',
-    docsIntro: 'יש להעלות את שלושת המסמכים הבאים. ניתן לבחור תמונה או PDF.',
+    docsIntro: 'יש להעלות את המסמכים הבאים. ניתן לבחור תמונה או PDF.',
 
     labelIdDoc: 'דרכון / תעודת זהות / רישיון נהיגה אמריקאי *',
     idDocHint: 'אחד מהשלושה — מסמך זיהוי ברור וקריא',
     labelSsn: 'צילום SSN אמריקאי *',
     ssnHint: 'חובה — כרטיס הביטוח הלאומי (Social Security)',
-    labelPayment: 'אישור תשלום על הזמנת הכרטיס ($150) *',
+
+    sectionPayment: 'תשלום לסיום ההזמנה',
+    paymentRequestTitle: 'בקשת תשלום: $150',
+    paymentRequestBody:
+      'לסיום הזמנת הכרטיס יש לשלם לנציגים שלנו סכום של 150 דולר, ואז להעלות כאן צילום של אישור התשלום.',
+    labelPayment: 'אישור תשלום על סך $150 *',
     paymentHint: 'צילום קבלה / אישור העברה לנציגים שלנו באתר',
 
     chooseFile: 'בחירה מהמכשיר',
@@ -68,10 +71,8 @@ export const orderCardTranslations = {
     errorPending: 'ממתינים לסיום העלאת קבצים...',
   },
   en: {
-    pageTitle: 'Card Order',
-    pageSubtitle: 'Order a replacement card through our representatives. Service fee: $150.',
-    priceBadge: '$150',
-    priceNote: 'After paying our representatives — upload a photo of the payment confirmation here.',
+    pageTitle: 'Order Card',
+    pageSubtitle: 'Order a replacement Food Stamps card through our representatives.',
     backHome: 'Back to home',
     translateButton: 'עברית',
 
@@ -101,13 +102,18 @@ export const orderCardTranslations = {
     cardPhotoRequired: 'A photo of the card is required for the status you selected',
 
     sectionDocs: 'Required documents',
-    docsIntro: 'Please upload all three documents below. Image or PDF accepted.',
+    docsIntro: 'Please upload the documents below. Image or PDF accepted.',
 
     labelIdDoc: 'Passport / National ID / US driver’s license *',
     idDocHint: 'One of the three — clear and readable',
     labelSsn: 'US Social Security card (SSN) photo *',
     ssnHint: 'Required — Social Security card',
-    labelPayment: 'Payment confirmation for card order ($150) *',
+
+    sectionPayment: 'Payment to complete the order',
+    paymentRequestTitle: 'Payment request: $150',
+    paymentRequestBody:
+      'To complete your card order, please pay our representatives $150, then upload a photo of the payment confirmation here.',
+    labelPayment: 'Payment confirmation for $150 *',
     paymentHint: 'Receipt / transfer confirmation to our site representatives',
 
     chooseFile: 'Choose from device',

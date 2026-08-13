@@ -2,13 +2,15 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useLanguage } from '../context/LanguageContext';
+import { getCaseStageToneClass } from '../utils/caseProcessingStages';
+import '../styles/caseStageTones.css';
 import './AdminCaseDetail.css';
 
 const benefitTitles = {
   family: 'משפחה (כולל הורה וילדים מתחת לגיל 18)',
   individual: 'בגיר מעל 21',
   minor: 'צעיר',
-  card_order: 'הזמנת כרטיס ($150)',
+  card_order: 'הזמנת כרטיס',
 };
 
 const cardIssueLabels = {
@@ -412,7 +414,7 @@ const AdminCaseDetail = () => {
           />
         </div>
       )}
-      <div className="admin-case-detail-card">
+      <div className={`admin-case-detail-card ${getCaseStageToneClass(c)}`.trim()}>
         <h1>פרטי טופס – תיק #{c.id.slice(0, 8)}</h1>
         <p className="admin-case-detail-sub">גישה כמנהל. כל הפרטים שנשלחו בטופס.</p>
 

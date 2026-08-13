@@ -1,0 +1,146 @@
+/* עליית צבעים לפי שלב כייס: חום → כתום → זהוב. אדום/ירוק שמורים לסגירה/אישור. */
+
+.admin-case-detail-card.case-tone-stage-1,
+.case-status-item.case-tone-stage-1 {
+  background: #f6efe8;
+  border: 3px solid #6d4c41;
+  box-shadow: 0 8px 28px rgba(93, 64, 55, 0.18);
+}
+
+.admin-case-detail-card.case-tone-stage-2,
+.case-status-item.case-tone-stage-2 {
+  background: #fff4e5;
+  border: 3px solid #ef6c00;
+  box-shadow: 0 8px 28px rgba(230, 81, 0, 0.16);
+}
+
+.admin-case-detail-card.case-tone-stage-3,
+.case-status-item.case-tone-stage-3 {
+  background: #fffbeb;
+  border: 3px solid #f5b400;
+  box-shadow: 0 8px 28px rgba(249, 168, 37, 0.22);
+}
+
+.admin-case-detail-card.case-tone-closed,
+.case-status-item.case-tone-closed {
+  background: #fff5f5;
+  border: 3px solid #e57373;
+  box-shadow: 0 8px 28px rgba(198, 40, 40, 0.16);
+}
+
+.admin-case-detail-card.case-tone-approved,
+.case-status-item.case-tone-approved {
+  background: #f1f8f4;
+  border: 3px solid #66bb6a;
+  box-shadow: 0 8px 28px rgba(46, 125, 50, 0.16);
+}
+
+[dir="rtl"] .case-status-item.case-tone-stage-1 {
+  border-right-color: #5d4037;
+}
+[dir="ltr"] .case-status-item.case-tone-stage-1 {
+  border-left-color: #5d4037;
+}
+[dir="rtl"] .case-status-item.case-tone-stage-2 {
+  border-right-color: #e65100;
+}
+[dir="ltr"] .case-status-item.case-tone-stage-2 {
+  border-left-color: #e65100;
+}
+[dir="rtl"] .case-status-item.case-tone-stage-3 {
+  border-right-color: #f9a825;
+}
+[dir="ltr"] .case-status-item.case-tone-stage-3 {
+  border-left-color: #f9a825;
+}
+[dir="rtl"] .case-status-item.case-tone-closed {
+  border-right-color: #c62828;
+}
+[dir="ltr"] .case-status-item.case-tone-closed {
+  border-left-color: #c62828;
+}
+[dir="rtl"] .case-status-item.case-tone-approved {
+  border-right-color: #2e7d32;
+}
+[dir="ltr"] .case-status-item.case-tone-approved {
+  border-left-color: #2e7d32;
+}
+
+.admin-table tbody tr.case-tone-stage-1 > td {
+  background: #f6efe8;
+  border-top: 2px solid #8d6e63;
+  border-bottom: 2px solid #8d6e63;
+}
+.admin-table tbody tr.case-tone-stage-1 > td:first-child {
+  border-inline-start: 3px solid #5d4037;
+}
+.admin-table tbody tr.case-tone-stage-1 > td:last-child {
+  border-inline-end: 3px solid #5d4037;
+}
+.admin-table tbody tr.case-tone-stage-1:hover > td {
+  background: #efe4d8;
+}
+
+.admin-table tbody tr.case-tone-stage-2 > td {
+  background: #fff4e5;
+  border-top: 2px solid #ffb74d;
+  border-bottom: 2px solid #ffb74d;
+}
+.admin-table tbody tr.case-tone-stage-2 > td:first-child {
+  border-inline-start: 3px solid #ef6c00;
+}
+.admin-table tbody tr.case-tone-stage-2 > td:last-child {
+  border-inline-end: 3px solid #ef6c00;
+}
+.admin-table tbody tr.case-tone-stage-2:hover > td {
+  background: #ffe0b2;
+}
+
+.admin-table tbody tr.case-tone-stage-3 > td {
+  background: #fffbeb;
+  border-top: 2px solid #f5b400;
+  border-bottom: 2px solid #f5b400;
+}
+.admin-table tbody tr.case-tone-stage-3 > td:first-child {
+  border-inline-start: 3px solid #f9a825;
+}
+.admin-table tbody tr.case-tone-stage-3 > td:last-child {
+  border-inline-end: 3px solid #f9a825;
+}
+.admin-table tbody tr.case-tone-stage-3:hover > td {
+  background: #fff3c4;
+}
+
+.admin-table tbody tr.case-tone-closed > td,
+.admin-table tbody tr.case-row-closed > td {
+  background: #fff5f5;
+  border-top: 2px solid #e57373;
+  border-bottom: 2px solid #e57373;
+}
+.admin-table tbody tr.case-tone-closed > td:first-child,
+.admin-table tbody tr.case-row-closed > td:first-child {
+  border-inline-start: 3px solid #c62828;
+}
+.admin-table tbody tr.case-tone-closed > td:last-child,
+.admin-table tbody tr.case-row-closed > td:last-child {
+  border-inline-end: 3px solid #c62828;
+}
+.admin-table tbody tr.case-tone-closed:hover > td,
+.admin-table tbody tr.case-row-closed:hover > td {
+  background: #ffebee;
+}
+
+.admin-table tbody tr.case-tone-approved > td {
+  background: #f1f8f4;
+  border-top: 2px solid #81c784;
+  border-bottom: 2px solid #81c784;
+}
+.admin-table tbody tr.case-tone-approved > td:first-child {
+  border-inline-start: 3px solid #2e7d32;
+}
+.admin-table tbody tr.case-tone-approved > td:last-child {
+  border-inline-end: 3px solid #2e7d32;
+}
+.admin-table tbody tr.case-tone-approved:hover > td {
+  background: #e8f5e9;
+}

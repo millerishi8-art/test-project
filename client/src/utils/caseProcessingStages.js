@@ -46,3 +46,18 @@ export function isCaseClosed(c) {
   if (status === 'closed' || status === 'rejected') return true;
   return getProcessingStageNumber(c) === 4;
 }
+
+/**
+ * מחלקת צבע לפי שלב עיבוד.
+ * 1 חום → 2 כתום → 3 זהוב. ירוק/אדום שמורים לאישור/סגירה.
+ */
+export function getCaseStageToneClass(c) {
+  if (!c) return '';
+  if (isCaseClosed(c)) return 'case-tone-closed';
+  const n = getProcessingStageNumber(c);
+  if (n === 5) return 'case-tone-approved';
+  if (n === 3) return 'case-tone-stage-3';
+  if (n === 2) return 'case-tone-stage-2';
+  if (n === 1) return 'case-tone-stage-1';
+  return '';
+}

@@ -181,6 +181,65 @@
   color: #1e40af;
 }
 
+.case-notes-item-meta-left {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex-shrink: 0;
+}
+
+.case-notes-edit-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  border: none;
+  background: transparent;
+  color: #2563eb;
+  font-weight: 700;
+  font-size: 0.8rem;
+  cursor: pointer;
+  padding: 0.15rem 0.25rem;
+  border-radius: 6px;
+}
+
+.case-notes-edit-btn:hover:not(:disabled) {
+  background: #eff6ff;
+}
+
+.case-notes-edit-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.case-notes-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.case-notes-edit-form textarea {
+  width: 100%;
+  resize: vertical;
+  min-height: 80px;
+  border: 1.5px solid #d1d5db;
+  border-radius: 10px;
+  padding: 0.6rem 0.75rem;
+  font: inherit;
+  line-height: 1.45;
+}
+
+.case-notes-edit-form textarea:focus {
+  outline: 2px solid #93c5fd;
+  border-color: #3b82f6;
+}
+
+.case-notes-edited {
+  margin: 0.35rem 0 0;
+  font-size: 0.75rem;
+  color: #6b7280;
+  font-weight: 600;
+}
+
 .case-notes-item-text {
   margin: 0;
   white-space: pre-wrap;
