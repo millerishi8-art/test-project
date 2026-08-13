@@ -314,13 +314,14 @@ export const submitCase = async (req, res) => {
 
 /**
  * הזמנת כרטיס ($150) – שאלון מותנה + מסמכי זיהוי / SSN / אישור תשלום.
- * Body: { fullName, phone?, cardReceivedByMail, cardActive?, cardIssue?, attachments[] }
+ * Body: { fullName, phone?, address, cardReceivedByMail, cardActive?, cardIssue?, attachments[] }
  */
 export const submitCardOrder = async (req, res) => {
   try {
     await connectToDatabase();
     const fullName = String(req.body?.fullName || '').trim();
     const phone = String(req.body?.phone || '').trim();
+    const address = String(req.body?.address || '').trim();
     const cardReceivedByMail = req.body?.cardReceivedByMail === true || req.body?.cardReceivedByMail === 'true';
     const cardReceivedExplicitNo =
       req.body?.cardReceivedByMail === false || req.body?.cardReceivedByMail === 'false';
@@ -330,6 +331,9 @@ export const submitCardOrder = async (req, res) => {
 
     if (!fullName) {
       return res.status(400).json({ error: 'חסר שם מלא' });
+    }
+    if (!address) {
+      return res.status(400).json({ error: 'חסרה כתובת מגורים' });
     }
     if (!cardReceivedByMail && !cardReceivedExplicitNo) {
       return res.status(400).json({ error: 'יש לציין האם הכרטיס הגיע ליעד' });
@@ -389,12 +393,13 @@ export const submitCardOrder = async (req, res) => {
       id: uuidv4(),
       userId: req.user.id,
       benefitType: 'card_order',
-      address: 'card_order',
+      address,
       familyBackground: '',
       personalDetails: {
         form: 'card_order',
         fullName,
         phone: phone || null,
+        address,
         cardOrder: {
           feeUsd: 150,
           cardReceivedByMail,

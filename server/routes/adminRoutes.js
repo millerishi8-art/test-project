@@ -13,6 +13,8 @@ import {
   patchUserDeferredPayment,
   getEmployeePayouts,
   settleEmployeePayout,
+  getUnseenAdminNotices,
+  ackAdminNotice,
 } from '../controllers/adminController.js';
 import {
   listEmployeeCases,
@@ -29,6 +31,8 @@ router.use(isAdmin);
 
 router.get('/cases', getAllCases);
 router.get('/cases/:id', getCaseById);
+router.get('/notices/unseen', getUnseenAdminNotices);
+router.post('/notices/:id/ack', ackAdminNotice);
 router.patch('/cases/:id', updateCaseStatus);
 router.patch('/cases/:id/processing', updateCaseProcessing);
 router.patch('/cases/:id/hra', updateCaseHraDetails);

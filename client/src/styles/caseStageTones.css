@@ -1,27 +1,27 @@
-/* צבעי שלב כייס — כרטיסים מעוגלים, בלי קווי רשת */
+/* שלבי כייס: פתיחה צהוב → ראיון כתום → הגשה ורוד. ירוק/אדום לאישור/סגירה. */
 
 .admin-case-detail-card.case-tone-stage-1,
 .case-status-item.case-tone-stage-1 {
-  background: #f8fafc;
-  border: 2px solid #cbd5e1;
+  background: #fff9e8;
+  border: 2px solid #e8c547;
   border-radius: 16px;
-  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+  box-shadow: 0 8px 24px rgba(212, 160, 23, 0.14);
 }
 
 .admin-case-detail-card.case-tone-stage-2,
 .case-status-item.case-tone-stage-2 {
-  background: #eff6ff;
-  border: 2px solid #93c5fd;
+  background: #fff3e8;
+  border: 2px solid #e8893a;
   border-radius: 16px;
-  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.1);
+  box-shadow: 0 8px 24px rgba(224, 112, 32, 0.14);
 }
 
 .admin-case-detail-card.case-tone-stage-3,
 .case-status-item.case-tone-stage-3 {
-  background: #eef2ff;
-  border: 2px solid #a5b4fc;
+  background: #fff0f6;
+  border: 2px solid #e85a9b;
   border-radius: 16px;
-  box-shadow: 0 8px 24px rgba(79, 70, 229, 0.1);
+  box-shadow: 0 8px 24px rgba(219, 39, 119, 0.12);
 }
 
 .admin-case-detail-card.case-tone-closed,
@@ -41,22 +41,22 @@
 }
 
 [dir="rtl"] .case-status-item.case-tone-stage-1 {
-  border-right-color: #64748b;
+  border-right-color: #d4a017;
 }
 [dir="ltr"] .case-status-item.case-tone-stage-1 {
-  border-left-color: #64748b;
+  border-left-color: #d4a017;
 }
 [dir="rtl"] .case-status-item.case-tone-stage-2 {
-  border-right-color: #3b82f6;
+  border-right-color: #e07020;
 }
 [dir="ltr"] .case-status-item.case-tone-stage-2 {
-  border-left-color: #3b82f6;
+  border-left-color: #e07020;
 }
 [dir="rtl"] .case-status-item.case-tone-stage-3 {
-  border-right-color: #6366f1;
+  border-right-color: #db2777;
 }
 [dir="ltr"] .case-status-item.case-tone-stage-3 {
-  border-left-color: #6366f1;
+  border-left-color: #db2777;
 }
 [dir="rtl"] .case-status-item.case-tone-closed {
   border-right-color: #e11d48;
@@ -94,27 +94,27 @@
 }
 
 .admin-table-cards tbody tr.case-tone-stage-1 > td {
-  background: #f8fafc;
-  border-color: #cbd5e1;
+  background: #fff9e8;
+  border-color: #e8c547;
 }
 .admin-table-cards tbody tr.case-tone-stage-1:hover > td {
-  background: #f1f5f9;
+  background: #fff3c4;
 }
 
 .admin-table-cards tbody tr.case-tone-stage-2 > td {
-  background: #eff6ff;
-  border-color: #93c5fd;
+  background: #fff3e8;
+  border-color: #e8893a;
 }
 .admin-table-cards tbody tr.case-tone-stage-2:hover > td {
-  background: #dbeafe;
+  background: #ffe4cc;
 }
 
 .admin-table-cards tbody tr.case-tone-stage-3 > td {
-  background: #eef2ff;
-  border-color: #a5b4fc;
+  background: #fff0f6;
+  border-color: #e85a9b;
 }
 .admin-table-cards tbody tr.case-tone-stage-3:hover > td {
-  background: #e0e7ff;
+  background: #fce7f3;
 }
 
 .admin-table-cards tbody tr.case-tone-closed > td,

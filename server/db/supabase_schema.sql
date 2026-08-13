@@ -116,3 +116,22 @@ CREATE INDEX IF NOT EXISTS employee_cases_case_number_idx
 
 COMMENT ON TABLE public.employee_cases IS
   'כייסי עובדים/מנהלים (ראיונות / הגשת טפסים) – תשלום ואיפוס רק למנהל-על; לאחר ארכוב הרשומה נעולה';
+
+-- עדכוני כייס לצוות מנהלים (חלון חד-פעמי)
+CREATE TABLE IF NOT EXISTS public.admin_notices (
+  id TEXT PRIMARY KEY,
+  actor_email TEXT,
+  actor_name TEXT,
+  case_id TEXT,
+  client_name TEXT,
+  title TEXT,
+  steps JSONB NOT NULL DEFAULT '[]'::jsonb,
+  seen_by JSONB NOT NULL DEFAULT '[]'::jsonb,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS admin_notices_created_at_idx
+  ON public.admin_notices (created_at DESC);
+
+COMMENT ON TABLE public.admin_notices IS
+  'הסברי שינוי בכייס למנהלים אחרים – כל מנהל רואה כל עדכון פעם אחת';

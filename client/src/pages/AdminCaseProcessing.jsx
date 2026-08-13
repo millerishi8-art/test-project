@@ -7,9 +7,9 @@ import './AdminPanel.css';
 import './AdminCaseProcessing.css';
 
 const STAGES = [
-  { stage: 1, label: 'נפתחה הבקשה באתר מחכה לראיון אישי' },
-  { stage: 2, label: 'נעשה ראיון מחכה להגשת טפסים' },
-  { stage: 3, label: 'הוגשו טפסים מחכה לאישור הממשלה' },
+  { stage: 1, label: 'נפתחה הבקשה באתר מחכה לראיון אישי', toneClass: 'stage-opening' },
+  { stage: 2, label: 'נעשה ראיון מחכה להגשת טפסים', toneClass: 'stage-interview' },
+  { stage: 3, label: 'הוגשו טפסים מחכה לאישור הממשלה', toneClass: 'stage-forms' },
   { stage: 4, label: 'הממשלה סגרה את הכייס', isRejection: true },
   { stage: 5, label: 'אושר על ידי הממשלה', isApproval: true },
 ];
@@ -205,7 +205,7 @@ const AdminCaseProcessing = () => {
                   </td>
                   <td>
                     <div className="admin-processing-buttons">
-                      {STAGES.map(({ stage, label, isRejection, isApproval }) => {
+                      {STAGES.map(({ stage, label, isRejection, isApproval, toneClass }) => {
                         const isActive = isStageActive(caseItem, stage, label);
                         const busy =
                           updatingId === caseItem.id &&
@@ -214,7 +214,7 @@ const AdminCaseProcessing = () => {
                           <button
                             key={stage}
                             type="button"
-                            className={`admin-processing-stage-btn ${isActive ? 'active-stage' : ''} ${isRejection ? 'stage-rejection' : ''} ${isApproval ? 'stage-approval' : ''}`}
+                            className={`admin-processing-stage-btn ${isActive ? 'active-stage' : ''} ${toneClass || ''} ${isRejection ? 'stage-rejection' : ''} ${isApproval ? 'stage-approval' : ''}`}
                             onClick={() => handleStageClick(caseItem, stage)}
                             disabled={updatingId === caseItem.id}
                             title={isActive ? `${label} (לחיצה לביטול)` : label}

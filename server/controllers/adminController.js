@@ -20,6 +20,11 @@ import {
   subtractOneDayYmd,
 } from '../utils/deferredPaymentDates.js';
 import { withSignedCaseMediaForAdmin } from '../utils/caseMediaUrls.js';
+import { recordAdminCaseChange, processingChangeSteps, statusChangeSteps } from '../services/adminChangeNotice.js';
+import {
+  listUnseenAdminNotices,
+  markAdminNoticeSeen,
+} from '../models/AdminNotice.js';
 import crypto from 'crypto';
 
 /**
@@ -338,6 +343,20 @@ export const updateCaseHraDetails = async (req, res) => {
     }
 
     const updated = await updateCase(id, { hraDetails: next });
+    const { authorName } = await resolveActorName(req);
+    const clientName = caseData.personalDetails?.fullName || '';
+    await recordAdminCaseChange({
+      req,
+      caseData,
+      actorName: authorName,
+      title: 'עודכנו פרטי HRA בכייס',
+      steps: [
+        `מי עדכן: ${authorName}`,
+        `כייס של: ${clientName || 'לקוח'}`,
+        'מה השתנה: נשמרו פרטי התחברות / קבצים של HRA.',
+        'מה לעשות: אם אתם מטפלים בכייס הזה, בדקו את פרטי HRA בכרטיס התיק.',
+      ],
+    });
     const withUrls = await withSignedCaseMediaForAdmin(updated);
     return res.json({ message: 'פרטי HRA נשמרו', case: withUrls });
   } catch (error) {
@@ -412,6 +431,19 @@ export const addCaseInterimNote = async (req, res) => {
     /* הערה חדשה בראש הרשימה (האחרונה קודם) */
     const interimNotes = [note, ...prev];
     const updated = await updateCase(id, { interimNotes });
+
+    await recordAdminCaseChange({
+      req,
+      caseData,
+      actorName: authorName,
+      title: 'נוספה הערת ביניים לכייס',
+      steps: [
+        `מי עדכן: ${authorName}`,
+        `כייס של: ${caseData.personalDetails?.fullName || 'לקוח'}`,
+        `ההערה: ${text.length > 180 ? `${text.slice(0, 180)}…` : text}`,
+        'מה לעשות: קראו את ההערה בכרטיס הכייס לפני שאתם ממשיכים בטיפול.',
+      ],
+    });
 
     return res.status(201).json({
       message: 'ההערה נוספה',
@@ -493,6 +525,20 @@ export const updateCaseStatus = async (req, res) => {
       return res.status(404).json({ error: 'תיק לא נמצא' });
     }
     const updated = await updateCase(id, { status });
+    const { authorName } = await resolveActorName(req);
+    await recordAdminCaseChange({
+      req,
+      caseData,
+      actorName: authorName,
+      title: 'עודכן סטטוס הכייס',
+      steps: statusChangeSteps({
+        actorName: authorName,
+        clientName: caseData.personalDetails?.fullName || '',
+        benefitType: caseData.benefitType,
+        prevStatus: caseData.status,
+        nextStatus: status,
+      }),
+    });
     return res.json({ message: 'סטטוס התיק עודכן', case: updated });
   } catch (error) {
     console.error('updateCaseStatus error:', error);
@@ -523,6 +569,19 @@ export const confirmCaseCompleted = async (req, res) => {
       completedBy: actorEmail || null,
       completedAt: now,
       employeePaid: false,
+    });
+    const { authorName } = await resolveActorName(req);
+    await recordAdminCaseChange({
+      req,
+      caseData,
+      actorName: authorName,
+      title: 'הכייס אושר כהושלם',
+      steps: [
+        `מי עדכן: ${authorName}`,
+        `כייס של: ${caseData.personalDetails?.fullName || 'לקוח'}`,
+        'מה השתנה: המנהל אישר שהכייס הושלם בהצלחה.',
+        'מה לעשות: הכייס נספר לתשלום עובדים. אין צורך להמשיך שלבי עיבוד עליו.',
+      ],
     });
     return res.json({ message: 'הקייס אושר כהושלם בהצלחה', case: updated });
   } catch (error) {
@@ -690,6 +749,20 @@ export const updateCaseProcessing = async (req, res) => {
         approvedBenefits: null,
         status: CASE_STATUS.PENDING,
       });
+      const { authorName } = await resolveActorName(req);
+      await recordAdminCaseChange({
+        req,
+        caseData,
+        actorName: authorName,
+        title: 'שלב העיבוד בכייס בוטל',
+        steps: processingChangeSteps({
+          actorName: authorName,
+          clientName: caseData.personalDetails?.fullName || '',
+          benefitType: caseData.benefitType,
+          prevLabel: PROCESSING_STAGES[prevStage] || caseData.detailedAdminStatus,
+          cleared: true,
+        }),
+      });
       return res.json({ message: 'שלב העיבוד בוטל', case: updated, cleared: true });
     }
 
@@ -705,6 +778,20 @@ export const updateCaseProcessing = async (req, res) => {
         rejectionReason: null,
         approvedBenefits: null,
         status: CASE_STATUS.PENDING,
+      });
+      const { authorName } = await resolveActorName(req);
+      await recordAdminCaseChange({
+        req,
+        caseData,
+        actorName: authorName,
+        title: 'שלב העיבוד בכייס בוטל',
+        steps: processingChangeSteps({
+          actorName: authorName,
+          clientName: caseData.personalDetails?.fullName || '',
+          benefitType: caseData.benefitType,
+          prevLabel: PROCESSING_STAGES[prevStage] || caseData.detailedAdminStatus,
+          cleared: true,
+        }),
       });
       return res.json({ message: 'שלב העיבוד בוטל', case: updated, cleared: true });
     }
@@ -738,6 +825,24 @@ export const updateCaseProcessing = async (req, res) => {
       updates.approvedBenefits = null;
     }
     const updated = await updateCase(id, updates);
+
+    const { authorName } = await resolveActorName(req);
+    await recordAdminCaseChange({
+      req,
+      caseData,
+      actorName: authorName,
+      title: 'עודכן שלב עיבוד בכייס',
+      steps: processingChangeSteps({
+        actorName: authorName,
+        clientName: caseData.personalDetails?.fullName || '',
+        benefitType: caseData.benefitType,
+        prevLabel: PROCESSING_STAGES[prevStage] || null,
+        nextLabel: detailedAdminStatus,
+        stageNum,
+        rejectionReason: updates.rejectionReason,
+        approvedBenefits: updates.approvedBenefits,
+      }),
+    });
 
     /* התראות רק במעבר לשלב חדש (לא בביטול) */
     try {
@@ -918,6 +1023,20 @@ export const deleteCasePermanent = async (req, res) => {
       });
     }
 
+    const { authorName } = await resolveActorName(req);
+    await recordAdminCaseChange({
+      req,
+      caseData: removed,
+      actorName: authorName,
+      title: 'כייס הוסר מהמערכת',
+      steps: [
+        `מי עדכן: ${authorName}`,
+        `כייס של: ${removed.personalDetails?.fullName || 'לקוח'}`,
+        'מה השתנה: הכייס נמחק לצמיתות על ידי מנהל המערכת.',
+        'מה לעשות: אין צורך להמשיך טיפול בכייס הזה.',
+      ],
+    });
+
     const userId = removed.userId;
     let userDeleted = false;
     if (userId) {
@@ -940,5 +1059,37 @@ export const deleteCasePermanent = async (req, res) => {
   } catch (error) {
     console.error('deleteCasePermanent error:', error);
     return res.status(500).json({ error: 'שגיאה במחיקת התיק' });
+  }
+};
+
+/**
+ * עדכוני כייס שמנהלים אחרים עדיין לא ראו – חלון חד-פעמי.
+ */
+export const getUnseenAdminNotices = async (req, res) => {
+  try {
+    const email = (req.user?.email || '').trim().toLowerCase();
+    const notices = await listUnseenAdminNotices(email);
+    return res.json({ notices });
+  } catch (error) {
+    console.error('getUnseenAdminNotices error:', error);
+    return res.json({ notices: [] });
+  }
+};
+
+/**
+ * סימון עדכון כנצפה – לא יוצג שוב לאותו מנהל.
+ */
+export const ackAdminNotice = async (req, res) => {
+  try {
+    const email = (req.user?.email || '').trim().toLowerCase();
+    const { id } = req.params;
+    const notice = await markAdminNoticeSeen(id, email);
+    if (!notice) {
+      return res.status(404).json({ error: 'העדכון לא נמצא' });
+    }
+    return res.json({ ok: true, notice });
+  } catch (error) {
+    console.error('ackAdminNotice error:', error);
+    return res.status(500).json({ error: 'שגיאה בסימון העדכון' });
   }
 };

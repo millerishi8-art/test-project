@@ -7,6 +7,7 @@ import Navbar from './components/Navbar';
 import WhatsAppButton from './components/WhatsAppButton';
 import AccessibilityWidget from './components/AccessibilityWidget';
 import TestimonialTicker from './components/TestimonialTicker';
+import AdminChangeNoticeModal from './components/AdminChangeNoticeModal';
 import './App.css';
 
 // Lazy loaded pages
@@ -41,6 +42,7 @@ function App() {
           <WhatsAppButton />
           <AccessibilityWidget />
           <TestimonialTicker />
+          <AdminChangeNoticeModal />
           <Suspense fallback={<LoadingFallback />}>
             <Routes>
               <Route path="/register" element={<Register />} />

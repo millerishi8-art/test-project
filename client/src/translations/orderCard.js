@@ -13,6 +13,9 @@ export const orderCardTranslations = {
     placeholderFullName: 'כפי שמופיע במסמך הזיהוי',
     labelPhone: 'טלפון ליצירת קשר',
     placeholderPhone: '050-0000000',
+    labelAddress: 'כתובת מגורים *',
+    placeholderAddress: 'רחוב, מספר בית, עיר, מיקוד',
+    errorAddress: 'נא למלא כתובת מגורים',
 
     sectionCardStatus: 'סטטוס הכרטיס',
     qReceived: 'האם הכרטיס הגיע אליך בדואר (או נמסר ליעדך) אי־פעם? *',
@@ -81,6 +84,9 @@ export const orderCardTranslations = {
     placeholderFullName: 'As shown on your ID document',
     labelPhone: 'Phone number',
     placeholderPhone: '050-0000000',
+    labelAddress: 'Residential address *',
+    placeholderAddress: 'Street, house number, city, ZIP',
+    errorAddress: 'Please enter your residential address',
 
     sectionCardStatus: 'Card status',
     qReceived: 'Did the card ever arrive by mail (or get delivered to you)? *',

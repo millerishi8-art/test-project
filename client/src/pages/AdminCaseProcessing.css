@@ -81,6 +81,57 @@
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
 }
 
+.admin-processing-stage-btn.stage-opening {
+  border-color: #e8c547;
+  color: #9a7b12;
+}
+
+.admin-processing-stage-btn.stage-opening:hover:not(:disabled) {
+  background: #fff9e8;
+  border-color: #d4a017;
+}
+
+.admin-processing-stage-btn.stage-opening.active-stage {
+  background: #fff3c4;
+  border-color: #d4a017;
+  color: #7a5c08;
+  box-shadow: 0 2px 8px rgba(212, 160, 23, 0.22);
+}
+
+.admin-processing-stage-btn.stage-interview {
+  border-color: #e8893a;
+  color: #c25e14;
+}
+
+.admin-processing-stage-btn.stage-interview:hover:not(:disabled) {
+  background: #fff3e8;
+  border-color: #e07020;
+}
+
+.admin-processing-stage-btn.stage-interview.active-stage {
+  background: #ffe4cc;
+  border-color: #e07020;
+  color: #9a4a10;
+  box-shadow: 0 2px 8px rgba(224, 112, 32, 0.22);
+}
+
+.admin-processing-stage-btn.stage-forms {
+  border-color: #e85a9b;
+  color: #be185d;
+}
+
+.admin-processing-stage-btn.stage-forms:hover:not(:disabled) {
+  background: #fff0f6;
+  border-color: #db2777;
+}
+
+.admin-processing-stage-btn.stage-forms.active-stage {
+  background: #fce7f3;
+  border-color: #db2777;
+  color: #9d174d;
+  box-shadow: 0 2px 8px rgba(219, 39, 119, 0.2);
+}
+
 .admin-processing-stage-btn.active-stage {
   border-color: #6366f1;
   background: #eef2ff;

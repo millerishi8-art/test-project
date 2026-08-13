@@ -17,6 +17,7 @@ const OrderCard = () => {
 
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
+  const [address, setAddress] = useState('');
   const [cardReceived, setCardReceived] = useState(null); // 'yes' | 'no' | null
   const [cardActive, setCardActive] = useState(null);
   const [cardIssue, setCardIssue] = useState('');
@@ -90,6 +91,7 @@ const OrderCard = () => {
   const validate = () => {
     const errs = {};
     if (!fullName.trim()) errs.fullName = t.errorName;
+    if (!address.trim()) errs.address = t.errorAddress;
     if (cardReceived !== 'yes' && cardReceived !== 'no') errs.cardReceived = t.errorReceived;
     if (needsCardFollowUp) {
       if (cardActive !== 'yes' && cardActive !== 'no') errs.cardActive = t.errorActive;
@@ -132,6 +134,7 @@ const OrderCard = () => {
         {
           fullName: fullName.trim(),
           phone: phone.trim(),
+          address: address.trim(),
           cardReceivedByMail: cardReceived === 'yes',
           cardActive: needsCardFollowUp ? cardActive === 'yes' : null,
           cardIssue: needsCardFollowUp ? cardIssue : null,
@@ -248,6 +251,20 @@ const OrderCard = () => {
               autoComplete="tel"
               dir="ltr"
             />
+          </label>
+          <label className="order-card-field">
+            <span>{t.labelAddress}</span>
+            <input
+              type="text"
+              value={address}
+              onChange={(e) => {
+                setAddress(e.target.value);
+                clearFieldError('address');
+              }}
+              placeholder={t.placeholderAddress}
+              autoComplete="street-address"
+            />
+            {fieldErrors.address && <em className="order-card-field-error">{fieldErrors.address}</em>}
           </label>
         </section>
 

@@ -269,6 +269,10 @@ const AdminCaseDetail = () => {
             <span className="admin-case-detail-value" dir="ltr">{pd?.phone || '–'}</span>
           </div>
           <div className="admin-case-detail-field">
+            <span className="admin-case-detail-label">כתובת מגורים</span>
+            <span className="admin-case-detail-value">{pd?.address || '–'}</span>
+          </div>
+          <div className="admin-case-detail-field">
             <span className="admin-case-detail-label">עלות הזמנה</span>
             <span className="admin-case-detail-value admin-case-fee">${order.feeUsd || 150}</span>
           </div>
