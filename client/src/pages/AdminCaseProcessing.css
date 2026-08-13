@@ -68,50 +68,31 @@
   min-height: var(--touch-min);
   font-size: clamp(0.8rem, 2vw, 0.85rem);
   font-weight: 600;
-  border-radius: 8px;
-  border: 2px solid #cfd8dc;
-  background: #f8f9fa;
-  color: #37474f;
+  border-radius: 12px;
+  border: 1.5px solid #e2e8f0;
+  background: #fff;
+  color: #334155;
   cursor: pointer;
   transition: all 0.2s ease;
   white-space: normal;
   width: 100%;
   max-width: min(280px, 100%);
   text-align: center;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-  position: relative;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
 }
 
 .admin-processing-stage-btn.active-stage {
-  border-color: #5c6bc0;
-  background: #e8eaf6;
-  color: #283593;
-}
-
-.admin-processing-stage-btn.active-stage::before {
-  background-color: #5c6bc0;
-}
-
-.admin-processing-stage-btn::before {
-  content: '';
-  position: absolute;
-  top: -12px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 2px;
-  height: 10px;
-  background-color: #cfd8dc;
-}
-
-.admin-processing-stage-btn:first-child::before {
-  display: none;
+  border-color: #6366f1;
+  background: #eef2ff;
+  color: #3730a3;
+  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.18);
 }
 
 .admin-processing-stage-btn:hover:not(:disabled) {
-  background: #f1f3f4;
-  border-color: #90a4ae;
+  background: #f8fafc;
+  border-color: #cbd5e1;
   transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.08);
 }
 
 .admin-processing-stage-btn:disabled {
@@ -119,55 +100,28 @@
   cursor: not-allowed;
 }
 
-/* Red rejection button */
 .admin-processing-stage-btn.stage-rejection {
-  border-color: #e57373;
-  background: white;
-  color: #c62828;
+  border-color: #fda4af;
+  background: #fff;
+  color: #be123c;
 }
 
-.admin-processing-stage-btn.stage-rejection::before {
-  background-color: #e57373;
-}
-
+.admin-processing-stage-btn.stage-rejection.active-stage,
 .admin-processing-stage-btn.stage-rejection:hover:not(:disabled) {
-  background: #ffebee;
-  border-color: #ef5350;
+  background: #fff1f2;
+  border-color: #fb7185;
 }
 
-/* שורת כייס שנסגר – מסגרת אדומה כמו כפתור הסגירה */
-.admin-table tbody tr.case-row-closed > td {
-  background: #fff5f5;
-  border-top: 2px solid #e57373;
-  border-bottom: 2px solid #e57373;
-}
-
-.admin-table tbody tr.case-row-closed > td:first-child {
-  border-inline-start: 3px solid #c62828;
-}
-
-.admin-table tbody tr.case-row-closed > td:last-child {
-  border-inline-end: 3px solid #c62828;
-}
-
-.admin-table tbody tr.case-row-closed:hover > td {
-  background: #ffebee;
-}
-
-/* Green approval button */
 .admin-processing-stage-btn.stage-approval {
-  border-color: #81c784;
-  background: white;
-  color: #2e7d32;
+  border-color: #6ee7b7;
+  background: #fff;
+  color: #047857;
 }
 
-.admin-processing-stage-btn.stage-approval::before {
-  background-color: #81c784;
-}
-
+.admin-processing-stage-btn.stage-approval.active-stage,
 .admin-processing-stage-btn.stage-approval:hover:not(:disabled) {
-  background: #e8f5e9;
-  border-color: #66bb6a;
+  background: #ecfdf5;
+  border-color: #34d399;
 }
 
 

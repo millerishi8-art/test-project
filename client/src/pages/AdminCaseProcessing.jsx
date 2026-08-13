@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { LEGACY_HE_STAGE1, getCaseStageToneClass } from '../utils/caseProcessingStages';
 import '../styles/caseStageTones.css';
+import './AdminPanel.css';
 import './AdminCaseProcessing.css';
 
 const STAGES = [
@@ -167,7 +168,7 @@ const AdminCaseProcessing = () => {
       )}
 
       <div className="admin-table-container">
-        <table className="admin-table">
+        <table className="admin-table admin-table-cards">
           <thead>
             <tr>
               <th>שם משתמש</th>

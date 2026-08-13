@@ -758,7 +758,7 @@ const AdminPanel = () => {
       {mainSection === 'cases' && (
         <>
           <div className="admin-table-container">
-            <table className="admin-table">
+            <table className="admin-table admin-table-cards">
               <thead>
                 <tr>
                   <th>שם משתמש</th>

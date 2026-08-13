@@ -219,22 +219,29 @@
   direction: rtl;
 }
 
-.admin-table thead {
-  background: linear-gradient(135deg, #1e6bb8 0%, #1565c0 100%);
-  color: white;
+.admin-table-cards {
+  border-collapse: separate;
+  border-spacing: 0 12px;
 }
 
-.admin-table th {
-  padding: 1rem;
-  text-align: right;
-  font-weight: 600;
-  font-size: 1rem;
+.admin-table-cards thead th:first-child {
+  border-start-start-radius: 12px;
+  border-end-start-radius: 12px;
+}
+
+.admin-table-cards thead th:last-child {
+  border-start-end-radius: 12px;
+  border-end-end-radius: 12px;
 }
 
 .admin-table td {
   padding: 1rem;
   border-bottom: 1px solid #e0e0e0;
   color: #555;
+}
+
+.admin-table.admin-table-cards td {
+  border-bottom: none;
 }
 
 .admin-view-form-btn {
@@ -293,23 +300,8 @@
   background: #e3f2fd;
 }
 
-/* כייס שנסגר – מסגרת אדומה כמו כפתור "הממשלה סגרה את הכייס" */
-.admin-table tbody tr.case-row-closed > td {
-  background: #fff5f5;
-  border-top: 2px solid #e57373;
-  border-bottom: 2px solid #e57373;
-}
-
-.admin-table tbody tr.case-row-closed > td:first-child {
-  border-inline-start: 3px solid #c62828;
-}
-
-.admin-table tbody tr.case-row-closed > td:last-child {
-  border-inline-end: 3px solid #c62828;
-}
-
-.admin-table tbody tr.case-row-closed:hover > td {
-  background: #ffebee;
+.admin-table.admin-table-cards tbody tr:hover {
+  background: transparent;
 }
 
 .empty-state {
