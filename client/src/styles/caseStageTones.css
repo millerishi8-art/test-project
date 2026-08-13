@@ -1,4 +1,4 @@
-/* שלבי כייס: פתיחה צהוב → ראיון כתום → הגשה ורוד. ירוק/אדום לאישור/סגירה. */
+/* שלבי כייס: פתיחה צהוב → ראיון כתום → הגשה כחול האתר. ירוק/אדום לאישור/סגירה. */
 
 .admin-case-detail-card.case-tone-stage-1,
 .case-status-item.case-tone-stage-1 {
@@ -18,10 +18,10 @@
 
 .admin-case-detail-card.case-tone-stage-3,
 .case-status-item.case-tone-stage-3 {
-  background: #fff0f6;
-  border: 2px solid #e85a9b;
+  background: #e3f2fd;
+  border: 2px solid #1e6bb8;
   border-radius: 16px;
-  box-shadow: 0 8px 24px rgba(219, 39, 119, 0.12);
+  box-shadow: 0 8px 24px rgba(30, 107, 184, 0.16);
 }
 
 .admin-case-detail-card.case-tone-closed,
@@ -53,10 +53,10 @@
   border-left-color: #e07020;
 }
 [dir="rtl"] .case-status-item.case-tone-stage-3 {
-  border-right-color: #db2777;
+  border-right-color: #1565c0;
 }
 [dir="ltr"] .case-status-item.case-tone-stage-3 {
-  border-left-color: #db2777;
+  border-left-color: #1565c0;
 }
 [dir="rtl"] .case-status-item.case-tone-closed {
   border-right-color: #e11d48;
@@ -110,11 +110,11 @@
 }
 
 .admin-table-cards tbody tr.case-tone-stage-3 > td {
-  background: #fff0f6;
-  border-color: #e85a9b;
+  background: #e3f2fd;
+  border-color: #1e6bb8;
 }
 .admin-table-cards tbody tr.case-tone-stage-3:hover > td {
-  background: #fce7f3;
+  background: #bbdefb;
 }
 
 .admin-table-cards tbody tr.case-tone-closed > td,

@@ -116,20 +116,20 @@
 }
 
 .admin-processing-stage-btn.stage-forms {
-  border-color: #e85a9b;
-  color: #be185d;
+  border-color: #1e6bb8;
+  color: #1565c0;
 }
 
 .admin-processing-stage-btn.stage-forms:hover:not(:disabled) {
-  background: #fff0f6;
-  border-color: #db2777;
+  background: #e3f2fd;
+  border-color: #1565c0;
 }
 
 .admin-processing-stage-btn.stage-forms.active-stage {
-  background: #fce7f3;
-  border-color: #db2777;
-  color: #9d174d;
-  box-shadow: 0 2px 8px rgba(219, 39, 119, 0.2);
+  background: #e3f2fd;
+  border-color: #1565c0;
+  color: #0d47a1;
+  box-shadow: 0 2px 8px rgba(30, 107, 184, 0.22);
 }
 
 .admin-processing-stage-btn.active-stage {

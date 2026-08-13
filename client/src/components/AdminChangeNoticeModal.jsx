@@ -62,12 +62,15 @@ const AdminChangeNoticeModal = () => {
     setAcking(true);
     addLocalSeen(notice.id);
     try {
-      await axios.post(`/admin/notices/${notice.id}/ack`);
-    } catch {
-      /* גם בלי שרת – לא יוצג שוב בדפדפן הזה */
+      try {
+        await axios.post(`/admin/notices/${notice.id}/ack`);
+      } catch {
+        /* גם בלי שרת – לא יוצג שוב בדפדפן הזה */
+      }
+      await loadUnseen();
+    } finally {
+      setAcking(false);
     }
-    setAcking(false);
-    await loadUnseen();
   };
 
   const openCase = () => {
