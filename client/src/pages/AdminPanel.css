@@ -944,8 +944,11 @@
     margin: 0 0 0.9rem;
   }
 
-  .admin-table tbody tr:hover,
-  .admin-table.admin-table-cards tbody tr:hover {
+  .admin-table tbody tr:hover {
+    background: #fff;
+  }
+
+  .admin-table.admin-table-cards tbody tr:not([class*='case-tone-']):not(.case-row-closed):hover {
     background: #fff;
   }
 

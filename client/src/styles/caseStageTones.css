@@ -137,40 +137,58 @@
 
 @media (max-width: 900px), (max-width: 1100px) and (hover: none) and (pointer: coarse) {
   .admin-table-cards tbody tr[class*="case-tone-"] > td,
+  .admin-table-cards tbody tr[class*="case-tone-"]:hover > td,
+  .admin-table-cards tbody tr[class*="case-tone-"]:active > td,
   .admin-table-cards tbody tr.case-row-closed > td,
+  .admin-table-cards tbody tr.case-row-closed:hover > td,
+  .admin-table-cards tbody tr.case-row-closed:active > td,
   .admin-table-cards tbody tr[class*="case-tone-"] > td:first-child,
+  .admin-table-cards tbody tr[class*="case-tone-"]:hover > td:first-child,
   .admin-table-cards tbody tr.case-row-closed > td:first-child,
   .admin-table-cards tbody tr[class*="case-tone-"] > td:last-child,
-  .admin-table-cards tbody tr.case-row-closed > td:last-child {
+  .admin-table-cards tbody tr[class*="case-tone-"]:hover > td:last-child,
+  .admin-table-cards tbody tr.case-row-closed > td:last-child,
+  .admin-table-cards tbody tr.case-tone-stage-1:hover > td,
+  .admin-table-cards tbody tr.case-tone-stage-2:hover > td,
+  .admin-table-cards tbody tr.case-tone-stage-3:hover > td,
+  .admin-table-cards tbody tr.case-tone-closed:hover > td,
+  .admin-table-cards tbody tr.case-row-closed:hover > td,
+  .admin-table-cards tbody tr.case-tone-approved:hover > td {
     border: none;
     border-radius: 0;
     background: transparent;
   }
 
   .admin-table-cards tbody tr.case-tone-stage-1,
-  .admin-table-cards tbody tr.case-tone-stage-1:hover {
+  .admin-table-cards tbody tr.case-tone-stage-1:hover,
+  .admin-table-cards tbody tr.case-tone-stage-1:active {
     background: #fffdf6;
   }
 
   .admin-table-cards tbody tr.case-tone-stage-2,
-  .admin-table-cards tbody tr.case-tone-stage-2:hover {
+  .admin-table-cards tbody tr.case-tone-stage-2:hover,
+  .admin-table-cards tbody tr.case-tone-stage-2:active {
     background: #fffaf6;
   }
 
   .admin-table-cards tbody tr.case-tone-stage-3,
-  .admin-table-cards tbody tr.case-tone-stage-3:hover {
+  .admin-table-cards tbody tr.case-tone-stage-3:hover,
+  .admin-table-cards tbody tr.case-tone-stage-3:active {
     background: #f7fbff;
   }
 
   .admin-table-cards tbody tr.case-tone-closed,
   .admin-table-cards tbody tr.case-row-closed,
   .admin-table-cards tbody tr.case-tone-closed:hover,
-  .admin-table-cards tbody tr.case-row-closed:hover {
+  .admin-table-cards tbody tr.case-row-closed:hover,
+  .admin-table-cards tbody tr.case-tone-closed:active,
+  .admin-table-cards tbody tr.case-row-closed:active {
     background: #fffafa;
   }
 
   .admin-table-cards tbody tr.case-tone-approved,
-  .admin-table-cards tbody tr.case-tone-approved:hover {
+  .admin-table-cards tbody tr.case-tone-approved:hover,
+  .admin-table-cards tbody tr.case-tone-approved:active {
     background: #f7fffb;
   }
 }
