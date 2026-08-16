@@ -1,8 +1,10 @@
 .app {
   min-height: 100vh;
+  min-height: -webkit-fill-available;
   min-height: 100dvh;
   padding-bottom: env(safe-area-inset-bottom, 0px);
   width: 100%;
+  overflow-x: hidden;
   overflow-x: clip;
   display: flex;
   flex-direction: column;

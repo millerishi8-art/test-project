@@ -3,18 +3,22 @@
  * iPhone / Android + מחשבים עם חלון צר
  */
 
-/* מניעת זום אוטומטי ב-iOS בשדות טופס */
-@media (max-width: 768px) {
+/* מניעת זום אוטומטי ב-iOS ובכרום אנדרואיד בשדות טופס */
+@media (max-width: 900px), (hover: none) and (pointer: coarse) {
   input,
   select,
   textarea,
   button {
     font-size: max(16px, 1em);
+    -webkit-appearance: none;
+    appearance: none;
   }
 
   input[type='checkbox'],
   input[type='radio'] {
     font-size: inherit;
+    -webkit-appearance: auto;
+    appearance: auto;
   }
 }
 
@@ -142,10 +146,26 @@ label {
   }
 }
 
-/* גלילה חלקה באזורי overflow */
+/* גלילה חלקה באזורי overflow – iOS Safari + Chrome Android */
 .admin-table-container,
 .signature-pad-wrap,
-.admin-table-wrap {
+.admin-table-wrap,
+.case-notes-modal,
+.case-status-modal,
+.hra-modal,
+.admin-notice-modal,
+.emp-modal,
+.admin-processing-modal {
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-x: contain;
+}
+
+/* חלונות קבועים – גובה מסך אמיתי באייפון (שורת כתובת) ובאנדרואיד */
+.case-notes-overlay,
+.case-status-modal-overlay,
+.hra-modal-overlay,
+.admin-notice-overlay,
+.emp-modal-overlay,
+.admin-processing-modal-overlay {
+  -webkit-overflow-scrolling: touch;
 }

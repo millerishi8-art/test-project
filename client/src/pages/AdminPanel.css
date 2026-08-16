@@ -920,26 +920,25 @@
 
   .admin-table tbody,
   .admin-user-cases-inner-table tbody {
-    display: flex;
-    flex-direction: column;
-    gap: 0.85rem;
+    display: block;
+    width: 100%;
   }
 
   .admin-table tbody tr,
   .admin-user-cases-inner-table tbody tr {
-    display: flex;
-    flex-direction: column;
+    display: block;
     width: 100%;
+    box-sizing: border-box;
     background: #fff;
     border: 1px solid #d7e6f5;
     border-radius: 16px;
     padding: 0.85rem 0.95rem 1rem;
     box-shadow: 0 4px 16px rgba(30, 107, 184, 0.08);
-    gap: 0;
+    margin: 0 0 0.85rem;
   }
 
   .admin-table.admin-table-cards tbody tr {
-    margin: 0;
+    margin: 0 0 0.85rem;
   }
 
   .admin-table tbody tr:hover,
@@ -951,15 +950,24 @@
   .admin-table td,
   .admin-user-cases-inner-table th,
   .admin-user-cases-inner-table td {
+    display: -webkit-box;
+    display: -ms-flexbox;
     display: flex;
+    -webkit-box-align: start;
+    -ms-flex-align: start;
     align-items: flex-start;
+    -webkit-box-pack: justify;
+    -ms-flex-pack: justify;
     justify-content: space-between;
     gap: 0.75rem;
     width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
     padding: 0.55rem 0;
     border-bottom: 1px solid #eef2f7;
     white-space: normal;
     word-break: break-word;
+    overflow-wrap: break-word;
     overflow-wrap: anywhere;
   }
 
