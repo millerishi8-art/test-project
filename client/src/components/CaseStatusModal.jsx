@@ -221,28 +221,6 @@ export default function CaseStatusModal({ caseItem: initialCase, onClose, onUpda
             <div className="case-status-modal-footer">
               <button
                 type="button"
-                className="case-status-modal-reject-quick"
-                onClick={() => {
-                  setSubView('reject');
-                  setError('');
-                }}
-                disabled={busy}
-              >
-                סגירת כייס
-              </button>
-              <button
-                type="button"
-                className="case-status-modal-approve-quick"
-                onClick={() => {
-                  setSubView('approve');
-                  setError('');
-                }}
-                disabled={busy}
-              >
-                אישור כייס
-              </button>
-              <button
-                type="button"
                 className="case-status-modal-done"
                 onClick={onClose}
                 disabled={busy}

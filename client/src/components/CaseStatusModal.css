@@ -165,18 +165,6 @@
   cursor: pointer;
 }
 
-.case-status-modal-reject-quick {
-  border: 2px solid #e11d48;
-  background: #fff;
-  color: #be123c;
-}
-
-.case-status-modal-approve-quick {
-  border: 2px solid #059669;
-  background: #fff;
-  color: #047857;
-}
-
 .case-status-modal-done {
   border: none;
   background: linear-gradient(135deg, #1e6bb8 0%, #1565c0 100%);
