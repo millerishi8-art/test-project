@@ -135,12 +135,62 @@
   height: 6px;
 }
 
-.benefit-cube.admin-cube-all::before {
-  background: linear-gradient(135deg, #42a5f5 0%, #1e88e5 100%);
+.benefit-cube.admin-cube-all::before,
+.benefit-cube.admin-cube-entry::before {
+  background: linear-gradient(135deg, #1e6bb8 0%, #0d47a1 100%);
 }
 
 .benefit-cube.admin-cube-renewal::before {
   background: linear-gradient(135deg, #e65100 0%, #bf360c 100%);
+}
+
+.benefit-cube.admin-cube-entry {
+  background: linear-gradient(165deg, #ffffff 0%, #eef6fc 100%);
+  border: 1px solid rgba(30, 107, 184, 0.18);
+  box-shadow: 0 8px 28px rgba(30, 107, 184, 0.12);
+}
+
+.benefit-cube.admin-cube-entry:hover {
+  box-shadow: 0 16px 40px rgba(30, 107, 184, 0.2);
+  border-color: rgba(30, 107, 184, 0.35);
+}
+
+.admin-cube-badge {
+  display: inline-block;
+  margin-bottom: 0.75rem;
+  padding: 0.28rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #1565c0;
+  background: rgba(30, 107, 184, 0.1);
+  border: 1px solid rgba(30, 107, 184, 0.2);
+}
+
+.admin-cube-icon {
+  width: 4.25rem;
+  height: 4.25rem;
+  margin: 0 auto var(--space-4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  background: linear-gradient(145deg, #e3f2fd 0%, #bbdefb 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  font-size: 2rem;
+}
+
+.admin-cube-cta {
+  display: inline-block;
+  margin-top: 0.25rem;
+  padding: 0.55rem 1.1rem;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, #1e6bb8 0%, #1565c0 100%);
+  box-shadow: 0 4px 14px rgba(30, 107, 184, 0.28);
 }
 
 .benefit-cube::before {

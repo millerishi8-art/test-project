@@ -379,6 +379,26 @@
   align-items: center;
 }
 
+.admin-case-detail-actions .admin-case-status-btn {
+  padding: 0.75rem 1.5rem;
+  min-height: var(--touch-min);
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0f766e;
+  background: #ecfdf5;
+  border: 2px solid #0f766e;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.admin-case-detail-actions .admin-case-status-btn:hover {
+  background: #0f766e;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(15, 118, 110, 0.3);
+}
+
 .admin-case-detail-back {
   padding: 0.75rem 1.5rem;
   min-height: var(--touch-min);

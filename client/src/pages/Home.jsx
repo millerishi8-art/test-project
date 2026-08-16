@@ -40,8 +40,8 @@ const Home = () => {
     navigate(`/benefit/${type}`);
   };
 
-  const handleAdminCubeClick = (filter) => {
-    navigate('/admin', { state: { tab: 'cases', filter: filter || 'all' } });
+  const handleAdminCubeClick = () => {
+    navigate('/admin', { state: { tab: 'cases', filter: 'all' } });
   };
 
   if (loading) {
@@ -156,12 +156,24 @@ const Home = () => {
 
         {isAdmin && (
           <div
-            className="benefit-cube admin-cube admin-cube-all"
-            onClick={() => handleAdminCubeClick('all')}
+            className="benefit-cube admin-cube admin-cube-entry"
+            onClick={handleAdminCubeClick}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                handleAdminCubeClick();
+              }
+            }}
           >
-            <div className="cube-icon">📋</div>
-            <h2>כל הטפסים שאושרו</h2>
-            <p className="cube-description">גישה לכל הטפסים שאנשים אישרו ונשלחו</p>
+            <span className="admin-cube-badge">{language === 'he' ? 'מנהלים בלבד' : 'Admins only'}</span>
+            <div className="cube-icon admin-cube-icon" aria-hidden="true">
+              🔐
+            </div>
+            <h2>{t.adminEntryTitle}</h2>
+            <p className="cube-description">{t.adminEntryDesc}</p>
+            <span className="admin-cube-cta">{t.adminEntryCta}</span>
           </div>
         )}
       </div>

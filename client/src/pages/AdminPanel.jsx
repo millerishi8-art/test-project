@@ -4,6 +4,7 @@ import axios from 'axios';
 import { useAuth } from '../context/AuthContext.jsx';
 import HraDetailsModal, { hasHraContent } from '../components/HraDetailsModal.jsx';
 import { CaseInterimNotesButton } from '../components/CaseInterimNotes.jsx';
+import CaseStatusModal from '../components/CaseStatusModal.jsx';
 import { getCaseStageToneClass } from '../utils/caseProcessingStages';
 import '../styles/caseStageTones.css';
 import './AdminPanel.css';
@@ -39,17 +40,19 @@ const AdminPanel = () => {
 
   const [users, setUsers] = useState([]);
   const [cases, setCases] = useState([]);
-  const [mainSection, setMainSection] = useState(stateTab === 'users' ? 'users' : 'cases');
+  const [mainSection, setMainSection] = useState(
+    stateTab === 'users' ? 'users' : 'cases'
+  );
   const [casesFilter, setCasesFilter] = useState(
-    (stateFilter === 'needs_renewal' || stateFilter === 'renewal_in_6_months') ? stateFilter : 'all'
+    stateFilter === 'renewal_in_6_months' ? stateFilter : 'all'
   );
   const [loading, setLoading] = useState(true);
-  const [deferUpdatingId, setDeferUpdatingId] = useState(null);
   const [deletingCaseId, setDeletingCaseId] = useState(null);
   const [statusUpdatingId, setStatusUpdatingId] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
   const [casesPanelUserId, setCasesPanelUserId] = useState(null);
   const [hraModalCase, setHraModalCase] = useState(null);
+  const [statusModalCase, setStatusModalCase] = useState(null);
 
   const handleInterimNotesChange = (caseId, interimNotes) => {
     setCases((prev) =>
@@ -72,16 +75,9 @@ const AdminPanel = () => {
   useEffect(() => {
     if (stateTab === 'cases') setMainSection('cases');
     if (stateTab === 'users') setMainSection('users');
-    if (stateFilter === 'needs_renewal' || stateFilter === 'renewal_in_6_months') setCasesFilter(stateFilter);
+    if (stateFilter === 'renewal_in_6_months') setCasesFilter(stateFilter);
+    if (stateFilter === 'needs_renewal') setCasesFilter('all');
   }, [stateTab, stateFilter]);
-
-  const clientUsers = users.filter((u) => (u.role || '').toLowerCase() !== 'admin');
-  const deferNewRequests = clientUsers.filter((u) => u.deferredPaymentRequestPending);
-  const deferAwaitingDateFromClient = clientUsers.filter(
-    (u) => u.deferredPaymentAwaitingClientDate && !u.deferredPaymentProposalPending
-  );
-  const deferPendingDateApproval = clientUsers.filter((u) => u.deferredPaymentProposalPending);
-  const superAdminDeferCount = deferNewRequests.length + deferPendingDateApproval.length;
 
   const fetchData = async () => {
     try {
@@ -138,103 +134,6 @@ const AdminPanel = () => {
       await fetchData();
     } catch (err) {
       console.error('Failed to confirm case:', err);
-    }
-  };
-
-  const handleSuperApproveRequest = async (userId) => {
-    if (
-      !window.confirm(
-        'לאשר את הבקשה? יישלח מייל ללקוח להזנת מועד תשלום; טווח התאריכים לפי הנחיות המוצגות בטופס ולפי המנהל.'
-      )
-    ) {
-      return;
-    }
-    setDeferUpdatingId(userId);
-    setSuccessMessage('');
-    try {
-      await axios.patch(`/admin/users/${userId}/deferred-payment`, { approveRequest: true });
-      await fetchData();
-      setSuccessMessage('בקשה אושרה; נשלח מייל ללקוח להזנת תאריך.');
-      setTimeout(() => setSuccessMessage(''), 4000);
-    } catch (err) {
-      console.error('approve defer request failed', err);
-      alert(err.response?.data?.error || 'שגיאה באישור הבקשה');
-    } finally {
-      setDeferUpdatingId(null);
-    }
-  };
-
-  const handleSuperApproveDeadline = async (userId) => {
-    if (!window.confirm('לאשר את תאריך התשלום מהלקוח ולהפעיל אישור תשלום מיוחד?')) return;
-    setDeferUpdatingId(userId);
-    setSuccessMessage('');
-    try {
-      await axios.patch(`/admin/users/${userId}/deferred-payment`, { approveDeadline: true });
-      await fetchData();
-      setSuccessMessage('תאריך התשלום אושר; נשלח מייל ללקוח.');
-      setTimeout(() => setSuccessMessage(''), 4000);
-    } catch (err) {
-      console.error('approve deadline failed', err);
-      alert(err.response?.data?.error || 'שגיאה באישור התאריך');
-    } finally {
-      setDeferUpdatingId(null);
-    }
-  };
-
-  const handleSuperRejectAll = async (userId) => {
-    if (!window.confirm('לבטל לחלוטין את תהליך התשלום המאוחר למשתמש זה?')) return;
-    setDeferUpdatingId(userId);
-    setSuccessMessage('');
-    try {
-      await axios.patch(`/admin/users/${userId}/deferred-payment`, { reject: true });
-      await fetchData();
-      setSuccessMessage('התהליך בוטל.');
-      setTimeout(() => setSuccessMessage(''), 4000);
-    } catch (err) {
-      console.error('reject defer failed', err);
-      alert(err.response?.data?.error || 'שגיאה בביטול');
-    } finally {
-      setDeferUpdatingId(null);
-    }
-  };
-
-  const handleSuperRequireEarlierDate = async (userId) => {
-    if (
-      !window.confirm(
-        'לדרוש מהלקוח תאריך מוקדם יותר? יישלח מייל והלקוח יוכל לבחור רק תאריך לפני זה שהוצע כעת (לא כולל).'
-      )
-    ) {
-      return;
-    }
-    setDeferUpdatingId(userId);
-    setSuccessMessage('');
-    try {
-      await axios.patch(`/admin/users/${userId}/deferred-payment`, { requireEarlierDate: true });
-      await fetchData();
-      setSuccessMessage('נשלחה דרישה לתאריך מוקדם יותר; מייל ללקוח.');
-      setTimeout(() => setSuccessMessage(''), 4000);
-    } catch (err) {
-      console.error('require earlier date failed', err);
-      alert(err.response?.data?.error || 'שגיאה בפעולה');
-    } finally {
-      setDeferUpdatingId(null);
-    }
-  };
-
-  const handleSuperRejectProposal = async (userId) => {
-    if (!window.confirm('לדחות את התאריך שהלקוח בחר ולהחזיר אותו להזנה מחדש (ללא הגבלת "לפני תאריך מסוים")?')) return;
-    setDeferUpdatingId(userId);
-    setSuccessMessage('');
-    try {
-      await axios.patch(`/admin/users/${userId}/deferred-payment`, { rejectProposal: true });
-      await fetchData();
-      setSuccessMessage('התאריך נדחה; הלקוח יוכל לבחור מחדש.');
-      setTimeout(() => setSuccessMessage(''), 4000);
-    } catch (err) {
-      console.error('reject proposal failed', err);
-      alert(err.response?.data?.error || 'שגיאה בדחיית התאריך');
-    } finally {
-      setDeferUpdatingId(null);
     }
   };
 
@@ -308,9 +207,7 @@ const AdminPanel = () => {
   const filteredCases =
     casesFilter === 'all'
       ? casesWithRenewal
-      : casesFilter === RENEWAL_NEEDS_NOW
-        ? casesWithRenewal.filter((c) => c.renewalStatus === RENEWAL_NEEDS_NOW || c.renewalStatus === RENEWAL_PENDING_CONFIRMATION)
-        : casesWithRenewal.filter((c) => c.renewalStatus === casesFilter);
+      : casesWithRenewal.filter((c) => c.renewalStatus === casesFilter);
   const sortedCases = [...filteredCases].sort((a, b) => {
     const order = { [RENEWAL_NEEDS_NOW]: 0, [RENEWAL_PENDING_CONFIRMATION]: 1, [RENEWAL_IN_6_MONTHS]: 2, [RENEWAL_OK]: 3, [RENEWAL_DONE]: 4 };
     const diff = (order[a.renewalStatus] ?? 2) - (order[b.renewalStatus] ?? 2);
@@ -318,9 +215,6 @@ const AdminPanel = () => {
     return new Date(a.renewalDate || 0) - new Date(b.renewalDate || 0);
   });
 
-  const countNeedsRenewal = cases.filter((c) => getRenewalStatus(c) === RENEWAL_NEEDS_NOW).length;
-  const countPendingConfirmation = cases.filter((c) => getRenewalStatus(c) === RENEWAL_PENDING_CONFIRMATION).length;
-  const countImmediateRenewal = countNeedsRenewal + countPendingConfirmation;
   const countIn6Months = cases.filter((c) => getRenewalStatus(c) === RENEWAL_IN_6_MONTHS).length;
 
   if (loading) {
@@ -336,8 +230,8 @@ const AdminPanel = () => {
       <div className="admin-header">
         <h1>פאנל ניהול</h1>
         <p className="admin-welcome">
-          כניסה כמנהל. כאן מופיעים <strong>כל הטפסים שאושרו ונשלחו</strong> וכן
-          <strong>טפסים לחידוש עתידי (חצי שנה)</strong> — מסודרים במצב חידוש.
+          כניסה כמנהל. כאן מופיעים <strong>כל התיקים</strong> וכן
+          <strong> טפסים לחידוש עתידי (חצי שנה)</strong>.
         </p>
         <p className="admin-sub">משתמשים ותיקים במערכת — מנהל ראשי או מנהל משנה.</p>
         {sessionUser?.isSecondaryAdmin && (
@@ -350,6 +244,7 @@ const AdminPanel = () => {
             type="button"
             className="admin-case-processing-btn"
             onClick={() => navigate('/admin/case-processing')}
+            title="רשימה מרוכזת – אפשר גם לעדכן סטטוס מכל תיק בכפתור סטטוס הכייס"
           >
             עובדים לך על הכייס
           </button>
@@ -364,15 +259,6 @@ const AdminPanel = () => {
       </div>
 
       <div className="admin-tabs">
-        <div className="admin-tabs-superadmin">
-          <button
-            type="button"
-            className={mainSection === 'superadmin' ? 'active' : ''}
-            onClick={() => setMainSection('superadmin')}
-          >
-            אישורים מיוחדים ({superAdminDeferCount})
-          </button>
-        </div>
         <div className="admin-tabs-main">
           <button
             className={mainSection === 'cases' ? 'active' : ''}
@@ -398,13 +284,6 @@ const AdminPanel = () => {
             </button>
             <button
               type="button"
-              className={casesFilter === RENEWAL_NEEDS_NOW ? 'active' : ''}
-              onClick={() => setCasesFilter(RENEWAL_NEEDS_NOW)}
-            >
-              טפסים לחידוש מיידי ({countImmediateRenewal})
-            </button>
-            <button
-              type="button"
               className={casesFilter === RENEWAL_IN_6_MONTHS ? 'active' : ''}
               onClick={() => setCasesFilter(RENEWAL_IN_6_MONTHS)}
             >
@@ -413,177 +292,6 @@ const AdminPanel = () => {
           </div>
         )}
       </div>
-
-      {mainSection === 'superadmin' && (
-        <div className="admin-table-container admin-superadmin-section">
-          {successMessage && (
-            <div className="admin-success-message" role="alert">
-              {successMessage}
-            </div>
-          )}
-          <p className="admin-superadmin-intro">
-            בקשות תשלום מאוחר: אישור ראשון → הלקוח בוחר תאריך → אישור סופי (או דרישה לתאריך מוקדם יותר) → סיום. רק לך מוצג אזור זה.
-          </p>
-
-          <h2 className="admin-superadmin-subtitle">בקשות חדשות (ממתינות לאישור ראשון)</h2>
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th>שם</th>
-                <th>אימייל</th>
-                <th>טלפון</th>
-                <th>תאריך בקשה</th>
-                <th>פעולות</th>
-              </tr>
-            </thead>
-            <tbody>
-              {deferNewRequests.length === 0 ? (
-                <tr>
-                  <td colSpan="5" className="empty-state">
-                    אין בקשות חדשות.
-                  </td>
-                </tr>
-              ) : (
-                deferNewRequests.map((user) => (
-                  <tr key={user.id}>
-                    <td>{user.name}</td>
-                    <td>{user.email}</td>
-                    <td>{user.phone}</td>
-                    <td>{formatDate(user.deferredPaymentRequestedAt)}</td>
-                    <td>
-                      <div className="admin-actions-cell admin-defer-actions">
-                        <button
-                          type="button"
-                          className="admin-defer-approve-btn"
-                          onClick={() => handleSuperApproveRequest(user.id)}
-                          disabled={deferUpdatingId !== null}
-                        >
-                          {deferUpdatingId === user.id ? 'מעדכן...' : 'אשר בקשה'}
-                        </button>
-                        <button
-                          type="button"
-                          className="admin-defer-reject-btn"
-                          onClick={() => handleSuperRejectAll(user.id)}
-                          disabled={deferUpdatingId !== null}
-                        >
-                          דחה
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-
-          <h2 className="admin-superadmin-subtitle">ממתינות לתאריך מהלקוח</h2>
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th>שם</th>
-                <th>אימייל</th>
-                <th>אושר בשלב ראשון</th>
-                <th>פעולות</th>
-              </tr>
-            </thead>
-            <tbody>
-              {deferAwaitingDateFromClient.length === 0 ? (
-                <tr>
-                  <td colSpan="4" className="empty-state">
-                    אין לקוחות בשלב הזנה של תאריך.
-                  </td>
-                </tr>
-              ) : (
-                deferAwaitingDateFromClient.map((user) => (
-                  <tr key={user.id}>
-                    <td>{user.name}</td>
-                    <td>{user.email}</td>
-                    <td>{formatDate(user.deferredPaymentRequestApprovedAt)}</td>
-                    <td>
-                      <button
-                        type="button"
-                        className="admin-defer-reject-btn"
-                        onClick={() => handleSuperRejectAll(user.id)}
-                        disabled={deferUpdatingId !== null}
-                      >
-                        בטל תהליך
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-
-          <h2 className="admin-superadmin-subtitle">ממתינות לאישור תאריך תשלום</h2>
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th>שם</th>
-                <th>אימייל</th>
-                <th>תאריך שהוצע</th>
-                <th>פעולות</th>
-              </tr>
-            </thead>
-            <tbody>
-              {deferPendingDateApproval.length === 0 ? (
-                <tr>
-                  <td colSpan="4" className="empty-state">
-                    אין תאריכים ממתינים לאישור.
-                  </td>
-                </tr>
-              ) : (
-                deferPendingDateApproval.map((user) => (
-                  <tr key={user.id}>
-                    <td>{user.name}</td>
-                    <td>{user.email}</td>
-                    <td>
-                      <strong>{user.deferredPaymentProposedDeadline || '—'}</strong>
-                    </td>
-                    <td>
-                      <div className="admin-actions-cell admin-defer-actions">
-                        <button
-                          type="button"
-                          className="admin-defer-approve-btn"
-                          onClick={() => handleSuperApproveDeadline(user.id)}
-                          disabled={deferUpdatingId !== null}
-                        >
-                          {deferUpdatingId === user.id ? 'מעדכן...' : 'אשר תאריך'}
-                        </button>
-                        <button
-                          type="button"
-                          className="admin-defer-require-earlier-btn"
-                          onClick={() => handleSuperRequireEarlierDate(user.id)}
-                          disabled={deferUpdatingId !== null}
-                          title="הלקוח יוכל לבחור רק תאריך לפני זה שהוצע"
-                        >
-                          דרוש תאריך מוקדם יותר
-                        </button>
-                        <button
-                          type="button"
-                          className="admin-defer-reject-btn"
-                          onClick={() => handleSuperRejectProposal(user.id)}
-                          disabled={deferUpdatingId !== null}
-                        >
-                          דחה תאריך
-                        </button>
-                        <button
-                          type="button"
-                          className="admin-remove-btn"
-                          onClick={() => handleSuperRejectAll(user.id)}
-                          disabled={deferUpdatingId !== null}
-                        >
-                          בטל הכל
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      )}
 
       {mainSection === 'users' && (
         <div className="admin-table-container">
@@ -707,6 +415,20 @@ const AdminPanel = () => {
                                         >
                                           צפה בטופס
                                         </button>
+                                        <button
+                                          type="button"
+                                          className="admin-case-status-btn"
+                                          onClick={() =>
+                                            setStatusModalCase({
+                                              ...caseItem,
+                                              userName: caseItem.userName || user.name,
+                                              userEmail: caseItem.userEmail || user.email,
+                                              userPhone: caseItem.userPhone || user.phone,
+                                            })
+                                          }
+                                        >
+                                          סטטוס הכייס
+                                        </button>
                                         <CaseInterimNotesButton
                                           caseId={caseItem.id}
                                           caseLabel={`${user.name || ''} · ${getBenefitTitle(caseItem.benefitType)}`}
@@ -812,6 +534,13 @@ const AdminPanel = () => {
                           >
                             צפה בטופס
                           </button>
+                          <button
+                            type="button"
+                            className="admin-case-status-btn"
+                            onClick={() => setStatusModalCase(caseItem)}
+                          >
+                            סטטוס הכייס
+                          </button>
                           <CaseInterimNotesButton
                             caseId={caseItem.id}
                             caseLabel={`${caseItem.userName || ''} · ${getBenefitTitle(caseItem.benefitType)}`}
@@ -865,18 +594,38 @@ const AdminPanel = () => {
         />
       ) : null}
 
+      {statusModalCase ? (
+        <CaseStatusModal
+          caseItem={statusModalCase}
+          onClose={() => setStatusModalCase(null)}
+          onUpdated={async (updated) => {
+            if (updated) {
+              setCases((prev) =>
+                prev.map((c) => (c.id === updated.id ? { ...c, ...updated } : c))
+              );
+              setUsers((prev) =>
+                prev.map((u) => ({
+                  ...u,
+                  cases: Array.isArray(u.cases)
+                    ? u.cases.map((c) => (c.id === updated.id ? { ...c, ...updated } : c))
+                    : u.cases,
+                }))
+              );
+            }
+            setSuccessMessage('סטטוס הכייס עודכן');
+            await fetchData();
+          }}
+        />
+      ) : null}
+
       <div className="admin-stats">
         <div className="stat-card">
           <h3>סה"כ משתמשים</h3>
           <p className="stat-number">{users.length}</p>
         </div>
         <div className="stat-card">
-          <h3>כל התיקים שאושרו</h3>
+          <h3>כל התיקים</h3>
           <p className="stat-number">{cases.length}</p>
-        </div>
-        <div className="stat-card stat-warning">
-          <h3>טפסים לחידוש מיידי</h3>
-          <p className="stat-number">{countImmediateRenewal}</p>
         </div>
         <div className="stat-card stat-info">
           <h3>טפסים לחידוש עתידי (חצי שנה)</h3>

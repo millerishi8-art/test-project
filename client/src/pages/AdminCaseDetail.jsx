@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useLanguage } from '../context/LanguageContext';
+import CaseStatusModal from '../components/CaseStatusModal.jsx';
 import { getCaseStageToneClass } from '../utils/caseProcessingStages';
 import '../styles/caseStageTones.css';
 import './AdminCaseDetail.css';
@@ -99,6 +100,7 @@ const AdminCaseDetail = () => {
   const [statusSaving, setStatusSaving] = useState(false);
   const [confirmingCompleted, setConfirmingCompleted] = useState(false);
   const [enlargedImage, setEnlargedImage] = useState(null);
+  const [statusModalOpen, setStatusModalOpen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -740,6 +742,13 @@ const AdminCaseDetail = () => {
         )}
 
         <div className="admin-case-detail-actions">
+          <button
+            type="button"
+            className="admin-case-status-btn"
+            onClick={() => setStatusModalOpen(true)}
+          >
+            סטטוס הכייס
+          </button>
           {!c.adminConfirmedCompleted && (
             <button
               type="button"
@@ -755,6 +764,16 @@ const AdminCaseDetail = () => {
           </button>
         </div>
       </div>
+
+      {statusModalOpen ? (
+        <CaseStatusModal
+          caseItem={c}
+          onClose={() => setStatusModalOpen(false)}
+          onUpdated={(updated) => {
+            if (updated) setCaseData((prev) => ({ ...prev, ...updated }));
+          }}
+        />
+      ) : null}
     </div>
   );
 };

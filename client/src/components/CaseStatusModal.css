@@ -1,0 +1,214 @@
+.case-status-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1300;
+  background: rgba(15, 23, 42, 0.48);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.case-status-modal {
+  width: 100%;
+  max-width: 440px;
+  max-height: calc(100dvh - 2rem);
+  overflow-y: auto;
+  background: #fff;
+  border-radius: 20px;
+  border: 2px solid #90caf9;
+  padding: 1.25rem 1.15rem 1.15rem;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.22);
+  direction: rtl;
+  text-align: right;
+}
+
+.case-status-modal.case-tone-stage-1 {
+  background: #fff9e8;
+  border-color: #e8c547;
+}
+
+.case-status-modal.case-tone-stage-2 {
+  background: #fff3e8;
+  border-color: #e8893a;
+}
+
+.case-status-modal.case-tone-stage-3 {
+  background: #e3f2fd;
+  border-color: #1e6bb8;
+}
+
+.case-status-modal.case-tone-closed {
+  background: #fff1f2;
+  border-color: #fda4af;
+}
+
+.case-status-modal.case-tone-approved {
+  background: #ecfdf5;
+  border-color: #6ee7b7;
+}
+
+.case-status-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.85rem;
+}
+
+.case-status-modal-kicker {
+  margin: 0 0 0.2rem;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #1e6bb8;
+}
+
+.case-status-modal-header h2 {
+  margin: 0;
+  font-size: 1.35rem;
+  color: #0f172a;
+  line-height: 1.25;
+}
+
+.case-status-modal-meta {
+  margin: 0.35rem 0 0;
+  color: #64748b;
+  font-size: 0.92rem;
+}
+
+.case-status-modal-close {
+  flex: 0 0 auto;
+  width: 2.25rem;
+  height: 2.25rem;
+  border: none;
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.06);
+  color: #334155;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.case-status-modal-close:hover:not(:disabled) {
+  background: rgba(15, 23, 42, 0.1);
+}
+
+.case-status-modal-close:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.case-status-modal-error {
+  background: #fff1f2;
+  color: #be123c;
+  border: 1px solid #fda4af;
+  border-radius: 10px;
+  padding: 0.65rem 0.85rem;
+  margin-bottom: 0.75rem;
+  font-weight: 600;
+}
+
+.case-status-modal-current {
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(30, 107, 184, 0.18);
+  border-radius: 14px;
+  padding: 0.85rem 1rem;
+  margin-bottom: 0.75rem;
+  text-align: center;
+}
+
+.case-status-modal-current-label {
+  display: block;
+  font-size: 0.85rem;
+  color: #64748b;
+  margin-bottom: 0.25rem;
+}
+
+.case-status-modal-current-value {
+  display: block;
+  font-size: 1.05rem;
+  color: #1e293b;
+  line-height: 1.4;
+}
+
+.case-status-modal-hint {
+  margin: 0 0 0.85rem;
+  font-size: 0.88rem;
+  color: #64748b;
+  line-height: 1.45;
+}
+
+.case-status-modal-stages {
+  gap: 0.65rem;
+}
+
+.case-status-modal-stages .admin-processing-stage-btn {
+  max-width: 100%;
+}
+
+.case-status-modal-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  justify-content: stretch;
+  margin-top: 1rem;
+}
+
+.case-status-modal-footer > button {
+  flex: 1 1 auto;
+  min-height: 44px;
+  padding: 0.55rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.case-status-modal-reject-quick {
+  border: 2px solid #e11d48;
+  background: #fff;
+  color: #be123c;
+}
+
+.case-status-modal-approve-quick {
+  border: 2px solid #059669;
+  background: #fff;
+  color: #047857;
+}
+
+.case-status-modal-done {
+  border: none;
+  background: linear-gradient(135deg, #1e6bb8 0%, #1565c0 100%);
+  color: #fff;
+}
+
+.case-status-modal-footer > button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.case-status-modal-sub h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1.15rem;
+  color: #0f172a;
+}
+
+.case-status-modal-sub .admin-processing-modal-input {
+  background: #fff;
+}
+
+@media (max-width: 480px) {
+  .case-status-modal {
+    padding: 1rem 0.9rem;
+    border-radius: 16px;
+  }
+
+  .case-status-modal-footer {
+    flex-direction: column;
+  }
+
+  .case-status-modal-footer > button {
+    width: 100%;
+  }
+}
