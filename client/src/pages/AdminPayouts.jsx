@@ -185,15 +185,15 @@ const AdminPayouts = () => {
               employees.map((emp) => (
                 <Fragment key={emp.email}>
                   <tr>
-                    <td>{emp.name || '–'}</td>
-                    <td>{emp.email}</td>
-                    <td>
+                    <td data-label="עובד">{emp.name || '–'}</td>
+                    <td data-label="אימייל">{emp.email}</td>
+                    <td data-label="כייסים שהושלמו">
                       <span className="status-badge payouts-count-badge">{emp.casesCount}</span>
                     </td>
-                    <td>
+                    <td data-label="סכום לתשלום">
                       <span className="payouts-amount">${emp.totalDue}</span>
                     </td>
-                    <td>
+                    <td data-label="פעולות">
                       <div className="admin-actions-cell">
                         <button
                           type="button"
@@ -236,10 +236,10 @@ const AdminPayouts = () => {
                             <tbody>
                               {emp.cases.map((c) => (
                                 <tr key={c.id}>
-                                  <td className="payouts-case-id">{c.id}</td>
-                                  <td>{getBenefitTitle(c.benefitType)}</td>
-                                  <td>{formatDate(c.completedAt)}</td>
-                                  <td>${ratePerCase}</td>
+                                  <td className="payouts-case-id" data-label="מזהה כייס">{c.id}</td>
+                                  <td data-label="סוג הטבה">{getBenefitTitle(c.benefitType)}</td>
+                                  <td data-label="תאריך השלמה">{formatDate(c.completedAt)}</td>
+                                  <td data-label="תשלום לעובד">${ratePerCase}</td>
                                 </tr>
                               ))}
                             </tbody>
@@ -277,11 +277,11 @@ const AdminPayouts = () => {
             ) : (
               history.map((p) => (
                 <tr key={p.id}>
-                  <td>{formatDate(p.paidAt)}</td>
-                  <td>{p.employeeName || '–'}</td>
-                  <td>{p.employeeEmail}</td>
-                  <td>{p.casesCount}</td>
-                  <td>
+                  <td data-label="תאריך תשלום">{formatDate(p.paidAt)}</td>
+                  <td data-label="עובד">{p.employeeName || '–'}</td>
+                  <td data-label="אימייל">{p.employeeEmail}</td>
+                  <td data-label="כייסים">{p.casesCount}</td>
+                  <td data-label="סכום ששולם">
                     <span className="payouts-amount payouts-amount-paid">${p.amount}</span>
                   </td>
                 </tr>

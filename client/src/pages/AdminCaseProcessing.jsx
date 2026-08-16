@@ -193,17 +193,17 @@ const AdminCaseProcessing = () => {
                   key={caseItem.id}
                   className={getCaseStageToneClass(caseItem) || undefined}
                 >
-                  <td>{caseItem.userName}</td>
-                  <td>{caseItem.userEmail}</td>
-                  <td>{caseItem.userPhone}</td>
-                  <td>{getBenefitTitle(caseItem.benefitType)}</td>
-                  <td>{formatDate(caseItem.createdAt)}</td>
-                  <td>
+                  <td data-label="שם משתמש">{caseItem.userName}</td>
+                  <td data-label="אימייל">{caseItem.userEmail}</td>
+                  <td data-label="טלפון">{caseItem.userPhone}</td>
+                  <td data-label="סוג הטבה">{getBenefitTitle(caseItem.benefitType)}</td>
+                  <td data-label="תאריך יצירה">{formatDate(caseItem.createdAt)}</td>
+                  <td data-label="סטטוס נוכחי">
                     <span className="admin-processing-current-status">
                       {currentStageLabel(caseItem)}
                     </span>
                   </td>
-                  <td>
+                  <td data-label="שלבי עיבוד">
                     <div className="admin-processing-buttons">
                       {STAGES.map(({ stage, label, isRejection, isApproval, toneClass }) => {
                         const isActive = isStageActive(caseItem, stage, label);

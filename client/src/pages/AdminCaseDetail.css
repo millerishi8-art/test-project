@@ -486,6 +486,14 @@
     line-height: 1.55;
   }
 
+  .admin-case-detail-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.65rem;
+  }
+
+  .admin-case-detail-actions .admin-case-status-btn,
+  .admin-case-detail-actions .admin-confirm-completed-btn,
   .admin-case-detail-back {
     width: 100%;
     min-height: 48px;

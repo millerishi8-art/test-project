@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
-import { MessageSquare, Pencil } from 'lucide-react';
+import { MessageSquare, Pencil, Trash2 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext.jsx';
 import './CaseInterimNotes.css';
 
 export function normalizeInterimNotes(raw) {
@@ -23,6 +24,12 @@ function formatNoteDate(dateString) {
     hour: '2-digit',
     minute: '2-digit',
   });
+}
+
+function normEmail(email) {
+  return String(email || '')
+    .trim()
+    .toLowerCase();
 }
 
 /**
@@ -77,6 +84,10 @@ export function CaseInterimNotesButton({
 }
 
 export function CaseInterimNotesModal({ caseId, caseLabel, initialNotes = [], onClose, onNotesChange }) {
+  const { user } = useAuth();
+  const myEmail = normEmail(user?.email);
+  const isPrimaryAdmin = user?.isPrimaryAdmin === true || user?.canDeleteCases === true;
+
   const [notes, setNotes] = useState(() => normalizeInterimNotes(initialNotes));
   const [text, setText] = useState('');
   const [saving, setSaving] = useState(false);
@@ -93,6 +104,14 @@ export function CaseInterimNotesModal({ caseId, caseLabel, initialNotes = [], on
       [...notes].sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)),
     [notes]
   );
+
+  const isOwnNote = (note) => {
+    const author = normEmail(note?.authorEmail);
+    return Boolean(myEmail && author && author === myEmail);
+  };
+
+  const canEditNote = (note) => isOwnNote(note);
+  const canDeleteNote = (note) => isOwnNote(note) || isPrimaryAdmin;
 
   const applyNotes = (nextNotes) => {
     const normalized = normalizeInterimNotes(nextNotes);
@@ -123,6 +142,7 @@ export function CaseInterimNotesModal({ caseId, caseLabel, initialNotes = [], on
   };
 
   const startEdit = (note) => {
+    if (!canEditNote(note)) return;
     setEditingId(note.id);
     setEditText(note.text || '');
     setError('');
@@ -157,6 +177,35 @@ export function CaseInterimNotesModal({ caseId, caseLabel, initialNotes = [], on
     }
   };
 
+  const handleDelete = async (note) => {
+    if (!canDeleteNote(note) || saving || !note?.id) return;
+    const own = isOwnNote(note);
+    const ok = window.confirm(
+      own
+        ? 'למחוק את ההערה שלך?'
+        : `למחוק את ההערה של ${note.authorName || note.authorEmail || 'מנהל אחר'}?`
+    );
+    if (!ok) return;
+
+    setSaving(true);
+    setError('');
+    try {
+      const res = await axios.delete(`/admin/cases/${caseId}/notes/${note.id}`);
+      const nextNotes = normalizeInterimNotes(res.data?.interimNotes);
+      applyNotes(
+        Array.isArray(res.data?.interimNotes) ? nextNotes : notes.filter((n) => n.id !== note.id)
+      );
+      if (editingId === note.id) {
+        setEditingId(null);
+        setEditText('');
+      }
+    } catch (err) {
+      setError(err.response?.data?.error || 'שגיאה במחיקת ההערה');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <div className="case-notes-overlay" role="dialog" aria-modal="true" dir="rtl" onClick={onClose}>
       <div className="case-notes-modal" onClick={(ev) => ev.stopPropagation()}>
@@ -180,7 +229,7 @@ export function CaseInterimNotesModal({ caseId, caseLabel, initialNotes = [], on
                   <strong>{note.authorName || note.authorEmail || 'צוות'}</strong>
                   <div className="case-notes-item-meta-left">
                     <time dateTime={note.createdAt || undefined}>{formatNoteDate(note.createdAt)}</time>
-                    {editingId !== note.id ? (
+                    {editingId !== note.id && canEditNote(note) ? (
                       <button
                         type="button"
                         className="case-notes-edit-btn"
@@ -191,6 +240,19 @@ export function CaseInterimNotesModal({ caseId, caseLabel, initialNotes = [], on
                       >
                         <Pencil size={15} strokeWidth={2.25} aria-hidden="true" />
                         עריכה
+                      </button>
+                    ) : null}
+                    {editingId !== note.id && canDeleteNote(note) ? (
+                      <button
+                        type="button"
+                        className="case-notes-delete-btn"
+                        onClick={() => handleDelete(note)}
+                        disabled={saving}
+                        aria-label="מחיקת הערה"
+                        title={isOwnNote(note) ? 'מחק הערה' : 'מחק הערה (מנהל ראשי)'}
+                      >
+                        <Trash2 size={15} strokeWidth={2.25} aria-hidden="true" />
+                        מחק
                       </button>
                     ) : null}
                   </div>

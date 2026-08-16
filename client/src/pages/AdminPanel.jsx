@@ -324,12 +324,12 @@ const AdminPanel = () => {
                 users.map((user) => (
                   <Fragment key={user.id}>
                     <tr>
-                      <td>{user.name}</td>
-                      <td>{user.email}</td>
-                      <td>{user.phone}</td>
-                      <td>{formatDate(user.createdAt)}</td>
-                      <td>{user.casesCount}</td>
-                      <td>
+                      <td data-label="שם">{user.name}</td>
+                      <td data-label="אימייל">{user.email}</td>
+                      <td data-label="טלפון">{user.phone}</td>
+                      <td data-label="תאריך הרשמה">{formatDate(user.createdAt)}</td>
+                      <td data-label="מספר קייסים">{user.casesCount}</td>
+                      <td data-label="תשלום מאוחר">
                         {user.role === 'admin' || user.role === 'Admin' ? (
                           <span className="admin-actions-empty">—</span>
                         ) : user.deferredPaymentApproved ? (
@@ -346,12 +346,12 @@ const AdminPanel = () => {
                           <span className="admin-actions-empty">—</span>
                         )}
                       </td>
-                      <td>
+                      <td data-label="סטטוס">
                         <span className={`status-badge ${user.role}`}>
                           {(user.role || '').toLowerCase() === 'admin' ? 'מנהל מערכת' : 'משתמש'}
                         </span>
                       </td>
-                      <td>
+                      <td data-label="פעולות">
                         <div className="admin-user-actions-stack">
                           {(user.role || '').toLowerCase() !== 'admin' &&
                           Array.isArray(user.cases) &&
@@ -399,14 +399,14 @@ const AdminPanel = () => {
                                     key={caseItem.id}
                                     className={getCaseStageToneClass(caseItem) || undefined}
                                   >
-                                    <td>{getBenefitTitle(caseItem.benefitType)}</td>
-                                    <td>{formatDate(caseItem.createdAt)}</td>
-                                    <td>
+                                    <td data-label="סוג הטבה">{getBenefitTitle(caseItem.benefitType)}</td>
+                                    <td data-label="תאריך יצירה">{formatDate(caseItem.createdAt)}</td>
+                                    <td data-label="סטטוס">
                                       <span className={`status-badge ${caseItem.status || ''}`}>
                                         {statusLabel(caseItem.status)}
                                       </span>
                                     </td>
-                                    <td>
+                                    <td data-label="פעולות">
                                       <div className="admin-actions-cell">
                                         <button
                                           type="button"
@@ -509,23 +509,23 @@ const AdminPanel = () => {
                       key={caseItem.id}
                       className={getCaseStageToneClass(caseItem) || undefined}
                     >
-                      <td>{caseItem.userName}</td>
-                      <td>{caseItem.userEmail}</td>
-                      <td>{caseItem.userPhone}</td>
-                      <td>{getBenefitTitle(caseItem.benefitType)}</td>
-                      <td>{formatDate(caseItem.createdAt)}</td>
-                      <td>{formatDate(caseItem.renewalDate)}</td>
-                      <td>
+                      <td data-label="שם משתמש">{caseItem.userName}</td>
+                      <td data-label="אימייל">{caseItem.userEmail}</td>
+                      <td data-label="טלפון">{caseItem.userPhone}</td>
+                      <td data-label="סוג הטבה">{getBenefitTitle(caseItem.benefitType)}</td>
+                      <td data-label="תאריך יצירה">{formatDate(caseItem.createdAt)}</td>
+                      <td data-label="תאריך חידוש">{formatDate(caseItem.renewalDate)}</td>
+                      <td data-label="מצב חידוש">
                         <span className={`status-badge renewal-${caseItem.renewalStatus}`}>
                           {renewalLabel(caseItem.renewalStatus)}
                         </span>
                       </td>
-                      <td>
+                      <td data-label="סטטוס תיק">
                         <span className={`status-badge ${caseItem.status}`}>
                           {statusLabel(caseItem.status)}
                         </span>
                       </td>
-                      <td>
+                      <td data-label="פעולות">
                         <div className="admin-actions-cell">
                           <button
                             type="button"

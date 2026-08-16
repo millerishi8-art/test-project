@@ -186,10 +186,22 @@
   background: #fff;
 }
 
-@media (max-width: 480px) {
+@media (max-width: 900px), (max-width: 1100px) and (hover: none) and (pointer: coarse) {
+  .case-status-modal-overlay {
+    padding: max(0.5rem, env(safe-area-inset-top, 0px)) 0.5rem
+      max(0.5rem, env(safe-area-inset-bottom, 0px));
+    align-items: flex-end;
+  }
+
   .case-status-modal {
-    padding: 1rem 0.9rem;
-    border-radius: 16px;
+    max-width: 100%;
+    max-height: min(92dvh, 100%);
+    padding: 1rem 0.9rem calc(1rem + env(safe-area-inset-bottom, 0px));
+    border-radius: 18px 18px 12px 12px;
+  }
+
+  .case-status-modal-header h2 {
+    font-size: 1.15rem;
   }
 
   .case-status-modal-footer {

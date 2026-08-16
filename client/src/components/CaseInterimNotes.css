@@ -211,6 +211,29 @@
   cursor: not-allowed;
 }
 
+.case-notes-delete-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  border: none;
+  background: transparent;
+  color: #be123c;
+  font-weight: 700;
+  font-size: 0.8rem;
+  cursor: pointer;
+  padding: 0.15rem 0.25rem;
+  border-radius: 6px;
+}
+
+.case-notes-delete-btn:hover:not(:disabled) {
+  background: #fff1f2;
+}
+
+.case-notes-delete-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .case-notes-edit-form {
   display: flex;
   flex-direction: column;
@@ -317,13 +340,39 @@
   cursor: not-allowed;
 }
 
-@media (max-width: 560px) {
+@media (max-width: 900px), (max-width: 1100px) and (hover: none) and (pointer: coarse) {
+  .case-notes-tooltip {
+    display: none;
+  }
+
   .case-notes-overlay {
-    padding: 0.5rem;
+    padding: 0;
+    align-items: stretch;
+  }
+
+  .case-notes-modal {
+    width: 100%;
+    max-width: none;
+    max-height: 100dvh;
+    min-height: 100dvh;
+    border-radius: 0;
   }
 
   .case-notes-item-meta {
     flex-direction: column;
-    gap: 0.2rem;
+    align-items: flex-start;
+    gap: 0.35rem;
+  }
+
+  .case-notes-item-meta-left {
+    flex-wrap: wrap;
+  }
+
+  .case-notes-actions {
+    flex-direction: column;
+  }
+
+  .case-notes-actions button {
+    width: 100%;
   }
 }

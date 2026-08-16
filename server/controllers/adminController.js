@@ -458,7 +458,7 @@ export const addCaseInterimNote = async (req, res) => {
 };
 
 /**
- * עריכת הערת ביניים קיימת (כל מנהל בפאנל).
+ * עריכת הערת ביניים – רק מחבר ההערה יכול לערוך את הודעתו.
  * PATCH /admin/cases/:id/notes/:noteId  Body: { text: string }
  */
 export const updateCaseInterimNote = async (req, res) => {
@@ -488,6 +488,11 @@ export const updateCaseInterimNote = async (req, res) => {
 
     const { authorEmail, authorName } = await resolveActorName(req);
     const existing = prev[idx];
+    const noteAuthor = String(existing.authorEmail || '').trim().toLowerCase();
+    if (!noteAuthor || noteAuthor !== authorEmail) {
+      return res.status(403).json({ error: 'ניתן לערוך רק הערות שכתבתם בעצמכם' });
+    }
+
     const updatedNote = {
       ...existing,
       text,
@@ -507,6 +512,68 @@ export const updateCaseInterimNote = async (req, res) => {
   } catch (error) {
     console.error('updateCaseInterimNote error:', error);
     return res.status(500).json({ error: 'שגיאה בעדכון ההערה' });
+  }
+};
+
+/**
+ * מחיקת הערת ביניים.
+ * מחבר ההערה יכול למחוק את שלו; מחיקת הערות של אחרים – מנהל ראשי בלבד.
+ * DELETE /admin/cases/:id/notes/:noteId
+ */
+export const deleteCaseInterimNote = async (req, res) => {
+  try {
+    const { id, noteId } = req.params;
+    if (!noteId) {
+      return res.status(400).json({ error: 'חסר מזהה הערה' });
+    }
+
+    const caseData = await findCaseById(id);
+    if (!caseData) {
+      return res.status(404).json({ error: 'תיק לא נמצא' });
+    }
+
+    const prev = normalizeInterimNotes(caseData.interimNotes);
+    const idx = prev.findIndex((n) => String(n.id) === String(noteId));
+    if (idx < 0) {
+      return res.status(404).json({ error: 'הערה לא נמצאה' });
+    }
+
+    const { authorEmail, authorName } = await resolveActorName(req);
+    const existing = prev[idx];
+    const noteAuthor = String(existing.authorEmail || '').trim().toLowerCase();
+    const isOwn = noteAuthor && noteAuthor === authorEmail;
+    const isPrimary = isSuperAdminEmail(authorEmail);
+
+    if (!isOwn && !isPrimary) {
+      return res.status(403).json({
+        error: 'אין הרשאה למחוק הערות של מנהלים אחרים – רק המנהל הראשי',
+      });
+    }
+
+    const interimNotes = prev.filter((_, i) => i !== idx);
+    const updated = await updateCase(id, { interimNotes });
+
+    await recordAdminCaseChange({
+      req,
+      caseData,
+      actorName: authorName,
+      title: 'נמחקה הערת ביניים מהכייס',
+      steps: [
+        `מי מחק: ${authorName}`,
+        `כייס של: ${caseData.personalDetails?.fullName || 'לקוח'}`,
+        `מחבר ההערה: ${existing.authorName || existing.authorEmail || 'צוות'}`,
+        `ההערה שנמחקה: ${String(existing.text || '').length > 180 ? `${String(existing.text).slice(0, 180)}…` : existing.text || '–'}`,
+      ],
+    });
+
+    return res.json({
+      message: 'ההערה נמחקה',
+      interimNotes: normalizeInterimNotes(updated?.interimNotes),
+      case: updated,
+    });
+  } catch (error) {
+    console.error('deleteCaseInterimNote error:', error);
+    return res.status(500).json({ error: 'שגיאה במחיקת ההערה' });
   }
 };
 

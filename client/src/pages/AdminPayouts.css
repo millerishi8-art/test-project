@@ -83,11 +83,16 @@
 
 @media (max-width: 768px) {
   .payouts-case-id {
-    max-width: 120px;
+    max-width: none;
+    word-break: break-all;
   }
 
   .admin-actions-cell .payouts-settle-btn {
     width: 100%;
     text-align: center;
+  }
+
+  .payouts-amount {
+    white-space: normal;
   }
 }
