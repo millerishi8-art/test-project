@@ -18,6 +18,7 @@ const AdminCaseProcessing = () => {
   const navigate = useNavigate();
   const [cases, setCases] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [updatingId, setUpdatingId] = useState(null);
   const [updatingStage, setUpdatingStage] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
@@ -32,9 +33,16 @@ const AdminCaseProcessing = () => {
     try {
       const res = await axios.get('/admin/cases');
       setCases(Array.isArray(res.data) ? res.data : []);
+      setLoadError('');
     } catch (err) {
       console.error('Failed to fetch cases:', err);
       setCases([]);
+      setLoadError(
+        err.response?.data?.error ||
+          (err.response?.status === 403
+            ? 'אין הרשאה לטעון תיקים. התנתק והתחבר מחדש עם חשבון המנהל.'
+            : 'שגיאה בטעינת התיקים')
+      );
     } finally {
       setLoading(false);
     }
@@ -164,6 +172,11 @@ const AdminCaseProcessing = () => {
       {successMessage && (
         <div className="admin-success-message" role="alert">
           {successMessage}
+        </div>
+      )}
+      {loadError && (
+        <div className="admin-load-error" role="alert">
+          {loadError}
         </div>
       )}
 

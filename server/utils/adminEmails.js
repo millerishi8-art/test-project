@@ -2,7 +2,7 @@
  * מנהל ראשי (סופר־אדמין) + מנהלי משנה.
  *
  * מנהל ראשי: SUPER_ADMIN_EMAIL / ADMIN_EMAIL / ברירת מחדל.
- * מנהלי משנה: SECONDARY_ADMIN_EMAILS (מופרד בפסיקים). אם לא הוגדר — ברירת מחדל בקוד.
+ * מנהלי משנה: ברירת מחדל בקוד + SECONDARY_ADMIN_EMAILS (מופרד בפסיקים) — האיחוד, לא דריסה.
  * מנהל משנה: אותן הרשאות בפאנל למעט מחיקת תיקים (ותיקי יתום בשרת) — רק הראשי.
  */
 
@@ -15,12 +15,13 @@ export const DEFAULT_PRIMARY_ADMIN_EMAIL = 'millerbitoach@gmail.com';
  */
 export const SUPER_ADMIN_EMAIL_ALIASES = ['millerbituach@gmail.com'];
 
-/** ברירת מחדל כשלא מוגדר SECONDARY_ADMIN_EMAILS */
+/** מנהלי משנה הקבועים בקוד — תמיד מורשים, גם אם SECONDARY_ADMIN_EMAILS מוגדר ב-.env */
 export const DEFAULT_SECONDARY_ADMIN_EMAILS = [
   'abergelyuda7@gmail.com',
   'shneortole257@gmail.com',
   'lapidwoldenberg@gmail.com',
   'harelmor11@gmail.com',
+  'maorinyo166@gmail.com',
 ];
 
 function normalizeEmail(email) {
@@ -53,15 +54,16 @@ export function isSuperAdminEmail(email) {
 
 /** רשימת מיילים של מנהלי משנה (בלי המנהל הראשי) */
 export function getSecondaryAdminEmails() {
+  const fromDefaults = DEFAULT_SECONDARY_ADMIN_EMAILS.map(normalizeEmail).filter(Boolean);
   const raw = process.env.SECONDARY_ADMIN_EMAILS;
-  if (raw != null && String(raw).trim() !== '') {
-    const list = String(raw)
-      .split(',')
-      .map((s) => s.trim().toLowerCase())
-      .filter(Boolean);
-    return [...new Set(list)];
-  }
-  return [...DEFAULT_SECONDARY_ADMIN_EMAILS];
+  const fromEnv =
+    raw != null && String(raw).trim() !== ''
+      ? String(raw)
+          .split(',')
+          .map((s) => normalizeEmail(s))
+          .filter(Boolean)
+      : [];
+  return [...new Set([...fromDefaults, ...fromEnv])];
 }
 
 export function isSecondaryAdminEmail(email) {

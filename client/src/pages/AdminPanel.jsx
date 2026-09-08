@@ -47,6 +47,7 @@ const AdminPanel = () => {
     stateFilter === 'renewal_in_6_months' ? stateFilter : 'all'
   );
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [deletingCaseId, setDeletingCaseId] = useState(null);
   const [statusUpdatingId, setStatusUpdatingId] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
@@ -80,20 +81,31 @@ const AdminPanel = () => {
   }, [stateTab, stateFilter]);
 
   const fetchData = async () => {
-    try {
-      const [usersRes, casesRes] = await Promise.all([
-        axios.get('/admin/users'),
-        axios.get('/admin/cases')
-      ]);
-      setUsers(usersRes.data);
-      setCases(casesRes.data);
-      return { users: usersRes.data, cases: casesRes.data };
-    } catch (error) {
-      console.error('Failed to fetch admin data:', error);
-      return null;
-    } finally {
-      setLoading(false);
+    setLoadError('');
+    const usersReq = axios.get('/admin/users').catch((error) => {
+      console.error('Failed to fetch admin users:', error);
+      return { data: null, error };
+    });
+    const casesReq = axios.get('/admin/cases').catch((error) => {
+      console.error('Failed to fetch admin cases:', error);
+      return { data: null, error };
+    });
+    const [usersRes, casesRes] = await Promise.all([usersReq, casesReq]);
+    const nextUsers = Array.isArray(usersRes.data) ? usersRes.data : [];
+    const nextCases = Array.isArray(casesRes.data) ? casesRes.data : [];
+    setUsers(nextUsers);
+    setCases(nextCases);
+    const failed = [usersRes.error, casesRes.error].filter(Boolean);
+    if (failed.length > 0) {
+      const msg =
+        failed[0].response?.data?.error ||
+        (failed[0].response?.status === 403
+          ? 'אין הרשאה לטעון תיקים. התנתק והתחבר מחדש עם חשבון המנהל.'
+          : 'שגיאה בטעינת נתוני הניהול');
+      setLoadError(msg);
     }
+    setLoading(false);
+    return { users: nextUsers, cases: nextCases };
   };
 
   const getBenefitTitle = (type) => {
@@ -257,6 +269,12 @@ const AdminPanel = () => {
           </button>
         </div>
       </div>
+
+      {loadError && (
+        <div className="admin-load-error" role="alert">
+          {loadError}
+        </div>
+      )}
 
       <div className="admin-tabs">
         <div className="admin-tabs-main">

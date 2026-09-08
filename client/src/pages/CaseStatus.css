@@ -60,6 +60,30 @@
   margin-bottom: var(--space-6);
 }
 
+.case-status-admin-hint {
+  text-align: center;
+  margin: -0.5rem auto 1.5rem;
+  max-width: 36rem;
+  padding: 0.75rem 1rem;
+  border-radius: 10px;
+  background: #e8f4ff;
+  border: 1px solid #b6d4fe;
+  color: #1a365d;
+  font-weight: 600;
+}
+
+.case-status-admin-link {
+  display: inline-block;
+  margin-top: 0.35rem;
+  border: 0;
+  background: #1e6bb8;
+  color: #fff;
+  border-radius: 8px;
+  padding: 0.4rem 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
 .case-status-list-section h2 {
   color: #1e6bb8;
   font-size: 1.25rem;

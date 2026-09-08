@@ -28,18 +28,19 @@ export const authenticateToken = async (req, res, next) => {
       if (!user) {
         return res.status(403).json({ error: ERROR_MESSAGES?.AUTH?.TOKEN_INVALID || 'טוקן לא תקין או שפג תוקפו' });
       }
+      const profileEmail = String(user.email || '').trim().toLowerCase();
+      const authEmail = String(authUser.email || '').trim().toLowerCase();
+      const panelEmail = authEmail || profileEmail;
       const confirmed = !!authUser.email_confirmed_at;
-      if (!confirmed && user.emailVerified === false) {
+      if (!confirmed && user.emailVerified === false && !isAnyAdminPanelEmail(panelEmail)) {
         return res.status(403).json({
           error: ERROR_MESSAGES?.AUTH?.EMAIL_NOT_VERIFIED || 'נא לאמת את כתובת האימייל',
           code: 'EMAIL_NOT_VERIFIED',
         });
       }
-      const profileEmail = String(user.email || '').trim().toLowerCase();
-      const authEmail = String(authUser.email || '').trim().toLowerCase();
       req.user = {
         id: user.id,
-        email: authEmail || profileEmail,
+        email: panelEmail,
         role: user.role,
       };
       return next();
@@ -50,14 +51,14 @@ export const authenticateToken = async (req, res, next) => {
     if (!user) {
       return res.status(403).json({ error: ERROR_MESSAGES?.AUTH?.TOKEN_INVALID || 'טוקן לא תקין או שפג תוקפו' });
     }
-    if (user.emailVerified === false) {
+    const jwtEmail = String(decoded.email || '').trim().toLowerCase();
+    const profileEmail = String(user.email || '').trim().toLowerCase();
+    if (user.emailVerified === false && !isAnyAdminPanelEmail(jwtEmail || profileEmail)) {
       return res.status(403).json({
         error: ERROR_MESSAGES?.AUTH?.EMAIL_NOT_VERIFIED || 'נא לאמת את כתובת האימייל',
         code: 'EMAIL_NOT_VERIFIED',
       });
     }
-    const jwtEmail = String(decoded.email || '').trim().toLowerCase();
-    const profileEmail = String(user.email || '').trim().toLowerCase();
     req.user = { id: user.id, email: jwtEmail || profileEmail, role: user.role };
     next();
   } catch (err) {
@@ -66,15 +67,13 @@ export const authenticateToken = async (req, res, next) => {
 };
 
 /**
- * Middleware — גישה ל־/admin רק למנהל־העל (מייל יחיד מ־SUPER_ADMIN_EMAIL / ADMIN_EMAIL).
+ * Middleware — גישה ל־/admin למנהל ראשי או משנה.
+ * מספיק מייל ברשימה או role=admin (חשבון שכבר קודם במסד).
  */
 export const isAdmin = (req, res, next) => {
-  if (!isUserRoleAdmin(req.user?.role)) {
-    return res.status(403).json({ error: ERROR_MESSAGES?.AUTH?.ADMIN_REQUIRED || 'נדרשת הרשאת מנהל מערכת' });
-  }
   const userEmail = (req.user?.email || '').trim().toLowerCase();
-  if (!isAnyAdminPanelEmail(userEmail)) {
-    return res.status(403).json({ error: ERROR_MESSAGES?.AUTH?.ADMIN_REQUIRED || 'נדרשת הרשאת מנהל מערכת' });
+  if (isAnyAdminPanelEmail(userEmail) || isUserRoleAdmin(req.user?.role)) {
+    return next();
   }
-  next();
+  return res.status(403).json({ error: ERROR_MESSAGES?.AUTH?.ADMIN_REQUIRED || 'נדרשת הרשאת מנהל מערכת' });
 };

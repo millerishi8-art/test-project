@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useLanguage } from '../context/LanguageContext';
+import { useAuth } from '../context/AuthContext';
 import { caseStatusTranslations } from '../translations/caseStatus';
 import { getProcessingStageNumber, isCaseProcessingSuccessfulEnd, getCaseStageToneClass } from '../utils/caseProcessingStages';
 import AgentSupportInline from '../components/AgentSupportInline';
@@ -79,6 +80,7 @@ function getTimelineSteps(c, t) {
 const CaseStatus = () => {
   const navigate = useNavigate();
   const { language, toggleLanguage } = useLanguage();
+  const { isAdmin } = useAuth();
   const t = caseStatusTranslations[language];
   const [cases, setCases] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -134,6 +136,16 @@ const CaseStatus = () => {
       <div className="case-status-card">
         <h1>{t.pageTitle}</h1>
         <p className="case-status-subtitle">{t.pageSubtitle}</p>
+        {isAdmin && (
+          <p className="case-status-admin-hint">
+            {language === 'he'
+              ? 'מחובר כמנהל — כל התיקים מופיעים בפאנל הניהול.'
+              : 'Signed in as admin — all cases are in the admin panel.'}{' '}
+            <button type="button" className="case-status-admin-link" onClick={() => navigate('/admin')}>
+              {language === 'he' ? 'מעבר לפאנל ניהול' : 'Open admin panel'}
+            </button>
+          </p>
+        )}
 
         <section className="case-status-list-section">
           <h2>{t.yourCases}</h2>

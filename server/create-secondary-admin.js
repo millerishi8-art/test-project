@@ -57,6 +57,7 @@ async function run() {
     process.exit(1);
   }
   const displayName = String(process.argv[4] || '').trim() || 'מנהל משנה';
+  const cliPhone = String(process.argv[5] || '').trim() || '0500000001';
 
   let existingByEmail;
   try {
@@ -75,6 +76,7 @@ async function run() {
       email: targetEmail,
       emailVerified: true,
       name: displayName,
+      phone: cliPhone,
     };
     if (existingByEmail.authProvider === 'supabase') {
       await updateAuthUserPassword(existingByEmail.id, cliPassword);
@@ -97,7 +99,7 @@ async function run() {
         email: targetEmail,
         password: cliPassword,
         name: displayName,
-        phone: '0500000001',
+        phone: cliPhone,
       });
     } catch (authErr) {
       if (!isSupabaseAuthUserExistsError(authErr)) throw authErr;
@@ -120,13 +122,14 @@ async function run() {
         name: displayName,
         emailVerified: true,
         authProvider: 'supabase',
+        phone: cliPhone,
       });
     } else {
       await createUser({
         id: authUser.id,
         name: displayName,
         email: targetEmail,
-        phone: '0500000001',
+        phone: cliPhone,
         role: ROLES.ADMIN,
         emailVerified: true,
         authProvider: 'supabase',
@@ -139,7 +142,7 @@ async function run() {
       id: uuidv4(),
       name: displayName,
       email: targetEmail,
-      phone: '0500000001',
+      phone: cliPhone,
       password: hashedPassword,
       role: ROLES.ADMIN,
       emailVerified: true,
