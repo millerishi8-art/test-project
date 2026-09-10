@@ -47,6 +47,20 @@ export function isCaseClosed(c) {
   return getProcessingStageNumber(c) === 4;
 }
 
+/** אישור או סגירה של הממשלה – נכנס אוטומטית למסלול חידוש בעוד חצי שנה */
+export function isGovernmentFinalDecision(c) {
+  if (!c) return false;
+  const n = getProcessingStageNumber(c);
+  return n === 4 || n === 5;
+}
+
+/** יופיע ב«חידוש עתידי (חצי שנה)» עד מחיקת התיק */
+export function isOnSixMonthRenewalTrack(c) {
+  if (!c) return false;
+  if (c.adminConfirmedCompleted) return true;
+  return isGovernmentFinalDecision(c);
+}
+
 /**
  * מחלקת צבע לפי שלב עיבוד.
  * 1 צהוב (פתיחה) → 2 כתום (ראיון) → 3 כחול האתר (הגשה). ירוק/אדום שמורים לאישור/סגירה.

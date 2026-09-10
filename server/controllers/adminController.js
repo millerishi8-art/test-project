@@ -1,7 +1,7 @@
 import { readUsers, findUserById, findUserByEmail, updateUserById, deleteUserById } from '../models/User.js';
 import { readCases, findCaseById, findCasesByUserId, updateCase, deleteCase, deleteCasesByIds } from '../models/Case.js';
 import { readPayouts, createPayout } from '../models/Payout.js';
-import { DEFAULT_UNKNOWN, CASE_STATUS } from '../components/constants.js';
+import { DEFAULT_UNKNOWN, CASE_STATUS, RENEWAL_MONTHS } from '../components/constants.js';
 import {
   isAnyAdminPanelEmail,
   isSuperAdminEmail,
@@ -591,7 +591,12 @@ export const updateCaseStatus = async (req, res) => {
     if (!caseData) {
       return res.status(404).json({ error: 'תיק לא נמצא' });
     }
-    const updated = await updateCase(id, { status });
+    const actorEmail = (req.user?.email || '').trim().toLowerCase();
+    const payload = { status };
+    if (status === CASE_STATUS.APPROVED || status === 'closed' || status === CASE_STATUS.REJECTED) {
+      Object.assign(payload, sixMonthRenewalFields(caseData, actorEmail));
+    }
+    const updated = await updateCase(id, payload);
     const { authorName } = await resolveActorName(req);
     await recordAdminCaseChange({
       req,
@@ -614,9 +619,31 @@ export const updateCaseStatus = async (req, res) => {
 };
 
 /**
- * מנהל מאשר שהקייס הושלם בהצלחה – אחרי זה הסטטוס "יחודש בעוד חצי שנה" יוצג.
- * נשמר גם מי העובד (המנהל) שאישר את הסיום – לצורך מעקב תשלומי עובדים (15$ לכייס).
+ * מסלול חידוש אוטומטי לחצי שנה אחרי החלטת ממשלה (אישור או סגירה).
+ * מתבטל רק במחיקת התיק – לא בביטול שלב עיבוד.
  */
+function sixMonthRenewalFields(existing, actorEmail) {
+  const now = new Date();
+  const renewalDate = new Date(now);
+  renewalDate.setMonth(renewalDate.getMonth() + RENEWAL_MONTHS);
+  const fields = {
+    renewalDate: renewalDate.toISOString(),
+    isRenewed: false,
+    adminConfirmedCompleted: true,
+  };
+  if (existing?.adminConfirmedCompleted === true) {
+    return fields;
+  }
+  const nowIso = now.toISOString();
+  fields.adminConfirmedAt = nowIso;
+  fields.completedBy = actorEmail || existing?.completedBy || null;
+  fields.completedAt = nowIso;
+  if (existing?.employeePaid !== true) {
+    fields.employeePaid = false;
+  }
+  return fields;
+}
+
 export const confirmCaseCompleted = async (req, res) => {
   try {
     const { id } = req.params;
@@ -809,7 +836,8 @@ export const updateCaseProcessing = async (req, res) => {
       stage === '0' ||
       String(stage || '').toLowerCase() === 'clear';
 
-    /* ביטול שלב פעיל – ללא שליחת מייל/התראה */
+    /* ביטול שלב פעיל – ללא שליחת מייל/התראה.
+     * מסלול חידוש חצי-שנה אחרי החלטת ממשלה לא מבוטל כאן – רק במחיקת התיק. */
     if (wantsClear) {
       const updated = await updateCase(id, {
         detailedAdminStatus: null,
@@ -874,6 +902,7 @@ export const updateCaseProcessing = async (req, res) => {
       updates.rejectionReason = reason;
       updates.status = 'closed';
       updates.approvedBenefits = null;
+      Object.assign(updates, sixMonthRenewalFields(caseData, (req.user?.email || '').trim().toLowerCase()));
     } else if (stageNum === 5) {
       updates.status = CASE_STATUS.APPROVED;
       updates.rejectionReason = null;
@@ -887,6 +916,7 @@ export const updateCaseProcessing = async (req, res) => {
       } else {
         updates.approvedBenefits = null;
       }
+      Object.assign(updates, sixMonthRenewalFields(caseData, (req.user?.email || '').trim().toLowerCase()));
     } else {
       updates.status = CASE_STATUS.PENDING;
       updates.rejectionReason = null;
@@ -895,21 +925,25 @@ export const updateCaseProcessing = async (req, res) => {
     const updated = await updateCase(id, updates);
 
     const { authorName } = await resolveActorName(req);
+    const noticeSteps = processingChangeSteps({
+      actorName: authorName,
+      clientName: caseData.personalDetails?.fullName || '',
+      benefitType: caseData.benefitType,
+      prevLabel: PROCESSING_STAGES[prevStage] || null,
+      nextLabel: detailedAdminStatus,
+      stageNum,
+      rejectionReason: updates.rejectionReason,
+      approvedBenefits: updates.approvedBenefits,
+    });
+    if (stageNum === 4 || stageNum === 5) {
+      noticeSteps.push('מה לעשות: הכייס הועבר אוטומטית לחידוש בעוד חצי שנה. ביטול המסלול רק במחיקת התיק.');
+    }
     await recordAdminCaseChange({
       req,
       caseData,
       actorName: authorName,
       title: 'עודכן שלב עיבוד בכייס',
-      steps: processingChangeSteps({
-        actorName: authorName,
-        clientName: caseData.personalDetails?.fullName || '',
-        benefitType: caseData.benefitType,
-        prevLabel: PROCESSING_STAGES[prevStage] || null,
-        nextLabel: detailedAdminStatus,
-        stageNum,
-        rejectionReason: updates.rejectionReason,
-        approvedBenefits: updates.approvedBenefits,
-      }),
+      steps: noticeSteps,
     });
 
     /* התראות רק במעבר לשלב חדש (לא בביטול) */

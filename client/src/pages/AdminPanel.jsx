@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 import HraDetailsModal, { hasHraContent } from '../components/HraDetailsModal.jsx';
 import { CaseInterimNotesButton } from '../components/CaseInterimNotes.jsx';
 import CaseStatusModal from '../components/CaseStatusModal.jsx';
-import { getCaseStageToneClass } from '../utils/caseProcessingStages';
+import { getCaseStageToneClass, isOnSixMonthRenewalTrack } from '../utils/caseProcessingStages';
 import '../styles/caseStageTones.css';
 import './AdminPanel.css';
 
@@ -17,16 +17,17 @@ const RENEWAL_DONE = 'renewed';
 
 const SIX_MONTHS_MS = 6 * 30 * 24 * 60 * 60 * 1000;
 
-/** מחזיר מצב חידוש: "חידוש עתידי (חצי שנה)" רק אחרי שמנהל אישר שהקייס הושלם */
+/** מחזיר מצב חידוש: אישור/סגירה של הממשלה נכנסים אוטומטית לחידוש בעוד חצי שנה (ביטול רק במחיקה) */
 function getRenewalStatus(c) {
-  if (!c.renewalDate) return RENEWAL_OK;
+  if (c.isRenewed) return RENEWAL_DONE;
+  const onTrack = isOnSixMonthRenewalTrack(c);
+  if (!c.renewalDate) return onTrack ? RENEWAL_IN_6_MONTHS : RENEWAL_OK;
   const renewal = new Date(c.renewalDate).getTime();
   const now = Date.now();
-  if (c.isRenewed) return RENEWAL_DONE;
+  if (Number.isNaN(renewal)) return onTrack ? RENEWAL_IN_6_MONTHS : RENEWAL_OK;
   if (renewal <= now) return RENEWAL_NEEDS_NOW;
-  if (renewal - now <= SIX_MONTHS_MS) {
-    return c.adminConfirmedCompleted ? RENEWAL_IN_6_MONTHS : RENEWAL_PENDING_CONFIRMATION;
-  }
+  if (onTrack) return RENEWAL_IN_6_MONTHS;
+  if (renewal - now <= SIX_MONTHS_MS) return RENEWAL_PENDING_CONFIRMATION;
   return RENEWAL_OK;
 }
 
