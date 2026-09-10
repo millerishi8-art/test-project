@@ -1,7 +1,36 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import axios from 'axios';
 import { compressImageFile, readFileAsDataUrl } from '../utils/imageCompression';
 import './HraDetailsModal.css';
+
+function isImageFile(file) {
+  if (!file) return false;
+  if (file.type && file.type.startsWith('image/')) return true;
+  return /\.(png|jpe?g|gif|webp|heic|heif|bmp)$/i.test(file.name || '');
+}
+
+function filesFromTransfer(transfer) {
+  if (!transfer) return [];
+  const fromFiles = Array.from(transfer.files || []);
+  if (fromFiles.length) return fromFiles;
+  return Array.from(transfer.items || [])
+    .filter((item) => item.kind === 'file')
+    .map((item) => item.getAsFile())
+    .filter(Boolean);
+}
+
+function firstImageFromTransfer(transfer) {
+  return filesFromTransfer(transfer).find(isImageFile) || null;
+}
+
+function transferLooksLikeFiles(dt) {
+  if (!dt) return false;
+  const types = dt.types;
+  if (!types) return false;
+  if (typeof types.contains === 'function') return types.contains('Files');
+  if (typeof types.includes === 'function') return types.includes('Files');
+  return Array.from(types).includes('Files');
+}
 
 function hasHraContent(hra) {
   if (!hra || typeof hra !== 'object') return false;
@@ -48,6 +77,8 @@ export default function HraDetailsModal({ caseId, caseLabel, onClose, onSaved })
   const [pendingFile, setPendingFile] = useState(null);
   const [clearImage, setClearImage] = useState(false);
   const [clearFile, setClearFile] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragDepthRef = useRef(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -76,17 +107,32 @@ export default function HraDetailsModal({ caseId, caseLabel, onClose, onSaved })
     };
   }, [caseId]);
 
+  useEffect(() => {
+    const onPaste = (e) => {
+      const image = firstImageFromTransfer(e.clipboardData);
+      if (!image) return;
+      e.preventDefault();
+      applyImageFile(image);
+    };
+    window.addEventListener('paste', onPaste);
+    return () => window.removeEventListener('paste', onPaste);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (localImagePreview) URL.revokeObjectURL(localImagePreview);
+    };
+  }, [localImagePreview]);
+
   const displayImage = localImagePreview || (!clearImage ? imageUrl : null);
   const displayFileName = pendingFile?.name || (!clearFile ? fileName : '') || '';
   const displayFileUrl = !clearFile && !pendingFile ? fileUrl : null;
 
-  const onPickImage = (e) => {
-    const file = e.target.files?.[0];
-    e.target.value = '';
-    if (!file) return;
-    if (!file.type.startsWith('image/')) {
+  const applyImageFile = (file) => {
+    if (!file) return false;
+    if (!isImageFile(file)) {
       setError('יש לבחור קובץ תמונה בלבד');
-      return;
+      return false;
     }
     setError('');
     setPendingImageFile(file);
@@ -96,6 +142,59 @@ export default function HraDetailsModal({ caseId, caseLabel, onClose, onSaved })
       if (prev) URL.revokeObjectURL(prev);
       return preview;
     });
+    return true;
+  };
+
+  const onPickImage = (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (file) applyImageFile(file);
+  };
+
+  const endDrag = () => {
+    dragDepthRef.current = 0;
+    setIsDragging(false);
+  };
+
+  const onDragEnter = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!transferLooksLikeFiles(e.dataTransfer)) return;
+    dragDepthRef.current += 1;
+    setIsDragging(true);
+  };
+
+  const onDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
+  };
+
+  const onDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    dragDepthRef.current = Math.max(0, dragDepthRef.current - 1);
+    if (dragDepthRef.current === 0) setIsDragging(false);
+  };
+
+  const onDropMedia = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    endDrag();
+    const image = firstImageFromTransfer(e.dataTransfer);
+    if (image) {
+      applyImageFile(image);
+      return;
+    }
+    const other = filesFromTransfer(e.dataTransfer)[0];
+    if (other) {
+      setError('');
+      setPendingFile(other);
+      setClearFile(false);
+      setFileName(other.name || 'קובץ');
+      return;
+    }
+    setError('לא נמצאה תמונה לגרירה. נסה לגרור קובץ תמונה או להדביק עם Ctrl+V.');
   };
 
   const onPickFile = (e) => {
@@ -150,8 +249,24 @@ export default function HraDetailsModal({ caseId, caseLabel, onClose, onSaved })
     (displayFileUrl && /\.pdf(\?|$)/i.test(displayFileUrl));
 
   return (
-    <div className="hra-modal-overlay" role="dialog" aria-modal="true" onClick={onClose}>
-      <div className="hra-modal" dir="rtl" onClick={(e) => e.stopPropagation()}>
+    <div
+      className={`hra-modal-overlay${isDragging ? ' is-dragging' : ''}`}
+      role="dialog"
+      aria-modal="true"
+      onClick={onClose}
+      onDragEnter={onDragEnter}
+      onDragOver={onDragOver}
+      onDragLeave={onDragLeave}
+      onDrop={onDropMedia}
+    >
+      <div
+        className="hra-modal"
+        dir="rtl"
+        onClick={(e) => e.stopPropagation()}
+        onDragEnter={onDragEnter}
+        onDragOver={onDragOver}
+        onDrop={onDropMedia}
+      >
         <header className="hra-modal-header">
           <div>
             <h2>פרטים מהאתר HRA לכייס</h2>
@@ -200,6 +315,7 @@ export default function HraDetailsModal({ caseId, caseLabel, onClose, onSaved })
 
             <section className="hra-section">
               <h3>תמונה</h3>
+              <p className="hra-hint">גרור תמונה לכאן כמו בוואטסאפ, או הדבק עם Ctrl+V.</p>
               <div className="hra-upload-row">
                 <label className="hra-file-label">
                   בחירת תמונה
@@ -222,13 +338,19 @@ export default function HraDetailsModal({ caseId, caseLabel, onClose, onSaved })
                   </button>
                 ) : null}
               </div>
-              {displayImage ? (
-                <div className="hra-image-preview">
-                  <img src={displayImage} alt="תמונת HRA" />
-                </div>
-              ) : (
-                <p className="hra-empty">לא הועלתה תמונה</p>
-              )}
+              <div
+                className={`hra-dropzone${isDragging ? ' is-active' : ''}${displayImage ? ' has-preview' : ''}`}
+                onDragOver={onDragOver}
+                onDrop={onDropMedia}
+              >
+                {displayImage ? (
+                  <div className="hra-image-preview">
+                    <img src={displayImage} alt="תמונת HRA" />
+                  </div>
+                ) : (
+                  <p className="hra-dropzone-empty">גרור תמונה לכאן או לחץ על בחירת תמונה</p>
+                )}
+              </div>
             </section>
 
             <section className="hra-section">
@@ -273,6 +395,15 @@ export default function HraDetailsModal({ caseId, caseLabel, onClose, onSaved })
             </section>
           </div>
         )}
+
+        {isDragging ? (
+          <div className="hra-drag-overlay" aria-hidden="true">
+            <div className="hra-drag-overlay-card">
+              <strong>שחרר כאן את התמונה</strong>
+              <span>התמונה תתווסף לטופס פרטי ה-HRA</span>
+            </div>
+          </div>
+        ) : null}
 
         <footer className="hra-modal-footer">
           <button type="button" className="hra-btn secondary" onClick={onClose} disabled={saving}>
