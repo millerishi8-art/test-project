@@ -92,6 +92,50 @@ export function isEmailConfigured() {
   return getTransporter() !== null;
 }
 
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+/**
+ * שם תצוגה + כתובת. כתובת ה-From עצמה נשארת תיבת השליחה (חובה ב-Gmail),
+ * כדי שהאימות של גוגל לא יישבר.
+ */
+function formatFromAddress(config) {
+  const addr = config.EMAIL_FROM || config.EMAIL_USER || config.SMTP_USER;
+  if (!addr) return '';
+  if (addr.includes('<')) return addr;
+  const displayName = (process.env.EMAIL_FROM_NAME || 'מילר ביטוח').trim() || 'מילר ביטוח';
+  return `"${displayName.replace(/"/g, '')}" <${addr}>`;
+}
+
+/**
+ * הודעת אימות אישית: עדיפות גבוהה (Outlook / Apple Mail) בלי ניסוח שיווקי
+ * שדוחף את Gmail לקידומי מכירות או לספאם.
+ */
+function transactionalMailFields(config, recipient) {
+  const fromAddress = config.EMAIL_FROM || config.EMAIL_USER || config.SMTP_USER;
+  return {
+    from: formatFromAddress(config),
+    replyTo: fromAddress,
+    to: recipient,
+    envelope: {
+      from: fromAddress,
+      to: recipient,
+    },
+    headers: {
+      Importance: 'high',
+      'X-Priority': '1',
+      'X-MSMail-Priority': 'High',
+      Priority: 'urgent',
+      'X-Auto-Response-Suppress': 'OOF, AutoReply',
+    },
+  };
+}
+
 /**
  * Send 6-digit verification code email (no link).
  * Never throws – returns false on failure and logs errors.
@@ -125,31 +169,27 @@ export async function sendVerificationCodeEmail(to, name, code) {
     console.error('[Email] Verification aborted: missing/invalid recipient. to=', to);
     return false;
   }
+  const safeName = escapeHtml((name || '').trim() || 'שלום');
+  const verifyUrl = `${config.APP_BASE_URL.replace(/\/+$/, '')}/verify-email`;
   console.log('[Email] Sending verification code to', recipient, '| from:', fromAddress);
-  const subject = 'קוד אימות – סוכן ביטוח';
+  const subject = 'קוד האימות להרשמה באתר מילר ביטוח';
   const html = `
-    <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 500px;">
-      <h2>שלום ${name || 'משתמש'},</h2>
-      <p>קוד האימות שלך הוא:</p>
-      <p style="font-size: 28px; font-weight: bold; letter-spacing: 4px;">${codeStr}</p>
-      <p>הזן את הקוד באתר כדי לאמת את כתובת האימייל.</p>
-      <p>הקוד תקף ל-15 דקות.</p>
-      <hr style="border: none; border-top: 1px solid #eee;" />
-      <p style="color: #888; font-size: 12px;">סוכן ביטוח</p>
+    <div dir="rtl" style="font-family: Arial, Helvetica, sans-serif; max-width: 520px; color: #1a1a1a; line-height: 1.55;">
+      <p style="margin: 0 0 12px;">שלום ${safeName},</p>
+      <p style="margin: 0 0 12px;">נרשמת עכשיו לאתר <strong>מילר ביטוח</strong>. כדי לסיים את ההרשמה ולהתחבר, הזן את קוד האימות הבא:</p>
+      <p style="margin: 16px 0; font-size: 32px; font-weight: 700; letter-spacing: 6px; font-family: Consolas, Monaco, monospace;">${codeStr}</p>
+      <p style="margin: 0 0 12px;">הקוד תקף ל-15 דקות. אפשר להזין אותו כאן:<br /><a href="${verifyUrl}">${verifyUrl}</a></p>
+      <p style="margin: 0 0 12px;">אם לא נרשמת לאתר, אפשר להתעלם מההודעה הזו.</p>
+      <p style="margin: 20px 0 0; color: #555; font-size: 13px;">מילר ביטוח · miller-bitoach.com<br />הודעת אימות אישית לחשבון שנפתח זה עתה.</p>
     </div>
   `;
-  const text = `שלום ${name || 'משתמש'},\n\nקוד האימות שלך: ${codeStr}\n\nהזן את הקוד באתר. הקוד תקף ל-15 דקות.`;
+  const text = `שלום ${(name || '').trim() || ''},\n\nנרשמת לאתר מילר ביטוח. קוד האימות להשלמת ההרשמה: ${codeStr}\n\nהקוד תקף ל-15 דקות.\nהזנת הקוד: ${verifyUrl}\n\nאם לא נרשמת, אפשר להתעלם מההודעה.\n\nמילר ביטוח · https://www.miller-bitoach.com`;
 
   const mailOptions = {
-    from: fromAddress,
-    to: recipient,
+    ...transactionalMailFields(config, recipient),
     subject,
     text,
     html,
-    envelope: {
-      from: fromAddress,
-      to: recipient,
-    },
   };
 
   try {
@@ -216,33 +256,27 @@ export async function sendPasswordResetCodeEmail(to, name, code) {
   }
 
   const codeStr = String(code || '').trim().replace(/\D/g, '').slice(0, 6) || '000000';
+  const safeName = escapeHtml((name || '').trim() || 'שלום');
   console.log('[Email] Sending password reset code to', recipient, '| from:', fromAddress);
-  const subject = 'קוד איפוס סיסמה – סוכן ביטוח';
+  const subject = 'קוד לאיפוס הסיסמה באתר מילר ביטוח';
   const html = `
-    <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 500px;">
-      <h2>שלום ${name || 'משתמש'},</h2>
-      <p>קוד איפוס הסיסמה שלך הוא:</p>
-      <p style="font-size: 28px; font-weight: bold; letter-spacing: 4px;">${codeStr}</p>
-      <p>הזן את הקוד בדף ההתחברות ובחר סיסמה חדשה.</p>
-      <p>הקוד תקף ל-15 דקות.</p>
-      <hr style="border: none; border-top: 1px solid #eee;" />
-      <p style="color: #888; font-size: 12px;">סוכן ביטוח</p>
+    <div dir="rtl" style="font-family: Arial, Helvetica, sans-serif; max-width: 520px; color: #1a1a1a; line-height: 1.55;">
+      <p style="margin: 0 0 12px;">שלום ${safeName},</p>
+      <p style="margin: 0 0 12px;">ביקשת לאפס את הסיסמה באתר <strong>מילר ביטוח</strong>. קוד האיפוס:</p>
+      <p style="margin: 16px 0; font-size: 32px; font-weight: 700; letter-spacing: 6px; font-family: Consolas, Monaco, monospace;">${codeStr}</p>
+      <p style="margin: 0 0 12px;">הזן את הקוד בדף ההתחברות ובחר סיסמה חדשה. הקוד תקף ל-15 דקות.</p>
+      <p style="margin: 0 0 12px;">אם לא ביקשת איפוס, אפשר להתעלם מההודעה.</p>
+      <p style="margin: 20px 0 0; color: #555; font-size: 13px;">מילר ביטוח · miller-bitoach.com</p>
     </div>
   `;
-  const text = `שלום ${name || 'משתמש'},\n\nקוד איפוס הסיסמה: ${codeStr}\n\nהזן את הקוד באתר ובחר סיסמה חדשה. הקוד תקף ל-15 דקות.`;
+  const text = `שלום ${(name || '').trim() || ''},\n\nקוד איפוס הסיסמה באתר מילר ביטוח: ${codeStr}\n\nהזן את הקוד באתר ובחר סיסמה חדשה. הקוד תקף ל-15 דקות.\nאם לא ביקשת איפוס, אפשר להתעלם.\n`;
 
   try {
     const info = await transport.sendMail({
-      from: fromAddress,
-      to: recipient,
+      ...transactionalMailFields(config, recipient),
       subject,
       text,
       html,
-      /* envelope מפורש – מבטיח ש-SMTP ימסור לנמען הנכון ולא רק לתיבת השולח */
-      envelope: {
-        from: fromAddress,
-        to: recipient,
-      },
     });
     console.log('[Email] Password reset code sent to', recipient, '| accepted:', info?.accepted, '| rejected:', info?.rejected);
     if (Array.isArray(info?.rejected) && info.rejected.length > 0) {
