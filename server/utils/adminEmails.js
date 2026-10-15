@@ -26,7 +26,11 @@ export const DEFAULT_SECONDARY_ADMIN_EMAILS = [
 
 function normalizeEmail(email) {
   return String(email == null ? '' : email)
-    .trim()ת תיקים וכו') */
+    .trim()
+    .toLowerCase();
+}
+
+/** מייל מנהל־העל הקנוני — מקור אמת לפעולות רגישות (מחיקת תיקים וכו') */
 export function getSuperAdminEmail() {
   const raw = process.env.SUPER_ADMIN_EMAIL || process.env.ADMIN_EMAIL || DEFAULT_PRIMARY_ADMIN_EMAIL;
   const s = typeof raw === 'string' ? raw : String(raw || '');
@@ -85,8 +89,3 @@ export function getAllowedAdminEmails() {
 export function isAllowedAdminEmail(email) {
   return isAnyAdminPanelEmail(email);
 }
-
-    .toLowerCase();
-}
-
-/** מייל מנהל־העל הקנוני — מקור אמת לפעולות רגישות (מחיק
