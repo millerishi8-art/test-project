@@ -1,5 +1,7 @@
 import nodemailer from 'nodemailer';
 
+import { recipientBounceRisk } from '../utils/emailAddress.js';
+
 /** Uses process.env.EMAIL_USER and process.env.EMAIL_PASS for Gmail; or SMTP_* for custom SMTP. */
 function getConfig() {
   const EMAIL_USER = (process.env.EMAIL_USER || '').trim();
@@ -169,6 +171,15 @@ export async function sendVerificationCodeEmail(to, name, code) {
     console.error('[Email] Verification aborted: missing/invalid recipient. to=', to);
     return false;
   }
+  const bounceRisk = await recipientBounceRisk(recipient);
+  if (bounceRisk) {
+    console.error(
+      '[Email] Verification not sent. A bad address would bounce the code back to the system mailbox.',
+      recipient,
+      bounceRisk.code
+    );
+    return false;
+  }
   const safeName = escapeHtml((name || '').trim() || 'שלום');
   const verifyUrl = `${config.APP_BASE_URL.replace(/\/+$/, '')}/verify-email`;
   console.log('[Email] Sending verification code to', recipient, '| from:', fromAddress);
@@ -246,6 +257,15 @@ export async function sendPasswordResetCodeEmail(to, name, code) {
   const recipient = normalizeRecipientEmail(to);
   if (!recipient || !recipient.includes('@')) {
     console.error('[Email] Password reset aborted: missing/invalid recipient. to=', to);
+    return false;
+  }
+  const bounceRisk = await recipientBounceRisk(recipient);
+  if (bounceRisk) {
+    console.error(
+      '[Email] Password reset not sent. A bad address would bounce the code back to the system mailbox.',
+      recipient,
+      bounceRisk.code
+    );
     return false;
   }
 

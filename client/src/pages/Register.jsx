@@ -3,6 +3,7 @@ import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { authTranslations, localizeAuthError } from '../translations/auth';
+import { mistypedEmailMessage } from '../utils/emailAddress';
 import {
   PHONE_COUNTRIES,
   phoneCountryLabel,
@@ -53,6 +54,11 @@ const Register = () => {
     const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
     if (!emailRegex.test(email)) {
       setEmailError('פורמט אימייל לא חוקי. אנא הזן כתובת תקינה.');
+      return;
+    }
+    const typoMessage = mistypedEmailMessage(email, language);
+    if (typoMessage) {
+      setEmailError(typoMessage);
       return;
     }
 
@@ -115,6 +121,14 @@ const Register = () => {
     );
     if (!phoneCheck.ok) {
       setError(phoneCheck.error);
+      setLoading(false);
+      return;
+    }
+
+    const typoMessage = mistypedEmailMessage(formData.email, language);
+    if (typoMessage) {
+      setEmailError(typoMessage);
+      setError(typoMessage);
       setLoading(false);
       return;
     }

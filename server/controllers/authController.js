@@ -16,6 +16,7 @@ import { sendVerificationSms } from '../services/sms.js';
 import { connectToDatabase, dbErrorMessageForClient } from '../db/database.js';
 import { isSuperAdminEmail, isSecondaryAdminEmail, isAnyAdminPanelEmail } from '../utils/adminEmails.js';
 import { secureCompare } from '../utils/auth.js';
+import { recipientBounceRisk } from '../utils/emailAddress.js';
 import {
   isSupabasePasswordAuthEnabled,
   registerAuthUserWithAdminApi,
@@ -351,6 +352,14 @@ export const register = async (req, res) => {
     }
 
     const registerEmail = (email + '').trim().toLowerCase();
+    const bounceRisk = await recipientBounceRisk(registerEmail);
+    if (bounceRisk) {
+      return res.status(400).json({
+        error: bounceRisk.error,
+        code: bounceRisk.code,
+        suggestion: bounceRisk.suggestion || null,
+      });
+    }
     const isPrivilegedAdminRegister = isAnyAdminPanelEmail(registerEmail);
 
     let existingUser = null;
@@ -591,6 +600,14 @@ export const login = async (req, res) => {
       });
 
     const respondEmailNotVerified = async (account) => {
+      const bounceRisk = await recipientBounceRisk(rawEmail);
+      if (bounceRisk) {
+        return res.status(400).json({
+          error: bounceRisk.error,
+          code: bounceRisk.code,
+          suggestion: bounceRisk.suggestion || null,
+        });
+      }
       let emailSent = false;
       let codeAlreadyActive = false;
       if (account?.id) {
@@ -925,6 +942,14 @@ export const resendVerificationEmail = async (req, res) => {
     if (!email) {
       return res.status(400).json({ error: ERROR_MESSAGES.AUTH.EMAIL_PASSWORD_REQUIRED });
     }
+    const bounceRisk = await recipientBounceRisk(email);
+    if (bounceRisk) {
+      return res.status(400).json({
+        error: bounceRisk.error,
+        code: bounceRisk.code,
+        suggestion: bounceRisk.suggestion || null,
+      });
+    }
     const user = await findUserByEmail(email);
     if (!user) {
       return res.status(404).json({
@@ -1092,6 +1117,14 @@ export const requestPasswordReset = async (req, res) => {
     const email = (req.body.email || '').trim().toLowerCase();
     if (!email) {
       return res.status(400).json({ error: ERROR_MESSAGES.AUTH.EMAIL_PASSWORD_REQUIRED });
+    }
+    const bounceRisk = await recipientBounceRisk(email);
+    if (bounceRisk) {
+      return res.status(400).json({
+        error: bounceRisk.error,
+        code: bounceRisk.code,
+        suggestion: bounceRisk.suggestion || null,
+      });
     }
     const user = await findUserByEmail(email);
     if (user) {

@@ -4,6 +4,7 @@ import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 import { authTranslations, localizeAuthError } from '../translations/auth';
+import { mistypedEmailMessage } from '../utils/emailAddress';
 import './Auth.css';
 
 function logAuthError(location, err) {
@@ -118,6 +119,13 @@ const Login = () => {
     setLoginErrorHint(null);
     setLoading(true);
 
+    const typoMessage = mistypedEmailMessage(formData.email, language);
+    if (typoMessage) {
+      setError(typoMessage);
+      setLoading(false);
+      return;
+    }
+
     const pendingCode = (emailCode || '').replace(/\D/g, '').slice(0, 6);
     if (pendingCode.length === 6) {
       try {
@@ -174,6 +182,11 @@ const Login = () => {
     const email = (formData.email || '').trim();
     if (!email) {
       setError('הזן אימייל כדי לשלוח שוב אימייל אימות');
+      return;
+    }
+    const typoMessage = mistypedEmailMessage(email, language);
+    if (typoMessage) {
+      setError(typoMessage);
       return;
     }
     setResendLoading(true);
@@ -296,6 +309,11 @@ const Login = () => {
     const email = (resetEmail || '').trim().toLowerCase();
     if (!email) {
       setResetError('הזן את כתובת האימייל');
+      return;
+    }
+    const typoMessage = mistypedEmailMessage(email, language);
+    if (typoMessage) {
+      setResetError(typoMessage);
       return;
     }
     setResetSendLoading(true);
