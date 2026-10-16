@@ -61,6 +61,7 @@ const Login = () => {
   const [loginErrorCode, setLoginErrorCode] = useState(null);
   const [loginErrorHint, setLoginErrorHint] = useState(null);
   const [emailCode, setEmailCode] = useState('');
+  const [emailFieldError, setEmailFieldError] = useState('');
   const [codeAlreadyActive, setCodeAlreadyActive] = useState(false);
   const [emailVerifyLoading, setEmailVerifyLoading] = useState(false);
   const [emailVerifySuccess, setEmailVerifySuccess] = useState('');
@@ -106,6 +107,7 @@ const Login = () => {
       [e.target.name]: e.target.value
     });
     setError('');
+    setEmailFieldError('');
     setLoginErrorCode(null);
     setLoginErrorHint(null);
   };
@@ -122,6 +124,7 @@ const Login = () => {
     const typoMessage = mistypedEmailMessage(formData.email, language);
     if (typoMessage) {
       setError(typoMessage);
+      setEmailFieldError(typoMessage);
       setLoading(false);
       return;
     }
@@ -149,6 +152,14 @@ const Login = () => {
 
     if (result.success) {
       navigate('/dashboard');
+      setLoading(false);
+      return;
+    }
+    if (result.code === 'EMAIL_TYPO' || result.code === 'EMAIL_UNDELIVERABLE') {
+      const msg = apiErrorToString(result.error, 'יש טעות בכתיבת האימייל. הכתובת לא קיימת, ולכן לא נשלח קוד.');
+      setError(msg);
+      setEmailFieldError(msg);
+      setResendMessage('');
       setLoading(false);
       return;
     }
@@ -187,6 +198,8 @@ const Login = () => {
     const typoMessage = mistypedEmailMessage(email, language);
     if (typoMessage) {
       setError(typoMessage);
+      setEmailFieldError(typoMessage);
+      setResendMessage('');
       return;
     }
     setResendLoading(true);
@@ -202,7 +215,12 @@ const Login = () => {
       if (code === 'USER_NOT_FOUND') {
         setLoginErrorCode('USER_NOT_FOUND');
       }
-      setError(apiErrorToString(err.response?.data?.error, 'שליחה חוזרת נכשלה.'));
+      const msg = apiErrorToString(err.response?.data?.error, 'שליחה חוזרת נכשלה.');
+      setError(msg);
+      if (code === 'EMAIL_TYPO' || code === 'EMAIL_UNDELIVERABLE') {
+        setEmailFieldError(msg);
+        setResendMessage('');
+      }
     } finally {
       setResendLoading(false);
     }
@@ -488,8 +506,14 @@ const Login = () => {
               name="email"
               value={formData.email}
               onChange={handleChange}
+              onBlur={() => {
+                const msg = mistypedEmailMessage(formData.email, language);
+                setEmailFieldError(msg);
+                if (msg) setError(msg);
+              }}
               required
             />
+            {emailFieldError && <div className="field-error-message">{show(emailFieldError)}</div>}
           </div>
           <div className="form-group">
             <label>{t.password}</label>

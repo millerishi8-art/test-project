@@ -72,7 +72,7 @@ export async function recipientBounceRisk(email) {
   const suggestion = mistypedEmailSuggestion(raw);
   if (suggestion) {
     return {
-      error: `הכתובת ${raw} שגויה ולא קיימת, ולכן קוד האימות לא נשלח. התכוונת ל-${suggestion}? תקן את האימייל ונסה שוב.`,
+      error: `יש טעות בכתיבת האימייל. כתבת ${raw}, והכתובת הזאת לא קיימת. לא נשלח קוד. כתוב במקום זה: ${suggestion}`,
       code: 'EMAIL_TYPO',
       suggestion,
     };
@@ -80,14 +80,14 @@ export async function recipientBounceRisk(email) {
   const domain = raw.split('@')[1] || '';
   if (!domain || !domain.includes('.')) {
     return {
-      error: 'כתובת האימייל לא תקינה, ולכן הקוד לא נשלח.',
+      error: 'יש טעות בכתיבת האימייל. הכתובת לא תקינה, ולכן לא נשלח קוד אימות.',
       code: 'EMAIL_UNDELIVERABLE',
     };
   }
   const canReceive = await domainCanReceiveMail(domain);
   if (!canReceive) {
     return {
-      error: `הכתובת ${raw} לא קיימת, ולכן קוד האימות לא נשלח. בדוק את האיות ונסה שוב.`,
+      error: `יש טעות בכתיבת האימייל. הכתובת ${raw} לא קיימת, ולכן לא נשלח קוד אימות. בדוק כל אות ונסה שוב.`,
       code: 'EMAIL_UNDELIVERABLE',
     };
   }

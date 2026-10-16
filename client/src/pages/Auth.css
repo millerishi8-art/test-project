@@ -445,9 +445,11 @@
 }
 
 .field-error-message {
-  color: #d32f2f;
-  font-size: 0.85rem;
-  margin-top: 0.3rem;
+  color: #b71c1c;
+  font-size: 1rem;
+  font-weight: 700;
+  margin-top: 0.45rem;
+  line-height: 1.45;
 }
 
 .auth-link--tight {

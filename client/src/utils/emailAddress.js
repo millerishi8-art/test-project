@@ -30,12 +30,13 @@ const TYPO_DOMAINS = {
 };
 
 export function mistypedEmailMessage(email, language = 'he') {
+  const typed = String(email || '').trim();
   const suggestion = mistypedEmailSuggestion(email);
   if (!suggestion) return '';
   if (language === 'en') {
-    return `That address does not exist, so no verification code was sent. Did you mean ${suggestion}?`;
+    return `There is a mistake in the email. You wrote ${typed}. That address does not exist, so no code was sent. Write this instead: ${suggestion}`;
   }
-  return `הכתובת שגויה ולא קיימת, ולכן קוד האימות לא נשלח. התכוונת ל-${suggestion}?`;
+  return `יש טעות בכתיבת האימייל. כתבת ${typed}, והכתובת הזאת לא קיימת. לא נשלח קוד. כתוב במקום זה: ${suggestion}`;
 }
 
 export function mistypedEmailSuggestion(email) {
