@@ -60,7 +60,8 @@ export const ERROR_MESSAGES = {
     VERIFICATION_CODE_EXPIRED: 'תוקף הקוד פג. בקש קוד חדש (שלח שוב אימייל אימות).',
     PHONE_CODE_INVALID: 'קוד האימות לא תקף או שפג תוקפו. בקש קוד חדש.',
     PHONE_REQUIRED: 'לא נמצא מספר טלפון. הזן אימייל של חשבון שנרשם עם טלפון.',
-    PASSWORD_RESET_CODE_INVALID: 'הקוד לא תקף או שפג תוקפו. בקש קוד חדש.',
+    PASSWORD_RESET_CODE_INVALID: 'הקוד שהוזן שגוי או לא תקף.',
+    PASSWORD_RESET_CODE_EXPIRED: 'תוקף הקוד פג. בקש קוד חדש.',
     PASSWORD_REQUIRED: 'נא להזין סיסמה חדשה.',
   },
   CASES: {

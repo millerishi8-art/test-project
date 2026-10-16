@@ -1,10 +1,14 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
+import { authTranslations } from '../translations/auth';
 import './Navbar.css';
 
 const Navbar = () => {
   const { isAuthenticated, user, logout, isAdmin } = useAuth();
+  const { language } = useLanguage();
+  const t = authTranslations[language] || authTranslations.he;
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -40,7 +44,7 @@ const Navbar = () => {
       <nav className="navbar">
         <div className="navbar-container">
           <Link to={isAuthenticated ? '/dashboard' : '/'} className="navbar-logo" onClick={closeMenu}>
-            סוכן ביטוח
+            {t.navBrand}
           </Link>
 
           <button
@@ -48,7 +52,7 @@ const Navbar = () => {
             className="navbar-burger"
             aria-expanded={menuOpen}
             aria-controls="navbar-mobile-menu"
-            aria-label={menuOpen ? 'סגור תפריט' : 'פתח תפריט'}
+            aria-label={menuOpen ? t.closeMenu : t.openMenu}
             onClick={() => setMenuOpen((o) => !o)}
           >
             <span className={`navbar-burger-line ${menuOpen ? 'open' : ''}`} />
@@ -60,25 +64,25 @@ const Navbar = () => {
             {isAuthenticated ? (
               <>
                 <Link to="/dashboard" className="navbar-link">
-                  בית
+                  {t.navHome}
                 </Link>
                 {isAdmin && (
                   <Link to="/admin" className="navbar-link">
-                    פאנל ניהול
+                    {t.navAdmin}
                   </Link>
                 )}
-                <span className="navbar-user">שלום, {user?.name}</span>
+                <span className="navbar-user">{t.navHello}, {user?.name}</span>
                 <button type="button" onClick={handleLogout} className="navbar-button">
-                  התנתק
+                  {t.navLogout}
                 </button>
               </>
             ) : (
               <>
                 <Link to="/login" className="navbar-link">
-                  התחבר
+                  {t.navLogin}
                 </Link>
                 <Link to="/register" className="navbar-link">
-                  הרשם
+                  {t.navRegister}
                 </Link>
               </>
             )}
@@ -97,31 +101,31 @@ const Navbar = () => {
         className={`navbar-drawer ${menuOpen ? 'open' : ''}`}
         role="dialog"
         aria-modal="true"
-        aria-label="תפריט ניווט"
+        aria-label={t.navMenu}
       >
         <div className="navbar-drawer-inner">
           {isAuthenticated ? (
             <>
-              <span className="navbar-drawer-user">שלום, {user?.name}</span>
+              <span className="navbar-drawer-user">{t.navHello}, {user?.name}</span>
               <Link to="/dashboard" className="navbar-drawer-link" onClick={closeMenu}>
-                בית
+                {t.navHome}
               </Link>
               {isAdmin && (
                 <Link to="/admin" className="navbar-drawer-link" onClick={closeMenu}>
-                  פאנל ניהול
+                  {t.navAdmin}
                 </Link>
               )}
               <button type="button" onClick={handleLogout} className="navbar-drawer-button">
-                התנתק
+                {t.navLogout}
               </button>
             </>
           ) : (
             <>
               <Link to="/login" className="navbar-drawer-link" onClick={closeMenu}>
-                התחבר
+                {t.navLogin}
               </Link>
               <Link to="/register" className="navbar-drawer-link" onClick={closeMenu}>
-                הרשם
+                {t.navRegister}
               </Link>
             </>
           )}

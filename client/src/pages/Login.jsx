@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
+import { authTranslations, localizeAuthError } from '../translations/auth';
 import './Auth.css';
 
 function logAuthError(location, err) {
@@ -71,6 +73,9 @@ const Login = () => {
   const [resetMessage, setResetMessage] = useState('');
   const [resetError, setResetError] = useState('');
   const { login, requireEmailVerification, applySession } = useAuth();
+  const { language, toggleLanguage } = useLanguage();
+  const t = authTranslations[language] || authTranslations.he;
+  const show = (text) => localizeAuthError(text, language);
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -124,7 +129,7 @@ const Login = () => {
         setCodeAlreadyActive(false);
       } catch (err) {
         logAuthError('Login verify email code before sign-in', err);
-        setError(apiErrorToString(err.response?.data?.error, 'הקוד לא תקף או שפג תוקפו.'));
+        setError(apiErrorToString(err.response?.data?.error, 'הקוד שהוזן שגוי או לא תקף.'));
         setLoginErrorCode('EMAIL_NOT_VERIFIED');
         setResendMessage('הקוד שהוזן לא תואם את המייל האחרון. לא נשלח קוד חדש.');
         setLoading(false);
@@ -230,7 +235,7 @@ const Login = () => {
       navigate('/dashboard');
     } catch (err) {
       logAuthError('Login verify phone code', err);
-      setError(apiErrorToString(err.response?.data?.error, 'קוד לא תקף או שפג תוקפו.'));
+      setError(apiErrorToString(err.response?.data?.error, 'הקוד שהוזן שגוי או לא תקף.'));
     } finally {
       setPhoneVerifyLoading(false);
     }
@@ -270,7 +275,7 @@ const Login = () => {
       }
     } catch (err) {
       logAuthError('Login verify email code', err);
-      setError(apiErrorToString(err.response?.data?.error, 'הקוד לא תקף או שפג תוקפו.'));
+      setError(apiErrorToString(err.response?.data?.error, 'הקוד שהוזן שגוי או לא תקף.'));
     } finally {
       setEmailVerifyLoading(false);
     }
@@ -337,7 +342,12 @@ const Login = () => {
       setFormData((prev) => ({ ...prev, email }));
     } catch (err) {
       logAuthError('Reset password', err);
-      setResetError(apiErrorToString(err.response?.data?.error, 'איפוס הסיסמה נכשל.'));
+      const serverCode = err.response?.data?.code;
+      const fallback =
+        serverCode === 'CODE_EXPIRED'
+          ? 'תוקף הקוד פג. בקש קוד חדש.'
+          : 'הקוד שהוזן שגוי או לא תקף.';
+      setResetError(apiErrorToString(err.response?.data?.error, fallback));
     } finally {
       setResetSubmitLoading(false);
     }
@@ -345,39 +355,48 @@ const Login = () => {
 
   if (resetStep === 'email' || resetStep === 'code') {
     return (
-      <div className="auth-container">
+      <div className="auth-container" dir={language === 'he' ? 'rtl' : 'ltr'}>
+        <button
+          type="button"
+          className="auth-translate-btn"
+          onClick={toggleLanguage}
+          title={language === 'he' ? 'Translate to English' : 'תרגם לעברית'}
+          aria-label={language === 'he' ? 'Translate to English' : 'תרגם לעברית'}
+        >
+          {t.translateButton}
+        </button>
         <div className="auth-card">
-          <h2>איפוס סיסמה</h2>
+          <h2>{t.resetTitle}</h2>
           {resetStep === 'email' && (
             <form onSubmit={handleRequestPasswordReset}>
               <div className="form-group">
-                <label>אימייל</label>
+                <label>{t.email}</label>
                 <input
                   type="email"
                   value={resetEmail}
                   onChange={(e) => { setResetEmail(e.target.value); setResetError(''); }}
-                  placeholder="הזן את כתובת האימייל"
+                  placeholder={t.emailPlaceholder}
                   autoFocus
                 />
               </div>
-              {resetError && <div className="error-message">{resetError}</div>}
-              {resetMessage && <div className="success-message">{resetMessage}</div>}
+              {resetError && <div className="error-message">{show(resetError)}</div>}
+              {resetMessage && <div className="success-message">{show(resetMessage)}</div>}
               <button type="submit" className="auth-button" disabled={resetSendLoading}>
-                {resetSendLoading ? 'שולח...' : 'שלח קוד לאימייל'}
+                {resetSendLoading ? t.sending : t.sendResetCode}
               </button>
               <button type="button" className="auth-link-button" onClick={handleBackToLogin}>
-                ← חזרה להתחברות
+                {t.backToLogin}
               </button>
             </form>
           )}
           {resetStep === 'code' && (
             <form onSubmit={handleResetPassword}>
               <div className="form-group">
-                <label>אימייל</label>
+                <label>{t.email}</label>
                 <input type="email" value={resetEmail} readOnly className="input-readonly" />
               </div>
               <div className="form-group">
-                <label>קוד אימות (6 ספרות)</label>
+                <label>{t.resetCode}</label>
                 <input
                   type="text"
                   inputMode="numeric"
@@ -389,36 +408,36 @@ const Login = () => {
                 />
               </div>
               <div className="form-group">
-                <label>סיסמה חדשה</label>
+                <label>{t.newPassword}</label>
                 <input
                   type="password"
                   value={resetNewPassword}
                   onChange={(e) => { setResetNewPassword(e.target.value); setResetError(''); }}
-                  placeholder="לפחות 6 תווים"
+                  placeholder={t.newPasswordPlaceholder}
                   minLength={6}
                 />
               </div>
               <div className="form-group">
-                <label>אימות סיסמה</label>
+                <label>{t.confirmNewPassword}</label>
                 <input
                   type="password"
                   value={resetConfirmPassword}
                   onChange={(e) => { setResetConfirmPassword(e.target.value); setResetError(''); }}
-                  placeholder="הזן שוב את הסיסמה"
+                  placeholder={t.confirmNewPasswordPlaceholder}
                 />
               </div>
-              {resetError && <div className="error-message">{resetError}</div>}
-              {resetMessage && <div className="success-message">{resetMessage}</div>}
+              {resetError && <div className="error-message">{show(resetError)}</div>}
+              {resetMessage && <div className="success-message">{show(resetMessage)}</div>}
               <button type="submit" className="auth-button" disabled={resetSubmitLoading}>
-                {resetSubmitLoading ? 'מאפס...' : 'אפס סיסמה'}
+                {resetSubmitLoading ? t.resetting : t.resetPassword}
               </button>
               <button type="button" className="auth-link-button" onClick={handleBackToLogin}>
-                ← חזרה להתחברות
+                {t.backToLogin}
               </button>
             </form>
           )}
           <p className="auth-link">
-            אין לך חשבון? <Link to="/register">הירשם כאן</Link>
+            {t.noAccount} <Link to="/register">{t.registerHere}</Link>
           </p>
         </div>
       </div>
@@ -426,17 +445,26 @@ const Login = () => {
   }
 
   return (
-    <div className="auth-container">
+    <div className="auth-container" dir={language === 'he' ? 'rtl' : 'ltr'}>
+      <button
+        type="button"
+        className="auth-translate-btn"
+        onClick={toggleLanguage}
+        title={language === 'he' ? 'Translate to English' : 'תרגם לעברית'}
+        aria-label={language === 'he' ? 'Translate to English' : 'תרגם לעברית'}
+      >
+        {t.translateButton}
+      </button>
       <div className="auth-card">
-        <h2>התחברות</h2>
+        <h2>{t.loginTitle}</h2>
           {requireEmailVerification && (
             <div className="verify-required-notice">
-              הזן את קוד האימות בן 6 הספרות שנשלח לאימייל שלך (או אמת דרך הטלפון למטה).
+              {t.verifyNotice}
             </div>
           )}
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label>אימייל</label>
+            <label>{t.email}</label>
             <input
               type="email"
               name="email"
@@ -446,7 +474,7 @@ const Login = () => {
             />
           </div>
           <div className="form-group">
-            <label>סיסמה</label>
+            <label>{t.password}</label>
             <div className="password-input-wrapper">
               <input
                 type={showPassword ? 'text' : 'password'}
@@ -460,8 +488,8 @@ const Login = () => {
                 type="button"
                 className="password-toggle-btn"
                 onClick={() => setShowPassword((s) => !s)}
-                title={showPassword ? 'הסתר סיסמה' : 'הצג סיסמה'}
-                aria-label={showPassword ? 'הסתר סיסמה' : 'הצג סיסמה'}
+                title={showPassword ? t.hidePassword : t.showPassword}
+                aria-label={showPassword ? t.hidePassword : t.showPassword}
               >
                 {showPassword ? (
                   <span className="password-icon" aria-hidden>🙈</span>
@@ -471,42 +499,38 @@ const Login = () => {
               </button>
             </div>
           </div>
-          {resetMessage && <div className="success-message">{resetMessage}</div>}
+          {resetMessage && <div className="success-message">{show(resetMessage)}</div>}
           {resendMessage && (
             <>
-              <div className="success-message">{resendMessage}</div>
+              <div className="success-message">{show(resendMessage)}</div>
               <div className="check-spam-tip">
-                💡 אם אינך מוצא את האימייל – בדוק בתיקיית <strong>דואר זבל (Spam/Junk)</strong> ובכל תיקיות תיבת הדואר.
+                💡 {t.spamTip}
               </div>
             </>
           )}
-          {phoneMessage && <div className="success-message">{phoneMessage}</div>}
-          {emailVerifySuccess && <div className="success-message">{emailVerifySuccess}</div>}
+          {phoneMessage && <div className="success-message">{show(phoneMessage)}</div>}
+          {emailVerifySuccess && <div className="success-message">{show(emailVerifySuccess)}</div>}
           {errorDisplay && (
             <div className={loginErrorCode === 'EMAIL_NOT_VERIFIED' ? 'error-message error-message-verify' : 'error-message'}>
-              {errorDisplay}
+              {show(errorDisplay)}
               {loginErrorCode === 'EMAIL_NOT_VERIFIED' ? (
                 <p className="error-hint">
-                  {codeAlreadyActive
-                    ? 'החשבון קיים והאימייל עדיין לא אומת. הזן את הקוד מהמייל ולחץ על "אמת קוד".'
-                    : 'החשבון קיים אך האימייל טרם אומת. הזן את הקוד מהמייל ולחץ על "אמת קוד".'}
+                  {codeAlreadyActive ? t.hintActiveCode : t.hintNeedCode}
                 </p>
               ) : loginErrorCode === 'USER_NOT_FOUND' ? (
-                <p className="error-hint">
-                  אין חשבון כזה במערכת. צריך להירשם מחדש, ואחרי ההרשמה לחזור לכאן ולהתחבר.
-                </p>
+                <p className="error-hint">{t.hintNoUser}</p>
               ) : (
                 (errorStr === 'פרטי התחברות לא תקינים' ||
                   errorStr === 'Invalid credentials' ||
                   errorStr.includes('Login failed')) && (
-                  <p className="error-hint">האימייל קיים, אבל הסיסמה לא נכונה. בדוק את הסיסמה או לחץ על "שכחתי סיסמה".</p>
+                  <p className="error-hint">{t.hintBadPassword}</p>
                 )
               )}
             </div>
           )}
           {showEmailVerifyBlock && (
             <div className="verification-options verification-options-always">
-              <p className="verification-intro">הזן את קוד האימות בן 6 הספרות שנשלח לאימייל שלך:</p>
+              <p className="verification-intro">{t.codeIntro}</p>
               <div className="email-verify-code-form">
                 <input
                   type="text"
@@ -522,7 +546,7 @@ const Login = () => {
                     }
                   }}
                   className="phone-code-input email-code-input"
-                  aria-label="קוד אימות 6 ספרות"
+                  aria-label={t.codeLabel}
                 />
                 <button
                   type="button"
@@ -530,19 +554,19 @@ const Login = () => {
                   disabled={emailVerifyLoading || emailCode.length !== 6}
                   onClick={handleVerifyEmailCode}
                 >
-                  {emailVerifyLoading ? 'בודק...' : 'אמת קוד'}
+                  {emailVerifyLoading ? t.checking : t.verifyCode}
                 </button>
               </div>
-              <p className="verification-or">לא קיבלת קוד? שליחת קוד חדש למייל:</p>
+              <p className="verification-or">{t.noCode}</p>
               <button
                 type="button"
                 className="resend-verification-btn resend-secondary"
                 onClick={handleResendVerification}
                 disabled={resendLoading}
               >
-                {resendLoading ? 'שולח...' : 'שלח שוב אימייל אימות'}
+                {resendLoading ? t.sending : t.resendEmail}
               </button>
-              <p className="verification-or">או אימות דרך הטלפון:</p>
+              <p className="verification-or">{t.orPhone}</p>
               {!phoneStep ? (
                 <button
                   type="button"
@@ -550,7 +574,7 @@ const Login = () => {
                   onClick={handleRequestPhoneCode}
                   disabled={phoneSendLoading}
                 >
-                  {phoneSendLoading ? 'שולח...' : 'שלח קוד SMS למספר שנרשם'}
+                  {phoneSendLoading ? t.sending : t.sendSms}
                 </button>
               ) : (
                 <div className="phone-verify-form">
@@ -558,7 +582,7 @@ const Login = () => {
                     type="text"
                     inputMode="numeric"
                     maxLength={6}
-                    placeholder="הזן קוד 6 ספרות"
+                    placeholder={t.phoneCodePlaceholder}
                     value={phoneCode}
                     onChange={(e) => setPhoneCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
                     onKeyDown={(e) => {
@@ -575,7 +599,7 @@ const Login = () => {
                     disabled={phoneVerifyLoading || phoneCode.length !== 6}
                     onClick={handleVerifyPhoneCode}
                   >
-                    {phoneVerifyLoading ? 'מאמת...' : 'אמת והתחבר'}
+                    {phoneVerifyLoading ? t.verifying : t.verifyAndLogin}
                   </button>
                 </div>
               )}
@@ -589,11 +613,11 @@ const Login = () => {
                 navigate('/register', { state: { email: formData.email.trim() } })
               }
             >
-              להרשמה מחדש
+              {t.registerAgain}
             </button>
           )}
           <button type="submit" className="auth-button" disabled={loading}>
-            {loading ? 'מתחבר...' : 'התחבר'}
+            {loading ? t.loggingIn : t.login}
           </button>
           <p className="auth-link auth-link-forgot">
             <button
@@ -609,12 +633,12 @@ const Login = () => {
                 setResetConfirmPassword('');
               }}
             >
-              שכחתי סיסמה
+              {t.forgotPassword}
             </button>
           </p>
         </form>
         <p className="auth-link">
-          אין לך חשבון? <Link to="/register">הירשם כאן</Link>
+          {t.noAccount} <Link to="/register">{t.registerHere}</Link>
         </p>
       </div>
     </div>

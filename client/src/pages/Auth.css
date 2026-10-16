@@ -7,6 +7,28 @@
   padding: var(--space-4);
 }
 
+.auth-translate-btn {
+  position: fixed;
+  top: calc(4.25rem + env(safe-area-inset-top, 0px));
+  right: var(--space-3);
+  z-index: 1100;
+  padding: var(--space-3) var(--space-4);
+  min-height: var(--touch-min);
+  font-size: clamp(0.875rem, 2.5vw, 1.05rem);
+  font-weight: 600;
+  color: #1e6bb8;
+  background: rgba(255, 255, 255, 0.95);
+  border: 2px solid #90caf9;
+  border-radius: 999px;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(30, 107, 184, 0.2);
+}
+
+[dir='rtl'] .auth-translate-btn {
+  right: auto;
+  left: var(--space-3);
+}
+
 .auth-card {
   background: white;
   padding: var(--space-6) var(--space-5);

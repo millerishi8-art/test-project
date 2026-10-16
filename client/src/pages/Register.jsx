@@ -1,8 +1,11 @@
 import { useState } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
+import { authTranslations, localizeAuthError } from '../translations/auth';
 import {
   PHONE_COUNTRIES,
+  phoneCountryLabel,
   sanitizePhoneDigits,
   validatePhoneInput,
   getPhonePlaceholder,
@@ -27,6 +30,9 @@ const Register = () => {
   const [emailError, setEmailError] = useState('');
   const [loading, setLoading] = useState(false);
   const { register } = useAuth();
+  const { language, toggleLanguage } = useLanguage();
+  const t = authTranslations[language] || authTranslations.he;
+  const show = (text) => localizeAuthError(text, language);
   const navigate = useNavigate();
   const looksLikeExistingEmailError =
     typeof error === 'string' &&
@@ -148,12 +154,21 @@ const Register = () => {
   const isOtherCountry = formData.phoneCountry === 'OTHER';
 
   return (
-    <div className="auth-container">
+    <div className="auth-container" dir={language === 'he' ? 'rtl' : 'ltr'}>
+      <button
+        type="button"
+        className="auth-translate-btn"
+        onClick={toggleLanguage}
+        title={language === 'he' ? 'Translate to English' : 'תרגם לעברית'}
+        aria-label={language === 'he' ? 'Translate to English' : 'תרגם לעברית'}
+      >
+        {t.translateButton}
+      </button>
       <div className="auth-card">
-        <h2>הרשמה</h2>
+        <h2>{t.registerTitle}</h2>
         <form onSubmit={handleSubmit}>
           <div className="form-group">
-            <label>שם מלא</label>
+            <label>{t.fullName}</label>
             <input
               type="text"
               name="name"
@@ -163,7 +178,7 @@ const Register = () => {
             />
           </div>
           <div className="form-group">
-            <label>אימייל</label>
+            <label>{t.email}</label>
             <input
               type="email"
               name="email"
@@ -175,25 +190,23 @@ const Register = () => {
               placeholder="example@mail.com"
             />
             {emailError && (
-              <div className="field-error-message">{emailError}</div>
+              <div className="field-error-message">{show(emailError)}</div>
             )}
           </div>
           <div className="form-group">
-            <label>מספר טלפון</label>
-            <p className="phone-input-hint">
-              ניתן להירשם עם מספר ישראלי, אמריקאי או בינלאומי
-            </p>
+            <label>{t.phone}</label>
+            <p className="phone-input-hint">{t.phoneHint}</p>
             <div className="phone-input-group" dir="ltr">
               <select
                 name="phoneCountry"
                 value={formData.phoneCountry}
                 onChange={handleChange}
                 className="phone-country-select"
-                aria-label="מדינה"
+                aria-label={t.country}
               >
                 {PHONE_COUNTRIES.map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.label}
+                    {phoneCountryLabel(c, language)}
                   </option>
                 ))}
               </select>
@@ -204,9 +217,9 @@ const Register = () => {
                   value={formData.phoneCustomDial}
                   onChange={handlePhoneCustomDialChange}
                   className="phone-custom-dial"
-                  placeholder="קידומת"
+                  placeholder={t.dialPlaceholder}
                   inputMode="numeric"
-                  aria-label="קידומת מדינה"
+                  aria-label={t.dialCode}
                   required
                 />
               ) : null}
@@ -216,15 +229,15 @@ const Register = () => {
                 value={formData.phoneNumber}
                 onChange={handlePhoneNumberChange}
                 className="phone-number-input"
-                placeholder={getPhonePlaceholder(formData.phoneCountry)}
+                placeholder={getPhonePlaceholder(formData.phoneCountry, language)}
                 inputMode="numeric"
                 required
-                aria-label="מספר טלפון"
+                aria-label={t.phone}
               />
             </div>
           </div>
           <div className="form-group">
-            <label>סיסמה</label>
+            <label>{t.password}</label>
             <div className="password-input-wrapper">
               <input
                 type={showPassword ? 'text' : 'password'}
@@ -238,8 +251,8 @@ const Register = () => {
                 type="button"
                 className="password-toggle-btn"
                 onClick={() => setShowPassword((s) => !s)}
-                title={showPassword ? 'הסתר סיסמה' : 'הצג סיסמה'}
-                aria-label={showPassword ? 'הסתר סיסמה' : 'הצג סיסמה'}
+                title={showPassword ? t.hidePassword : t.showPassword}
+                aria-label={showPassword ? t.hidePassword : t.showPassword}
               >
                 <span className="password-icon" aria-hidden>
                   {showPassword ? '🙈' : '👁'}
@@ -248,7 +261,7 @@ const Register = () => {
             </div>
           </div>
           <div className="form-group">
-            <label>אישור סיסמה</label>
+            <label>{t.confirmPassword}</label>
             <div className="password-input-wrapper">
               <input
                 type={showConfirmPassword ? 'text' : 'password'}
@@ -262,8 +275,8 @@ const Register = () => {
                 type="button"
                 className="password-toggle-btn"
                 onClick={() => setShowConfirmPassword((s) => !s)}
-                title={showConfirmPassword ? 'הסתר סיסמה' : 'הצג סיסמה'}
-                aria-label={showConfirmPassword ? 'הסתר סיסמה' : 'הצג סיסמה'}
+                title={showConfirmPassword ? t.hidePassword : t.showPassword}
+                aria-label={showConfirmPassword ? t.hidePassword : t.showPassword}
               >
                 <span className="password-icon" aria-hidden>
                   {showConfirmPassword ? '🙈' : '👁'}
@@ -271,22 +284,20 @@ const Register = () => {
               </button>
             </div>
           </div>
-          {error && <div className="error-message">{error}</div>}
+          {error && <div className="error-message">{show(error)}</div>}
           {looksLikeExistingEmailError ? (
             <div className="auth-link auth-link--tight">
-              <Link to="/login">האימייל כבר רשום? התחבר כאן</Link>
+              <Link to="/login">{t.emailExistsLogin}</Link>
               {' · '}
-              <Link to="/login">
-                שכחת סיסמה? עבור למסך ההתחברות ובחר &quot;שכחתי סיסמה&quot;
-              </Link>
+              <Link to="/login">{t.emailExistsReset}</Link>
             </div>
           ) : null}
           <button type="submit" className="auth-button" disabled={loading}>
-            {loading ? 'נרשם...' : 'הרשם'}
+            {loading ? t.registering : t.register}
           </button>
         </form>
         <p className="auth-link">
-          כבר יש לך חשבון? <Link to="/login">התחבר כאן</Link>
+          {t.hasAccount} <Link to="/login">{t.loginHere}</Link>
         </p>
       </div>
     </div>

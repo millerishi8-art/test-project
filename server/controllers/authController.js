@@ -1158,8 +1158,17 @@ export const resetPassword = async (req, res) => {
     const storedCode = stored.code;
     const expires = stored.expires;
 
-    if (!storedCode || !secureCompare(storedCode, code) || (expires && expires < now)) {
-      return res.status(400).json({ error: ERROR_MESSAGES.AUTH.PASSWORD_RESET_CODE_INVALID });
+    if (!storedCode || !secureCompare(storedCode, code)) {
+      return res.status(400).json({
+        error: ERROR_MESSAGES.AUTH.PASSWORD_RESET_CODE_INVALID,
+        code: 'CODE_MISMATCH',
+      });
+    }
+    if (expires && expires < now) {
+      return res.status(400).json({
+        error: ERROR_MESSAGES.AUTH.PASSWORD_RESET_CODE_EXPIRED,
+        code: 'CODE_EXPIRED',
+      });
     }
 
     if (user.authProvider === 'supabase') {

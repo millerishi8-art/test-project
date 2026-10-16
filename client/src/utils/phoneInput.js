@@ -3,14 +3,18 @@
  */
 
 export const PHONE_COUNTRIES = [
-  { id: 'IL', dial: '972', label: 'ישראל (+972)' },
-  { id: 'US', dial: '1', label: 'ארה"ב / קנדה (+1)' },
-  { id: 'GB', dial: '44', label: 'בריטניה (+44)' },
-  { id: 'FR', dial: '33', label: 'צרפת (+33)' },
-  { id: 'DE', dial: '49', label: 'גרמניה (+49)' },
-  { id: 'AU', dial: '61', label: 'אוסטרליה (+61)' },
-  { id: 'OTHER', dial: '', label: 'מדינה אחרת…' },
+  { id: 'IL', dial: '972', label: 'ישראל (+972)', labelEn: 'Israel (+972)' },
+  { id: 'US', dial: '1', label: 'ארה"ב / קנדה (+1)', labelEn: 'USA / Canada (+1)' },
+  { id: 'GB', dial: '44', label: 'בריטניה (+44)', labelEn: 'United Kingdom (+44)' },
+  { id: 'FR', dial: '33', label: 'צרפת (+33)', labelEn: 'France (+33)' },
+  { id: 'DE', dial: '49', label: 'גרמניה (+49)', labelEn: 'Germany (+49)' },
+  { id: 'AU', dial: '61', label: 'אוסטרליה (+61)', labelEn: 'Australia (+61)' },
+  { id: 'OTHER', dial: '', label: 'מדינה אחרת…', labelEn: 'Other country…' },
 ];
+
+export function phoneCountryLabel(country, language) {
+  return language === 'en' ? country.labelEn : country.label;
+}
 
 export function sanitizePhoneDigits(value, maxLen = 15) {
   return String(value || '')
@@ -36,7 +40,7 @@ export function getDialCode(countryId, customDial) {
   return row?.dial || null;
 }
 
-export function getPhonePlaceholder(countryId) {
+export function getPhonePlaceholder(countryId, language = 'he') {
   switch (countryId) {
     case 'IL':
       return '501234567';
@@ -47,7 +51,7 @@ export function getPhonePlaceholder(countryId) {
     case 'FR':
       return '612345678';
     default:
-      return 'מספר ללא קידומת';
+      return language === 'en' ? 'Number without country code' : 'מספר ללא קידומת';
   }
 }
 
