@@ -58,6 +58,7 @@ const Login = () => {
   const [loginErrorCode, setLoginErrorCode] = useState(null);
   const [loginErrorHint, setLoginErrorHint] = useState(null);
   const [emailCode, setEmailCode] = useState('');
+  const [codeAlreadyActive, setCodeAlreadyActive] = useState(false);
   const [emailVerifyLoading, setEmailVerifyLoading] = useState(false);
   const [emailVerifySuccess, setEmailVerifySuccess] = useState('');
   const [resetStep, setResetStep] = useState(null);
@@ -112,6 +113,25 @@ const Login = () => {
     setLoginErrorHint(null);
     setLoading(true);
 
+    const pendingCode = (emailCode || '').replace(/\D/g, '').slice(0, 6);
+    if (pendingCode.length === 6) {
+      try {
+        await axios.post('/verify-code', {
+          email: (formData.email || '').trim(),
+          code: pendingCode,
+        });
+        setEmailCode('');
+        setCodeAlreadyActive(false);
+      } catch (err) {
+        logAuthError('Login verify email code before sign-in', err);
+        setError(apiErrorToString(err.response?.data?.error, 'הקוד לא תקף או שפג תוקפו.'));
+        setLoginErrorCode('EMAIL_NOT_VERIFIED');
+        setResendMessage('הקוד שהוזן לא תואם את המייל האחרון. לא נשלח קוד חדש.');
+        setLoading(false);
+        return;
+      }
+    }
+
     const result = await login(formData.email, formData.password);
 
     if (result.success) {
@@ -128,10 +148,13 @@ const Login = () => {
     if (result.code === 'EMAIL_NOT_VERIFIED') {
       setError(apiErrorToString(result.error, 'נא לאמת את כתובת האימייל.'));
       setLoginErrorCode('EMAIL_NOT_VERIFIED');
+      setCodeAlreadyActive(!!result.codeAlreadyActive);
       setResendMessage(
         result.emailSent
-          ? 'נשלח עכשיו קוד אימות חדש למייל. הזן אותו למטה, ואז התחבר.'
-          : 'לא הצלחנו לשלוח קוד למייל. לחץ על "שלח שוב אימייל אימות".'
+          ? 'נשלח קוד אימות למייל. הזן אותו ולחץ על "אמת קוד".'
+          : result.codeAlreadyActive
+            ? 'הקוד שכבר נשלח למייל עדיין בתוקף. הזן אותו ולחץ על "אמת קוד". לא נשלח קוד חדש.'
+            : 'לא הצלחנו לשלוח קוד למייל. לחץ על "שלח שוב אימייל אימות".'
       );
       setLoading(false);
       return;
@@ -233,6 +256,18 @@ const Login = () => {
       setEmailVerifySuccess(res.data?.message || 'האימייל אומת בהצלחה. כעת ניתן להתחבר.');
       setEmailCode('');
       setLoginErrorCode(null);
+      setCodeAlreadyActive(false);
+      if ((formData.password || '').length > 0) {
+        const result = await login(email, formData.password);
+        if (result.success) {
+          navigate('/dashboard');
+          return;
+        }
+        setEmailVerifySuccess('');
+        setError(apiErrorToString(result.error, 'האימייל אומת, אבל ההתחברות נכשלה. בדוק את הסיסמה.'));
+        setLoginErrorCode(result.code || null);
+        setCodeAlreadyActive(!!result.codeAlreadyActive);
+      }
     } catch (err) {
       logAuthError('Login verify email code', err);
       setError(apiErrorToString(err.response?.data?.error, 'הקוד לא תקף או שפג תוקפו.'));
@@ -451,7 +486,11 @@ const Login = () => {
             <div className={loginErrorCode === 'EMAIL_NOT_VERIFIED' ? 'error-message error-message-verify' : 'error-message'}>
               {errorDisplay}
               {loginErrorCode === 'EMAIL_NOT_VERIFIED' ? (
-                <p className="error-hint">החשבון קיים אך האימייל טרם אומת. נשלח קוד חדש למייל — הזן אותו למטה.</p>
+                <p className="error-hint">
+                  {codeAlreadyActive
+                    ? 'החשבון קיים והאימייל עדיין לא אומת. הזן את הקוד מהמייל ולחץ על "אמת קוד".'
+                    : 'החשבון קיים אך האימייל טרם אומת. הזן את הקוד מהמייל ולחץ על "אמת קוד".'}
+                </p>
               ) : loginErrorCode === 'USER_NOT_FOUND' ? (
                 <p className="error-hint">
                   אין חשבון כזה במערכת. צריך להירשם מחדש, ואחרי ההרשמה לחזור לכאן ולהתחבר.
@@ -468,7 +507,7 @@ const Login = () => {
           {showEmailVerifyBlock && (
             <div className="verification-options verification-options-always">
               <p className="verification-intro">הזן את קוד האימות בן 6 הספרות שנשלח לאימייל שלך:</p>
-              <form onSubmit={handleVerifyEmailCode} className="email-verify-code-form">
+              <div className="email-verify-code-form">
                 <input
                   type="text"
                   inputMode="numeric"
@@ -476,17 +515,24 @@ const Login = () => {
                   placeholder="000000"
                   value={emailCode}
                   onChange={(e) => setEmailCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleVerifyEmailCode(e);
+                    }
+                  }}
                   className="phone-code-input email-code-input"
                   aria-label="קוד אימות 6 ספרות"
                 />
                 <button
-                  type="submit"
+                  type="button"
                   className="resend-verification-btn"
                   disabled={emailVerifyLoading || emailCode.length !== 6}
+                  onClick={handleVerifyEmailCode}
                 >
                   {emailVerifyLoading ? 'בודק...' : 'אמת קוד'}
                 </button>
-              </form>
+              </div>
               <p className="verification-or">לא קיבלת קוד? שליחת קוד חדש למייל:</p>
               <button
                 type="button"
@@ -507,7 +553,7 @@ const Login = () => {
                   {phoneSendLoading ? 'שולח...' : 'שלח קוד SMS למספר שנרשם'}
                 </button>
               ) : (
-                <form onSubmit={handleVerifyPhoneCode} className="phone-verify-form">
+                <div className="phone-verify-form">
                   <input
                     type="text"
                     inputMode="numeric"
@@ -515,16 +561,23 @@ const Login = () => {
                     placeholder="הזן קוד 6 ספרות"
                     value={phoneCode}
                     onChange={(e) => setPhoneCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleVerifyPhoneCode(e);
+                      }
+                    }}
                     className="phone-code-input"
                   />
                   <button
-                    type="submit"
+                    type="button"
                     className="resend-verification-btn phone-btn"
                     disabled={phoneVerifyLoading || phoneCode.length !== 6}
+                    onClick={handleVerifyPhoneCode}
                   >
                     {phoneVerifyLoading ? 'מאמת...' : 'אמת והתחבר'}
                   </button>
-                </form>
+                </div>
               )}
             </div>
           )}

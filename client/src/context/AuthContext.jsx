@@ -123,6 +123,7 @@ export const AuthProvider = ({ children }) => {
         code: code || null,
         hint,
         emailSent: data?.emailSent === true,
+        codeAlreadyActive: data?.codeAlreadyActive === true,
       };
     }
   };

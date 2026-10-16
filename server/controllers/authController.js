@@ -238,11 +238,12 @@ async function ensureAdminEmailVerified(user, email) {
 async function isAppEmailVerified(user) {
   if (!user) return false;
   if (user.emailVerified === true) return true;
-  if (user.emailVerified === false) return false;
   if (user.authProvider === 'supabase' || canSignInWithSupabasePassword()) {
     const meta = await getEmailVerificationFromAuthMeta(user.id);
-    if (meta.appEmailVerified === false) return false;
     if (meta.appEmailVerified === true) return true;
+    if (user.emailVerified === false || meta.appEmailVerified === false) return false;
+  } else if (user.emailVerified === false) {
+    return false;
   }
   return true;
 }
@@ -591,9 +592,16 @@ export const login = async (req, res) => {
 
     const respondEmailNotVerified = async (account) => {
       let emailSent = false;
+      let codeAlreadyActive = false;
       if (account?.id) {
         try {
-          emailSent = await issueAndSendVerificationCode(account, rawEmail);
+          const stored = await resolveStoredEmailVerification(account);
+          const expiresOk = !stored.expires || stored.expires >= new Date().toISOString();
+          if (stored.code && stored.code.length === 6 && expiresOk) {
+            codeAlreadyActive = true;
+          } else {
+            emailSent = await issueAndSendVerificationCode(account, rawEmail);
+          }
         } catch (sendErr) {
           logAuthError('Login auto-send verification code', sendErr);
         }
@@ -604,6 +612,7 @@ export const login = async (req, res) => {
           'נא לאמת את כתובת האימייל לפני ההתחברות.',
         code: 'EMAIL_NOT_VERIFIED',
         emailSent,
+        codeAlreadyActive,
       });
     };
 

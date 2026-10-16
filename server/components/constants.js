@@ -50,7 +50,7 @@ export const ERROR_MESSAGES = {
     EMAIL_PASSWORD_REQUIRED: 'אימייל וסיסמה חובה',
     USER_EXISTS: 'משתמש עם אימייל זה כבר קיים',
     INVALID_CREDENTIALS: 'פרטי התחברות לא תקינים',
-    EMAIL_NOT_VERIFIED: 'נא לאמת את כתובת האימייל לפני ההתחברות. בדוק את תיבת הדואר (כולל דואר זבל) ולחץ על הקישור שנשלח.',
+    EMAIL_NOT_VERIFIED: 'נא לאמת את כתובת האימייל לפני ההתחברות. הזן את הקוד בן 6 הספרות מהמייל ולחץ על "אמת קוד".',
     TOKEN_REQUIRED: 'נדרש טוקן גישה',
     TOKEN_INVALID: 'טוקן לא תקין או שפג תוקפו',
     ADMIN_REQUIRED: 'נדרשת הרשאת מנהל',
