@@ -25,6 +25,7 @@ import {
   isSupabaseAuthUserExistsError,
   canSignInWithSupabasePassword,
   classifySupabaseAuthError,
+  findAuthUserByEmail,
   setEmailVerificationInAuthMeta,
   getEmailVerificationFromAuthMeta,
   setPasswordResetInAuthMeta,
@@ -179,6 +180,34 @@ function emailCodeExpiresAt() {
   const d = new Date();
   d.setMinutes(d.getMinutes() + 15);
   return d.toISOString();
+}
+
+/** יוצר קוד חדש, שומר אותו ושולח למייל. מחזיר האם השליחה הצליחה. */
+async function issueAndSendVerificationCode(user, email) {
+  const recipient = String(email || user?.email || '').trim().toLowerCase();
+  if (!user?.id || !recipient) return false;
+  const verificationCode = generateEmailVerificationCode();
+  const expires = emailCodeExpiresAt();
+  await updateUserById(user.id, {
+    emailVerificationCode: verificationCode,
+    emailVerificationCodeExpires: expires,
+    emailVerified: false,
+  });
+  try {
+    await setEmailVerificationInAuthMeta(user.id, {
+      code: verificationCode,
+      expires,
+      verified: false,
+    });
+  } catch (metaErr) {
+    logAuthError('issueAndSendVerificationCode meta', metaErr);
+  }
+  try {
+    return await sendVerificationCodeEmail(recipient, user.name, verificationCode);
+  } catch (emailErr) {
+    logAuthError('issueAndSendVerificationCode send', emailErr);
+    return false;
+  }
 }
 
 function generatePhoneCode() {
@@ -554,13 +583,29 @@ export const login = async (req, res) => {
 
     const plainPassword = typeof password === 'string' ? password : String(password ?? '');
 
-    const respondEmailNotVerified = () =>
-      res.status(403).json({
+    const respondUserNotFound = () =>
+      res.status(404).json({
+        error: 'אין חשבון עם האימייל הזה. יש להירשם מחדש, ואז להתחבר.',
+        code: 'USER_NOT_FOUND',
+      });
+
+    const respondEmailNotVerified = async (account) => {
+      let emailSent = false;
+      if (account?.id) {
+        try {
+          emailSent = await issueAndSendVerificationCode(account, rawEmail);
+        } catch (sendErr) {
+          logAuthError('Login auto-send verification code', sendErr);
+        }
+      }
+      return res.status(403).json({
         error:
           ERROR_MESSAGES?.AUTH?.EMAIL_NOT_VERIFIED ||
           'נא לאמת את כתובת האימייל לפני ההתחברות.',
         code: 'EMAIL_NOT_VERIFIED',
+        emailSent,
       });
+    };
 
     const respondInvalidCredentials = (extra = {}) => {
       console.log('[Backend] Login: invalid credentials. email:', maskEmail(rawEmail));
@@ -589,11 +634,13 @@ export const login = async (req, res) => {
         const classified = classifySupabaseAuthError(authErr);
         logAuthError('Login signInWithPassword (no app_users row)', authErr, { status: 401 });
         if (classified.kind === 'email_not_confirmed') {
-          return respondEmailNotVerified();
+          return respondEmailNotVerified(null);
         }
         if (classified.kind === 'infrastructure') {
           return res.status(503).json({ error: dbErrorMessageForClient(authErr) });
         }
+        const authAccount = await findAuthUserByEmail(rawEmail);
+        if (!authAccount) return respondUserNotFound();
         return respondInvalidCredentials();
       }
       try {
@@ -610,7 +657,7 @@ export const login = async (req, res) => {
         }
         u = await ensureAdminEmailVerified(u, rawEmail);
         if (!(await isAppEmailVerified(u)) && !isAnyAdminPanelEmail(rawEmail)) {
-          return respondEmailNotVerified();
+          return respondEmailNotVerified(u);
         }
         const result = await buildLoginSuccessResponse(u, rawEmail, session.access_token);
         if (result.error) {
@@ -628,8 +675,10 @@ export const login = async (req, res) => {
     }
 
     if (!user) {
-      console.log('[Backend] Login: user not found, returning 401. email:', maskEmail(rawEmail));
-      return respondInvalidCredentials();
+      console.log('[Backend] Login: user not found, returning 404. email:', maskEmail(rawEmail));
+      const authAccount = canSignInWithSupabasePassword() ? await findAuthUserByEmail(rawEmail) : null;
+      if (authAccount) return respondInvalidCredentials();
+      return respondUserNotFound();
     }
 
     const usesSupabaseAuth = user.authProvider === 'supabase';
@@ -651,7 +700,7 @@ export const login = async (req, res) => {
           }
           u = await ensureAdminEmailVerified(u, rawEmail);
           if (!(await isAppEmailVerified(u)) && !isAnyAdminPanelEmail(rawEmail)) {
-            return respondEmailNotVerified();
+            return respondEmailNotVerified(u);
           }
           const result = await buildLoginSuccessResponse(u, rawEmail, session.access_token);
           if (result.error) {
@@ -664,7 +713,7 @@ export const login = async (req, res) => {
           logAuthError('Login signInWithPassword', authErr, { status: 401 });
 
           if (classified.kind === 'email_not_confirmed') {
-            return respondEmailNotVerified();
+            return respondEmailNotVerified(user);
           }
           if (classified.kind === 'infrastructure') {
             return res.status(503).json({ error: dbErrorMessageForClient(authErr) });
@@ -674,7 +723,7 @@ export const login = async (req, res) => {
           if (bcryptOk) {
             user = await ensureAdminEmailVerified(user, rawEmail);
             if (!(await isAppEmailVerified(user)) && !isAnyAdminPanelEmail(rawEmail)) {
-              return respondEmailNotVerified();
+              return respondEmailNotVerified(user);
             }
             const emailForJwt =
               typeof user.email === 'string' ? user.email : String(user.email ?? '');
@@ -718,7 +767,7 @@ export const login = async (req, res) => {
 
     user = await ensureAdminEmailVerified(user, rawEmail);
     if (!(await isAppEmailVerified(user)) && !isAnyAdminPanelEmail(rawEmail)) {
-      return respondEmailNotVerified();
+      return respondEmailNotVerified(user);
     }
 
     const emailForJwt = typeof user.email === 'string' ? user.email : String(user.email ?? '');
@@ -869,7 +918,10 @@ export const resendVerificationEmail = async (req, res) => {
     }
     const user = await findUserByEmail(email);
     if (!user) {
-      return res.status(401).json({ error: ERROR_MESSAGES.AUTH.INVALID_CREDENTIALS });
+      return res.status(404).json({
+        error: 'אין חשבון עם האימייל הזה. יש להירשם מחדש, ואז להתחבר.',
+        code: 'USER_NOT_FOUND',
+      });
     }
     if (user.emailVerified) {
       return res.status(400).json({ error: 'האימייל כבר אומת. ניתן להתחבר.' });

@@ -122,6 +122,7 @@ export const AuthProvider = ({ children }) => {
         error: debugMsg ? `${message}: ${debugMsg}` : message,
         code: code || null,
         hint,
+        emailSent: data?.emailSent === true,
       };
     }
   };

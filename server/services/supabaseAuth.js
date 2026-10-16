@@ -121,6 +121,26 @@ export async function deleteAuthUser(userId) {
 }
 
 /** קריאת משתמש Auth לפי מזהה (למטא־דאטה של קודי אימות) */
+/** חיפוש משתמש Auth לפי אימייל. null אם אין חשבון כזה. */
+export async function findAuthUserByEmail(email) {
+  const target = String(email || '').trim().toLowerCase();
+  if (!target) return null;
+  const sb = getSupabaseAdmin();
+  try {
+    const { data, error } = await sb.auth.admin.listUsers({
+      page: 1,
+      perPage: 200,
+    });
+    if (error) throw error;
+    return (
+      (data?.users || []).find((u) => String(u.email || '').trim().toLowerCase() === target) || null
+    );
+  } catch (err) {
+    console.error('[Auth] findAuthUserByEmail:', err?.message || err);
+    return null;
+  }
+}
+
 export async function getAuthUserById(userId) {
   const sb = getSupabaseAdmin();
   const { data, error } = await sb.auth.admin.getUserById(String(userId || ''));

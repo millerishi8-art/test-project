@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
   PHONE_COUNTRIES,
@@ -10,9 +10,11 @@ import {
 import './Auth.css';
 
 const Register = () => {
+  const location = useLocation();
+  const prefilledEmail = typeof location.state?.email === 'string' ? location.state.email : '';
   const [formData, setFormData] = useState({
     name: '',
-    email: '',
+    email: prefilledEmail,
     phoneCountry: 'IL',
     phoneCustomDial: '',
     phoneNumber: '',
@@ -127,11 +129,13 @@ const Register = () => {
     if (result.success) {
       setError('');
       setLoading(false);
-      navigate('/verify-email', {
+      navigate('/login', {
         state: {
           email: formData.email,
-          message: result.message,
-          emailSent: result.emailSent,
+          message: result.emailSent
+            ? 'ההרשמה בוצעה ונשלח קוד אימות למייל. הזן את הקוד כאן, ואז התחבר.'
+            : result.message || 'ההרשמה בוצעה. עכשיו אפשר להתחבר.',
+          showVerification: !!result.emailSent,
         },
       });
       return;

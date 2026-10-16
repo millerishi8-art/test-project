@@ -77,16 +77,20 @@ const Login = () => {
   const errorDisplay = displayLoginError(error);
   const showVerificationOptions =
     requireEmailVerification ||
-    errorStr.includes('לאמת') ||
     loginErrorCode === 'EMAIL_NOT_VERIFIED' ||
-    loginErrorHint === 'EMAIL_VERIFICATION_MAY_BE_REQUIRED' ||
-    (errorStr === 'פרטי התחברות לא תקינים' && !!formData.email.trim());
-  const showEmailVerifyBlock = showVerificationOptions;
+    loginErrorHint === 'EMAIL_VERIFICATION_MAY_BE_REQUIRED';
+  const showEmailVerifyBlock = showVerificationOptions && loginErrorCode !== 'USER_NOT_FOUND';
 
   useEffect(() => {
     const msg = location.state?.message;
     if (msg) setResendMessage(msg);
-  }, [location.state?.message]);
+    if (location.state?.email) {
+      setFormData((prev) => ({ ...prev, email: location.state.email }));
+    }
+    if (location.state?.showVerification) {
+      setLoginErrorCode('EMAIL_NOT_VERIFIED');
+    }
+  }, [location.state]);
 
 
   const handleChange = (e) => {
@@ -115,8 +119,20 @@ const Login = () => {
       setLoading(false);
       return;
     }
+    if (result.code === 'USER_NOT_FOUND') {
+      setError(apiErrorToString(result.error, 'אין חשבון עם האימייל הזה. יש להירשם מחדש.'));
+      setLoginErrorCode('USER_NOT_FOUND');
+      setLoading(false);
+      return;
+    }
     if (result.code === 'EMAIL_NOT_VERIFIED') {
-      navigate('/verify-email', { state: { email: formData.email.trim(), fromLogin: true } });
+      setError(apiErrorToString(result.error, 'נא לאמת את כתובת האימייל.'));
+      setLoginErrorCode('EMAIL_NOT_VERIFIED');
+      setResendMessage(
+        result.emailSent
+          ? 'נשלח עכשיו קוד אימות חדש למייל. הזן אותו למטה, ואז התחבר.'
+          : 'לא הצלחנו לשלוח קוד למייל. לחץ על "שלח שוב אימייל אימות".'
+      );
       setLoading(false);
       return;
     }
@@ -141,6 +157,10 @@ const Login = () => {
       setResendMessage(res.data?.message || 'נשלח שוב אימייל אימות.');
     } catch (err) {
       logAuthError('Login resend verification', err);
+      const code = err.response?.data?.code;
+      if (code === 'USER_NOT_FOUND') {
+        setLoginErrorCode('USER_NOT_FOUND');
+      }
       setError(apiErrorToString(err.response?.data?.error, 'שליחה חוזרת נכשלה.'));
     } finally {
       setResendLoading(false);
@@ -431,18 +451,16 @@ const Login = () => {
             <div className={loginErrorCode === 'EMAIL_NOT_VERIFIED' ? 'error-message error-message-verify' : 'error-message'}>
               {errorDisplay}
               {loginErrorCode === 'EMAIL_NOT_VERIFIED' ? (
-                <p className="error-hint">החשבון קיים אך האימייל טרם אומת. הזן את קוד האימות למטה או שלח קוד חדש.</p>
+                <p className="error-hint">החשבון קיים אך האימייל טרם אומת. נשלח קוד חדש למייל — הזן אותו למטה.</p>
+              ) : loginErrorCode === 'USER_NOT_FOUND' ? (
+                <p className="error-hint">
+                  אין חשבון כזה במערכת. צריך להירשם מחדש, ואחרי ההרשמה לחזור לכאן ולהתחבר.
+                </p>
               ) : (
                 (errorStr === 'פרטי התחברות לא תקינים' ||
                   errorStr === 'Invalid credentials' ||
                   errorStr.includes('Login failed')) && (
-                  <p className="error-hint">
-                    בדוק שהאימייל והסיסמה נכונים. אם הרגע נרשמת – אמת קודם את האימייל (קוד למטה) או{' '}
-                    <Link to="/verify-email" state={{ email: formData.email.trim() }}>
-                      עבור לדף אימות
-                    </Link>
-                    .
-                  </p>
+                  <p className="error-hint">האימייל קיים, אבל הסיסמה לא נכונה. בדוק את הסיסמה או לחץ על "שכחתי סיסמה".</p>
                 )
               )}
             </div>
@@ -509,6 +527,17 @@ const Login = () => {
                 </form>
               )}
             </div>
+          )}
+          {loginErrorCode === 'USER_NOT_FOUND' && (
+            <button
+              type="button"
+              className="auth-button"
+              onClick={() =>
+                navigate('/register', { state: { email: formData.email.trim() } })
+              }
+            >
+              להרשמה מחדש
+            </button>
           )}
           <button type="submit" className="auth-button" disabled={loading}>
             {loading ? 'מתחבר...' : 'התחבר'}
