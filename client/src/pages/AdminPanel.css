@@ -206,6 +206,49 @@
   justify-content: center;
 }
 
+.admin-case-search {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  justify-content: center;
+  align-items: center;
+  width: min(720px, 100%);
+  margin: 0 auto 1.25rem;
+}
+
+.admin-case-search input {
+  flex: 1 1 240px;
+  min-height: var(--touch-min);
+  padding: 0.75rem 1rem;
+  border: 2px solid #d6e4f0;
+  border-radius: 12px;
+  font-size: 1rem;
+  background: #fff;
+  color: #1a3a52;
+}
+
+.admin-case-search input:focus {
+  outline: none;
+  border-color: #1e6bb8;
+}
+
+.admin-case-search button {
+  min-height: var(--touch-min);
+  padding: 0.7rem 1.3rem;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #1e6bb8 0%, #1565c0 100%);
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.admin-case-search-clear {
+  background: #fff !important;
+  color: #1565c0 !important;
+  border: 2px solid #90caf9 !important;
+}
+
 .admin-table-container {
   background: white;
   border-radius: 20px;
@@ -895,6 +938,15 @@
   }
 
   .admin-cases-filters-inline button {
+    width: 100%;
+  }
+
+  .admin-case-search {
+    width: 100%;
+  }
+
+  .admin-case-search input,
+  .admin-case-search button {
     width: 100%;
   }
 

@@ -17,6 +17,28 @@ const RENEWAL_DONE = 'renewed';
 
 const SIX_MONTHS_MS = 6 * 30 * 24 * 60 * 60 * 1000;
 
+function caseMatchesSearch(c, query) {
+  if (!query) return true;
+  const compact = query.replace(/[\s#]/g, '');
+  const accountName = String(c.userName || '').trim();
+  const formName = String(c.personalDetails?.fullName || c.fullName || '').trim();
+  const nameParts = `${accountName} ${formName}`.split(/\s+/).filter(Boolean);
+  const firstName = (nameParts[0] || '').toLowerCase();
+  const lastName = (nameParts.length > 1 ? nameParts[nameParts.length - 1] : '').toLowerCase();
+  const email = String(c.userEmail || '').toLowerCase();
+  const id = String(c.id || '').toLowerCase();
+  const shortId = id.slice(0, 8);
+  const haystack = `${accountName} ${formName}`.toLowerCase();
+  return (
+    firstName.includes(query) ||
+    lastName.includes(query) ||
+    haystack.includes(query) ||
+    email.includes(query) ||
+    id.includes(compact) ||
+    shortId.includes(compact)
+  );
+}
+
 /** מחזיר מצב חידוש: אישור/סגירה של הממשלה נכנסים אוטומטית לחידוש בעוד חצי שנה (ביטול רק במחיקה) */
 function getRenewalStatus(c) {
   if (c.isRenewed) return RENEWAL_DONE;
@@ -55,6 +77,7 @@ const AdminPanel = () => {
   const [casesPanelUserId, setCasesPanelUserId] = useState(null);
   const [hraModalCase, setHraModalCase] = useState(null);
   const [statusModalCase, setStatusModalCase] = useState(null);
+  const [caseSearch, setCaseSearch] = useState('');
 
   const handleInterimNotesChange = (caseId, interimNotes) => {
     setCases((prev) =>
@@ -217,10 +240,12 @@ const AdminPanel = () => {
   };
 
   const casesWithRenewal = cases.map((c) => ({ ...c, renewalStatus: getRenewalStatus(c) }));
-  const filteredCases =
+  const caseSearchQuery = caseSearch.trim().toLowerCase();
+  const filteredCases = (
     casesFilter === 'all'
       ? casesWithRenewal
-      : casesWithRenewal.filter((c) => c.renewalStatus === casesFilter);
+      : casesWithRenewal.filter((c) => c.renewalStatus === casesFilter)
+  ).filter((c) => caseMatchesSearch(c, caseSearchQuery));
   const sortedCases = [...filteredCases].sort((a, b) => {
     const order = { [RENEWAL_NEEDS_NOW]: 0, [RENEWAL_PENDING_CONFIRMATION]: 1, [RENEWAL_IN_6_MONTHS]: 2, [RENEWAL_OK]: 3, [RENEWAL_DONE]: 4 };
     const diff = (order[a.renewalStatus] ?? 2) - (order[b.renewalStatus] ?? 2);
@@ -498,6 +523,25 @@ const AdminPanel = () => {
 
       {mainSection === 'cases' && (
         <>
+          <form
+            className="admin-case-search"
+            onSubmit={(e) => e.preventDefault()}
+            role="search"
+          >
+            <input
+              type="search"
+              value={caseSearch}
+              onChange={(e) => setCaseSearch(e.target.value)}
+              placeholder="חיפוש לפי שם פרטי, שם משפחה, אימייל או מספר תיק"
+              aria-label="חיפוש תיקים לפי שם, אימייל או מספר תיק"
+            />
+            <button type="submit">חיפוש</button>
+            {caseSearch.trim() ? (
+              <button type="button" className="admin-case-search-clear" onClick={() => setCaseSearch('')}>
+                נקה
+              </button>
+            ) : null}
+          </form>
           <div className="admin-table-container">
             <table className="admin-table admin-table-cards">
               <thead>
@@ -519,7 +563,9 @@ const AdminPanel = () => {
                     <td colSpan="9" className="empty-state">
                       {cases.length === 0
                         ? 'אין קייסים במערכת. כל תיק שאושר (נשלח) יופיע כאן.'
-                        : 'אין תיקים בקטגוריה זו'}
+                        : caseSearchQuery
+                          ? 'לא נמצא תיק לפי החיפוש. נסה שם פרטי, שם משפחה, אימייל או מספר תיק.'
+                          : 'אין תיקים בקטגוריה זו'}
                     </td>
                   </tr>
                 ) : (
