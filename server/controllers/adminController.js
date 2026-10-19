@@ -696,13 +696,12 @@ const PROCESSING_STAGES = {
 /** מנהלי ראיונות – מקבלים מייל כשתיק ממתין לראיון אישי */
 const INTERVIEW_STAFF_EMAILS = ['lapidwoldenberg@gmail.com', 'abergelyuda7@gmail.com'];
 /** מנהל טפסים – מקבל מייל אחרי שנעשה ראיון ומחכים להגשת טפסים */
-const FORMS_STAFF_EMAILS = ['shneortole257@gmail.com'];
+const FORMS_STAFF_EMAILS = [];
 
 /** טלפונים ישראליים של העובדים להתראות SMS (ניתן לדרוס ב-STAFF_PHONE_OVERRIDES) */
 const DEFAULT_STAFF_PHONES = {
   'abergelyuda7@gmail.com': '0515770516', // יהודה אברגל
   'lapidwoldenberg@gmail.com': '0545882718', // לפיד וולדנברג
-  'shneortole257@gmail.com': '0586770584', // שניאור טולדנו
 };
 
 /** ניסוח ישן לפני תיקון (נפתח → נפתחה) – עדיין קיים בתיקים ישנים */

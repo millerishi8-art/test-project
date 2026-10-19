@@ -18,7 +18,6 @@ export const SUPER_ADMIN_EMAIL_ALIASES = ['millerbituach@gmail.com'];
 /** מנהלי משנה הקבועים בקוד — תמיד מורשים, גם אם SECONDARY_ADMIN_EMAILS מוגדר ב-.env */
 export const DEFAULT_SECONDARY_ADMIN_EMAILS = [
   'abergelyuda7@gmail.com',
-  'shneortole257@gmail.com',
   'lapidwoldenberg@gmail.com',
   'lioranl770@gmail.com',
 ];
