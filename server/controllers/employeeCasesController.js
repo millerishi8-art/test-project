@@ -26,6 +26,7 @@ const STAFF_DISPLAY_NAMES = {
   'abergelyuda7@gmail.com': 'יהודה אברגל',
   'lapidwoldenberg@gmail.com': 'לפיד וולדנברג',
   'lioranl770@gmail.com': 'ליאור',
+  'michalhezi2@gmail.com': 'מיכל',
 };
 
 function staffDisplayName(email, fallbackName = '') {
