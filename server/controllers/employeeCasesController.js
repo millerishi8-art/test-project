@@ -26,7 +26,6 @@ const STAFF_DISPLAY_NAMES = {
   'abergelyuda7@gmail.com': 'יהודה אברגל',
   'lapidwoldenberg@gmail.com': 'לפיד וולדנברג',
   'shneortole257@gmail.com': 'שניאור טולדנו',
-  'harelmor11@gmail.com': 'הראל',
   'maorinyo166@gmail.com': 'מאור',
   'lioranl770@gmail.com': 'ליאור',
 };
