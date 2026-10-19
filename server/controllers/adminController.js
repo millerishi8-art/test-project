@@ -703,7 +703,6 @@ const DEFAULT_STAFF_PHONES = {
   'abergelyuda7@gmail.com': '0515770516', // יהודה אברגל
   'lapidwoldenberg@gmail.com': '0545882718', // לפיד וולדנברג
   'shneortole257@gmail.com': '0586770584', // שניאור טולדנו
-  'maorinyo166@gmail.com': '0542598042',
 };
 
 /** ניסוח ישן לפני תיקון (נפתח → נפתחה) – עדיין קיים בתיקים ישנים */
