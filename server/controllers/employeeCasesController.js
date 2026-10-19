@@ -28,6 +28,7 @@ const STAFF_DISPLAY_NAMES = {
   'shneortole257@gmail.com': 'שניאור טולדנו',
   'harelmor11@gmail.com': 'הראל',
   'maorinyo166@gmail.com': 'מאור',
+  'lioranl770@gmail.com': 'ליאור',
 };
 
 function staffDisplayName(email, fallbackName = '') {
