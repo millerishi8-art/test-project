@@ -62,12 +62,16 @@ export function isOnSixMonthRenewalTrack(c) {
 }
 
 /**
- * מחלקת צבע לפי שלב עיבוד.
- * 1 צהוב (פתיחה) → 2 כתום (אחרי ראיון) → 3 כחול (הגשת טפסים).
- * ירוק לאישור, אדום לסגירה. המסגרת מהבהבת בצבע הסטטוס הנוכחי.
+ * מחלקת צבע לפי שלב שסומן בפועל.
+ * לחיצה שנייה מבטלת את השלב — בלי תווית אין צבע, והמסגרת חוזרת ללבן.
+ * סטטוס «ממתין» לבדו לא צובע את התיק.
  */
 export function getCaseStageToneClass(c) {
   if (!c) return '';
+  const d = (c.detailedAdminStatus || '').trim();
+  const marked =
+    PROCESSING_STAGE_LABELS_HE.includes(d) || d === LEGACY_HE_STAGE1;
+  if (!marked) return '';
   if (isCaseClosed(c)) return 'case-tone-closed';
   const n = getProcessingStageNumber(c);
   if (n === 5) return 'case-tone-approved';
