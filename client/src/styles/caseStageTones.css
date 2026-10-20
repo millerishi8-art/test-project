@@ -1,4 +1,68 @@
-/* שלבי כייס: פתיחה צהוב → ראיון כתום → הגשה כחול האתר. ירוק/אדום לאישור/סגירה. */
+/* שלבי כייס: פתיחה צהוב → ראיון כתום → הגשה כחול האתר. ירוק/אדום לאישור/סגירה.
+   המסגרת מהבהבת בעדינות בצבע הסטטוס הנוכחי. */
+
+@keyframes case-frame-blink-1 {
+  0%, 100% { border-color: #c99612; }
+  50% { border-color: #ffe08a; }
+}
+@keyframes case-frame-blink-2 {
+  0%, 100% { border-color: #e07020; }
+  50% { border-color: #ffc599; }
+}
+@keyframes case-frame-blink-3 {
+  0%, 100% { border-color: #1565c0; }
+  50% { border-color: #90caf9; }
+}
+@keyframes case-frame-blink-closed {
+  0%, 100% { border-color: #e11d48; }
+  50% { border-color: #fecdd3; }
+}
+@keyframes case-frame-blink-approved {
+  0%, 100% { border-color: #059669; }
+  50% { border-color: #a7f3d0; }
+}
+
+.admin-table-cards tbody tr.case-tone-stage-1 > td,
+.admin-case-detail-card.case-tone-stage-1,
+.case-status-item.case-tone-stage-1,
+.case-status-modal.case-tone-stage-1 {
+  animation: case-frame-blink-1 1.7s ease-in-out infinite;
+}
+.admin-table-cards tbody tr.case-tone-stage-2 > td,
+.admin-case-detail-card.case-tone-stage-2,
+.case-status-item.case-tone-stage-2,
+.case-status-modal.case-tone-stage-2 {
+  animation: case-frame-blink-2 1.7s ease-in-out infinite;
+}
+.admin-table-cards tbody tr.case-tone-stage-3 > td,
+.admin-case-detail-card.case-tone-stage-3,
+.case-status-item.case-tone-stage-3,
+.case-status-modal.case-tone-stage-3 {
+  animation: case-frame-blink-3 1.7s ease-in-out infinite;
+}
+.admin-table-cards tbody tr.case-tone-closed > td,
+.admin-table-cards tbody tr.case-row-closed > td,
+.admin-case-detail-card.case-tone-closed,
+.case-status-item.case-tone-closed,
+.case-status-modal.case-tone-closed {
+  animation: case-frame-blink-closed 1.7s ease-in-out infinite;
+}
+.admin-table-cards tbody tr.case-tone-approved > td,
+.admin-case-detail-card.case-tone-approved,
+.case-status-item.case-tone-approved,
+.case-status-modal.case-tone-approved {
+  animation: case-frame-blink-approved 1.7s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-table-cards tbody tr[class*='case-tone-'] > td,
+  .admin-table-cards tbody tr.case-row-closed > td,
+  .admin-case-detail-card[class*='case-tone-'],
+  .case-status-item[class*='case-tone-'],
+  .case-status-modal[class*='case-tone-'] {
+    animation: none;
+  }
+}
 
 .admin-case-detail-card.case-tone-stage-1,
 .case-status-item.case-tone-stage-1 {
@@ -190,5 +254,39 @@
   .admin-table-cards tbody tr.case-tone-approved:hover,
   .admin-table-cards tbody tr.case-tone-approved:active {
     background: #f7fffb;
+  }
+
+  .admin-table-cards tbody tr.case-tone-stage-1,
+  .admin-table-cards tbody tr.case-tone-stage-1:hover,
+  .admin-table-cards tbody tr.case-tone-stage-1:active {
+    border: 2px solid #e8c547;
+    animation: case-frame-blink-1 1.7s ease-in-out infinite;
+  }
+  .admin-table-cards tbody tr.case-tone-stage-2,
+  .admin-table-cards tbody tr.case-tone-stage-2:hover,
+  .admin-table-cards tbody tr.case-tone-stage-2:active {
+    border: 2px solid #e8893a;
+    animation: case-frame-blink-2 1.7s ease-in-out infinite;
+  }
+  .admin-table-cards tbody tr.case-tone-stage-3,
+  .admin-table-cards tbody tr.case-tone-stage-3:hover,
+  .admin-table-cards tbody tr.case-tone-stage-3:active {
+    border: 2px solid #1e6bb8;
+    animation: case-frame-blink-3 1.7s ease-in-out infinite;
+  }
+  .admin-table-cards tbody tr.case-tone-closed,
+  .admin-table-cards tbody tr.case-row-closed,
+  .admin-table-cards tbody tr.case-tone-closed:hover,
+  .admin-table-cards tbody tr.case-row-closed:hover,
+  .admin-table-cards tbody tr.case-tone-closed:active,
+  .admin-table-cards tbody tr.case-row-closed:active {
+    border: 2px solid #fda4af;
+    animation: case-frame-blink-closed 1.7s ease-in-out infinite;
+  }
+  .admin-table-cards tbody tr.case-tone-approved,
+  .admin-table-cards tbody tr.case-tone-approved:hover,
+  .admin-table-cards tbody tr.case-tone-approved:active {
+    border: 2px solid #6ee7b7;
+    animation: case-frame-blink-approved 1.7s ease-in-out infinite;
   }
 }

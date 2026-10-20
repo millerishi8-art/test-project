@@ -63,8 +63,8 @@ export function isOnSixMonthRenewalTrack(c) {
 
 /**
  * מחלקת צבע לפי שלב עיבוד.
- * שלב 1 (נפתחה הבקשה / מחכה לראיון) נשאר במסגרת הלבנה המקורית.
- * 2 כתום (אחרי ראיון) → 3 כחול (הגשת טפסים). ירוק/אדום שמורים לאישור/סגירה.
+ * 1 צהוב (פתיחה) → 2 כתום (אחרי ראיון) → 3 כחול (הגשת טפסים).
+ * ירוק לאישור, אדום לסגירה. המסגרת מהבהבת בצבע הסטטוס הנוכחי.
  */
 export function getCaseStageToneClass(c) {
   if (!c) return '';
@@ -73,5 +73,6 @@ export function getCaseStageToneClass(c) {
   if (n === 5) return 'case-tone-approved';
   if (n === 3) return 'case-tone-stage-3';
   if (n === 2) return 'case-tone-stage-2';
+  if (n === 1) return 'case-tone-stage-1';
   return '';
 }
