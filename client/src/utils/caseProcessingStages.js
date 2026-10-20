@@ -71,11 +71,7 @@ export function getCaseStageToneClass(c) {
   const d = (c.detailedAdminStatus || '').trim();
   const marked =
     PROCESSING_STAGE_LABELS_HE.includes(d) || d === LEGACY_HE_STAGE1;
-  if (!marked) {
-    const s = (c.status || '').toLowerCase();
-    if (s === 'submitted') return 'case-tone-new';
-    return '';
-  }
+  if (!marked) return '';
   if (isCaseClosed(c)) return 'case-tone-closed';
   const n = getProcessingStageNumber(c);
   if (n === 5) return 'case-tone-approved';
