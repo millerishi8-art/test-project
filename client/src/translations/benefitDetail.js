@@ -6,14 +6,14 @@ export const benefitDetailTranslations = {
   en: {
     family: {
       title: 'Family',
-      description: 'Benefits for a family',
-      criteria: 'Family with children (parents + children up to age 21). ID documents for all family members and family relationship documents are required when needed.',
+      description: 'An adult over 21 caring for a minor under 18',
+      criteria: 'An adult over 21 caring for a minor under 18. ID for the adult and the minor, plus a document confirming the care arrangement, are required.',
       instructions: 'Fill out the family benefit application form, attach ID documents for each family member, and proof of address. After submission the case will be reviewed and you will receive an update within 2–3 weeks.',
       estimatedTime: '2-3 weeks',
-      details: 'The family benefit covers the entire family unit and is suitable for households with children. We recommend preparing all documents in advance to speed up processing.',
+      details: 'This benefit is for an adult over 21 who cares for a minor under 18. Payment starts from $1,000 and up, and income is set according to the family situation of each case.',
       fullExplanation: [
-        { heading: 'What does the family benefit include?', text: 'This benefit is for families with children and covers all household members as one unit. The total price (₪1,800 / $500) applies to the whole family, not per person. The benefit is suitable for a household with children up to age 21.' },
-        { heading: 'Who is it suitable for?', text: 'Couples with children, single parents with children, or any family unit with at least one child up to age 21. You must present ID documents and documents supporting the family composition.' },
+        { heading: 'What does the family benefit include?', text: 'A benefit for an adult over 21 who cares for a minor under 18. Payment starts from $1,000 and up. Income is set individually for each case, based on the family situation.' },
+        { heading: 'Who is it suitable for?', text: 'An adult over 21 who has a minor under 18 in their care. ID documents and a document confirming the care arrangement and household are required.' },
         { heading: 'How do I get started?', text: 'Click "Continue to fill details", fill in the details of all family members and attach the required documents. After submission you will receive confirmation and can track the case status.' },
       ],
     },

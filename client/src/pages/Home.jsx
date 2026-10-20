@@ -88,14 +88,13 @@ const Home = () => {
           onClick={() => handleCubeClick('family')}
         >
           <div className="cube-icon">👨‍👩‍👧‍👦</div>
-          <h2>{language === 'he' ? benefits.family.title : t.family}</h2>
-          <p className="cube-description">{language === 'he' ? benefits.family.description : t.familyDesc}</p>
+          <h2>{t.family}</h2>
+          <p className="cube-description">{t.familyDesc}</p>
           <div className="cube-price">
-            <span>${benefits.family.price.usd}</span>
-            <span>₪{benefits.family.price.ils}</span>
+            <span>{t.familyPrice}</span>
           </div>
           <div style={{ fontSize: '0.75rem', color: '#666', marginTop: '0.5rem', textAlign: 'center' }}>
-            * משוער ותלוי כמה שהמשרד החליט לתקצב
+            {t.familyPriceNote}
           </div>
         </div>
 
