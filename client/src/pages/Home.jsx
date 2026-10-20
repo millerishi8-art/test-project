@@ -104,30 +104,14 @@ const Home = () => {
           onClick={() => handleCubeClick('individual')}
         >
           <div className="cube-icon">👤</div>
-          <h2>{language === 'he' ? benefits.individual.title : t.individual}</h2>
-          <p className="cube-description">{language === 'he' ? benefits.individual.description : t.individualDesc}</p>
+          <h2>{t.individual}</h2>
+          <p className="cube-description">{t.individualDesc}</p>
           <div className="cube-price">
             <span>${benefits.individual.price.usd}</span>
             <span>₪{benefits.individual.price.ils}</span>
           </div>
           <div style={{ fontSize: '0.75rem', color: '#666', marginTop: '0.5rem', textAlign: 'center' }}>
             * משוער ותלוי כמה שהמשרד החליט לתקצב
-          </div>
-        </div>
-
-        <div
-          className="benefit-cube"
-          onClick={() => handleCubeClick('minor')}
-        >
-          <div className="cube-icon">🧒</div>
-          <h2>{t.minor}</h2>
-          <p className="cube-description">{t.minorDesc}</p>
-          <div className="cube-price">
-            <span>${benefits.minor.price.usd}</span>
-            <span>₪{benefits.minor.price.ils}</span>
-          </div>
-          <div style={{ fontSize: '0.75rem', color: '#666', marginTop: '0.5rem', textAlign: 'center' }}>
-            *   משוער ותלוי כמה שהמשרד החליט לתקצב ויכול להשתנות לפי סטטוס ההטבה
           </div>
         </div>
 

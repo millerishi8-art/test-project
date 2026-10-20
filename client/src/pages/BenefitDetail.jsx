@@ -16,6 +16,10 @@ const BenefitDetail = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if ((type || '').toLowerCase() === 'minor') {
+      navigate('/benefit/individual', { replace: true });
+      return;
+    }
     fetchBenefit();
   }, [type]);
 

@@ -50,7 +50,7 @@ const Landing = () => {
   }
 
   const managerWaUrl = buildWhatsAppUrl('MANAGER', LANDING_WA_MESSAGE);
-  const types = ['family', 'individual', 'minor'];
+  const types = ['family', 'individual'];
 
   return (
     <div className="landing-page" dir={language === 'he' ? 'rtl' : 'ltr'}>
@@ -148,7 +148,6 @@ const Landing = () => {
           <ul className="landing-list" style={{ marginTop: '0.5rem' }}>
             <li>{t.familyPotential}</li>
             <li>{t.individualPotential}</li>
-            <li>{t.minorPotential}</li>
           </ul>
           <p className="landing-pricing-note">{t.monthlyDisclaimer}</p>
         </div>
