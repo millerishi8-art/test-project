@@ -19,7 +19,7 @@ export const SUPER_ADMIN_EMAIL_ALIASES = ['millerbituach@gmail.com'];
 export const DEFAULT_SECONDARY_ADMIN_EMAILS = [
   'abergelyuda7@gmail.com',
   'lapidwoldenberg@gmail.com',
-  'lioranl770@gmail.com',
+  'lioranwork770@gmail.com',
   'michalhezi2@gmail.com',
 ];
 
