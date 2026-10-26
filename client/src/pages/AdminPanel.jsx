@@ -265,7 +265,7 @@ const AdminPanel = () => {
     for (const label of extraStages) {
       options.push({ value: `extra:${label}`, label });
     }
-    for (const base of ['submitted', 'pending', 'approved', 'rejected', 'closed']) {
+    for (const base of ['rejected', 'closed']) {
       if (baseStatuses.has(base)) options.push({ value: `status:${base}`, label: statusLabel(base) });
     }
     return options;
