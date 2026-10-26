@@ -1,32 +1,32 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
-import { LEGACY_HE_STAGE1, getCaseStageToneClass } from '../utils/caseProcessingStages';
+import { explicitStageNumberFromLabel, getCaseStageToneClass, shortStageLabel } from '../utils/caseProcessingStages';
 import '../styles/caseStageTones.css';
 import '../pages/AdminCaseProcessing.css';
 import './CaseStatusModal.css';
 
 export const CASE_PROCESSING_STAGES = [
-  { stage: 1, label: 'נפתחה הבקשה באתר מחכה לראיון אישי', toneClass: 'stage-opening' },
-  { stage: 2, label: 'נעשה ראיון מחכה להגשת טפסים', toneClass: 'stage-interview' },
-  { stage: 3, label: 'הוגשו טפסים מחכה לאישור הממשלה', toneClass: 'stage-forms' },
-  { stage: 4, label: 'הממשלה סגרה את הכייס', isRejection: true },
-  { stage: 5, label: 'אושר על ידי הממשלה', isApproval: true },
+  { stage: 1, label: 'נפתחה בקשה', toneClass: 'stage-opening' },
+  { stage: 2, label: 'נעשה ראיון', toneClass: 'stage-interview' },
+  { stage: 3, label: 'הוגשו טפסים', toneClass: 'stage-forms' },
+  { stage: 4, label: 'הכייס סגור', isRejection: true },
+  { stage: 5, label: 'הכייס אושר', isApproval: true },
 ];
 
-function isStageActive(caseItem, stageNum, label) {
-  const cur = (caseItem?.detailedAdminStatus || '').trim();
-  return cur === label || (stageNum === 1 && cur === LEGACY_HE_STAGE1);
+function isStageActive(caseItem, stageNum) {
+  return explicitStageNumberFromLabel(caseItem?.detailedAdminStatus) === stageNum;
 }
 
 function currentStageLabel(c) {
   if (!c) return 'בתהליך';
+  const short = shortStageLabel(c.detailedAdminStatus);
+  if (short) return short;
   return (
-    c.detailedAdminStatus ||
-    (c.status === 'approved'
-      ? 'אושר'
+    c.status === 'approved'
+      ? 'הכייס אושר'
       : c.status === 'rejected' || c.status === 'closed'
-        ? 'נסגר'
-        : 'בתהליך')
+        ? 'הכייס סגור'
+        : 'בתהליך'
   );
 }
 
@@ -105,7 +105,7 @@ export default function CaseStatusModal({ caseItem: initialCase, onClose, onUpda
 
   const handleStageClick = (stageNum) => {
     const stageDef = CASE_PROCESSING_STAGES.find((s) => s.stage === stageNum);
-    const active = stageDef ? isStageActive(caseItem, stageNum, stageDef.label) : false;
+    const active = stageDef ? isStageActive(caseItem, stageNum) : false;
     if (active) {
       submitProcessing({ clearStage: true });
       return;
@@ -233,7 +233,7 @@ export default function CaseStatusModal({ caseItem: initialCase, onClose, onUpda
 
         {subView === 'reject' && (
           <div className="case-status-modal-sub">
-            <h3>הממשלה סגרה את הכייס – סיבת סגירה</h3>
+            <h3>הכייס סגור – סיבת סגירה</h3>
             <p className="admin-processing-modal-desc">סיבת הסגירה תוצג ללקוח בדף סטטוס הכייס.</p>
             <textarea
               className="admin-processing-modal-input"
@@ -270,9 +270,9 @@ export default function CaseStatusModal({ caseItem: initialCase, onClose, onUpda
 
         {subView === 'approve' && (
           <div className="case-status-modal-sub">
-            <h3>אושר על ידי הממשלה – פרטי הטבות</h3>
+            <h3>הכייס אושר – פרטי הטבות</h3>
             <p className="admin-processing-modal-desc">
-              הפרטים יוצגו ללקוח בדף סטטוס הכייס תחת שלב &quot;אושר על ידי הממשלה&quot;.
+              הפרטים יוצגו ללקוח בדף סטטוס הכייס תחת שלב &quot;הכייס אושר&quot;.
             </p>
             <div className="admin-processing-benefits-form">
               <label htmlFor="case-status-approval-rent">סיוע בשכר דירה (כן/לא או סכום)</label>

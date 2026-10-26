@@ -9,7 +9,8 @@ import {
   getCaseStageToneClass,
   isOnSixMonthRenewalTrack,
   PROCESSING_STAGE_LABELS_HE,
-  LEGACY_HE_STAGE1,
+  LEGACY_STAGE_LABELS_HE,
+  explicitStageNumberFromLabel,
 } from '../utils/caseProcessingStages';
 import '../styles/caseStageTones.css';
 import './AdminPanel.css';
@@ -253,7 +254,10 @@ const AdminPanel = () => {
       value: `stage:${index + 1}`,
       label,
     }));
-    const knownStages = new Set([...PROCESSING_STAGE_LABELS_HE, LEGACY_HE_STAGE1]);
+    const knownStages = new Set([
+      ...PROCESSING_STAGE_LABELS_HE,
+      ...Object.keys(LEGACY_STAGE_LABELS_HE),
+    ]);
     const extraStages = new Set();
     const baseStatuses = new Set();
     for (const c of casesWithRenewal) {
@@ -274,10 +278,7 @@ const AdminPanel = () => {
     if (caseStatusFilter === 'all') return true;
     const detailed = String(c.detailedAdminStatus || '').trim();
     if (caseStatusFilter.startsWith('stage:')) {
-      const stageNum = Number(caseStatusFilter.slice(6));
-      const label = PROCESSING_STAGE_LABELS_HE[stageNum - 1];
-      if (stageNum === 1 && detailed === LEGACY_HE_STAGE1) return true;
-      return detailed === label;
+      return explicitStageNumberFromLabel(detailed) === Number(caseStatusFilter.slice(6));
     }
     if (caseStatusFilter.startsWith('extra:')) return detailed === caseStatusFilter.slice(6);
     if (caseStatusFilter.startsWith('status:')) {

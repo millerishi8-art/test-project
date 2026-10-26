@@ -686,11 +686,20 @@ export const confirmCaseCompleted = async (req, res) => {
 
 /** שלבי עיבוד תיק – טקסט ל־detailedAdminStatus */
 const PROCESSING_STAGES = {
-  1: 'נפתחה הבקשה באתר מחכה לראיון אישי',
-  2: 'נעשה ראיון מחכה להגשת טפסים',
-  3: 'הוגשו טפסים מחכה לאישור הממשלה',
-  4: 'הממשלה סגרה את הכייס',
-  5: 'אושר על ידי הממשלה',
+  1: 'נפתחה בקשה',
+  2: 'נעשה ראיון',
+  3: 'הוגשו טפסים',
+  4: 'הכייס סגור',
+  5: 'הכייס אושר',
+};
+
+const LEGACY_STAGE_LABELS = {
+  'נפתחה הבקשה באתר מחכה לראיון אישי': 1,
+  'נפתח הבקשה באתר מחכה לראיון אישי': 1,
+  'נעשה ראיון מחכה להגשת טפסים': 2,
+  'הוגשו טפסים מחכה לאישור הממשלה': 3,
+  'הממשלה סגרה את הכייס': 4,
+  'אושר על ידי הממשלה': 5,
 };
 
 /** מנהלי ראיונות – מקבלים מייל כשתיק ממתין לראיון אישי */
@@ -704,12 +713,9 @@ const DEFAULT_STAFF_PHONES = {
   'lapidwoldenberg@gmail.com': '0545882718', // לפיד וולדנברג
 };
 
-/** ניסוח ישן לפני תיקון (נפתח → נפתחה) – עדיין קיים בתיקים ישנים */
-const LEGACY_STAGE1_LABEL = 'נפתח הבקשה באתר מחכה לראיון אישי';
-
 /**
  * מחזיר את מספר שלב העיבוד הנוכחי (1–5) או 0 אם אין שלב.
- * מזהה גם את תווית השלב הקנונית וגם את הניסוח הישן של שלב 1.
+ * מזהה גם את הנוסח הקצר וגם את הנוסח הארוך הישן.
  */
 function previousProcessingStageNumber(caseData) {
   const d = String(caseData?.detailedAdminStatus || '').trim();
@@ -717,9 +723,7 @@ function previousProcessingStageNumber(caseData) {
   for (const [num, label] of Object.entries(PROCESSING_STAGES)) {
     if (d === label) return Number(num);
   }
-  /* תאימות לאחור: תיקים שנשמרו עם "נפתח" במקום "נפתחה" */
-  if (d === LEGACY_STAGE1_LABEL) return 1;
-  return 0;
+  return LEGACY_STAGE_LABELS[d] || 0;
 }
 
 function benefitTypeLabelHe(type) {
@@ -895,7 +899,7 @@ export const updateCaseProcessing = async (req, res) => {
     if (stageNum === 4) {
       const reason = (rejectionReason || '').trim();
       if (!reason) {
-        return res.status(400).json({ error: 'בשלב "הממשלה סגרה את הכייס" חובה להזין סיבת סגירה.' });
+        return res.status(400).json({ error: 'בשלב "הכייס סגור" חובה להזין סיבת סגירה.' });
       }
       updates.rejectionReason = reason;
       updates.status = 'closed';

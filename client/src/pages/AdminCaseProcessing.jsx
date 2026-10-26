@@ -1,17 +1,17 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { LEGACY_HE_STAGE1, getCaseStageToneClass } from '../utils/caseProcessingStages';
+import { explicitStageNumberFromLabel, getCaseStageToneClass, shortStageLabel } from '../utils/caseProcessingStages';
 import '../styles/caseStageTones.css';
 import './AdminPanel.css';
 import './AdminCaseProcessing.css';
 
 const STAGES = [
-  { stage: 1, label: 'נפתחה הבקשה באתר מחכה לראיון אישי', toneClass: 'stage-opening' },
-  { stage: 2, label: 'נעשה ראיון מחכה להגשת טפסים', toneClass: 'stage-interview' },
-  { stage: 3, label: 'הוגשו טפסים מחכה לאישור הממשלה', toneClass: 'stage-forms' },
-  { stage: 4, label: 'הממשלה סגרה את הכייס', isRejection: true },
-  { stage: 5, label: 'אושר על ידי הממשלה', isApproval: true },
+  { stage: 1, label: 'נפתחה בקשה', toneClass: 'stage-opening' },
+  { stage: 2, label: 'נעשה ראיון', toneClass: 'stage-interview' },
+  { stage: 3, label: 'הוגשו טפסים', toneClass: 'stage-forms' },
+  { stage: 4, label: 'הכייס סגור', isRejection: true },
+  { stage: 5, label: 'הכייס אושר', isApproval: true },
 ];
 
 const AdminCaseProcessing = () => {
@@ -64,14 +64,12 @@ const AdminCaseProcessing = () => {
     });
   };
 
-  const isStageActive = (caseItem, stageNum, label) => {
-    const cur = (caseItem.detailedAdminStatus || '').trim();
-    return cur === label || (stageNum === 1 && cur === LEGACY_HE_STAGE1);
-  };
+  const isStageActive = (caseItem, stageNum) =>
+    explicitStageNumberFromLabel(caseItem?.detailedAdminStatus) === stageNum;
 
   const handleStageClick = (caseItem, stageNum) => {
     const stageDef = STAGES.find((s) => s.stage === stageNum);
-    const active = stageDef ? isStageActive(caseItem, stageNum, stageDef.label) : false;
+    const active = stageDef ? isStageActive(caseItem, stageNum) : false;
 
     /* לחיצה שנייה על אותו שלב – ביטול מלא (בלי מייל) */
     if (active) {
@@ -143,7 +141,9 @@ const AdminCaseProcessing = () => {
     submitProcessing(rejectionModal.caseItem.id, 4, reason);
   };
 
-  const currentStageLabel = (c) => c.detailedAdminStatus || (c.status === 'approved' ? 'אושר' : c.status === 'rejected' || c.status === 'closed' ? 'נסגר' : 'בתהליך');
+  const currentStageLabel = (c) =>
+    shortStageLabel(c.detailedAdminStatus) ||
+    (c.status === 'approved' ? 'הכייס אושר' : c.status === 'rejected' || c.status === 'closed' ? 'הכייס סגור' : 'בתהליך');
 
   if (loading) {
     return (
@@ -248,7 +248,7 @@ const AdminCaseProcessing = () => {
       {rejectionModal && (
         <div className="admin-processing-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="rejection-modal-title">
           <div className="admin-processing-modal">
-            <h2 id="rejection-modal-title">הממשלה סגרה את הכייס – סיבת סגירה</h2>
+            <h2 id="rejection-modal-title">הכייס סגור – סיבת סגירה</h2>
             <p className="admin-processing-modal-desc">סיבת הסגירה תוצג ללקוח בדף סטטוס הכייס.</p>
             <textarea
               id="rejection-reason-input"
@@ -280,8 +280,8 @@ const AdminCaseProcessing = () => {
       {approvalModal && (
         <div className="admin-processing-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="approval-modal-title">
           <div className="admin-processing-modal admin-processing-modal-benefits">
-            <h2 id="approval-modal-title">אושר על ידי הממשלה – פרטי הטבות</h2>
-            <p className="admin-processing-modal-desc">הפרטים יוצגו ללקוח בדף סטטוס הכייס תחת שלב &quot;אושר על ידי הממשלה&quot;.</p>
+            <h2 id="approval-modal-title">הכייס אושר – פרטי הטבות</h2>
+            <p className="admin-processing-modal-desc">הפרטים יוצגו ללקוח בדף סטטוס הכייס תחת שלב &quot;הכייס אושר&quot;.</p>
             <div className="admin-processing-benefits-form">
               <label htmlFor="approval-rent">סיוע בשכר דירה (כן/לא או סכום)</label>
               <input type="text" id="approval-rent" className="admin-processing-modal-input" placeholder="למשל: כן / ₪500" dir="rtl" />
