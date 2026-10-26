@@ -5,7 +5,12 @@ import { useAuth } from '../context/AuthContext.jsx';
 import HraDetailsModal, { hasHraContent } from '../components/HraDetailsModal.jsx';
 import { CaseInterimNotesButton } from '../components/CaseInterimNotes.jsx';
 import CaseStatusModal from '../components/CaseStatusModal.jsx';
-import { getCaseStageToneClass, isOnSixMonthRenewalTrack } from '../utils/caseProcessingStages';
+import {
+  getCaseStageToneClass,
+  isOnSixMonthRenewalTrack,
+  PROCESSING_STAGE_LABELS_HE,
+  LEGACY_HE_STAGE1,
+} from '../utils/caseProcessingStages';
 import '../styles/caseStageTones.css';
 import './AdminPanel.css';
 
@@ -78,6 +83,8 @@ const AdminPanel = () => {
   const [hraModalCase, setHraModalCase] = useState(null);
   const [statusModalCase, setStatusModalCase] = useState(null);
   const [caseSearch, setCaseSearch] = useState('');
+  const [caseStatusFilter, setCaseStatusFilter] = useState('all');
+  const [caseSortOrder, setCaseSortOrder] = useState('newest');
 
   const handleInterimNotesChange = (caseId, interimNotes) => {
     setCases((prev) =>
@@ -241,17 +248,56 @@ const AdminPanel = () => {
 
   const casesWithRenewal = cases.map((c) => ({ ...c, renewalStatus: getRenewalStatus(c) }));
   const caseSearchQuery = caseSearch.trim().toLowerCase();
+  const statusFilterOptions = (() => {
+    const options = PROCESSING_STAGE_LABELS_HE.map((label, index) => ({
+      value: `stage:${index + 1}`,
+      label,
+    }));
+    const knownStages = new Set([...PROCESSING_STAGE_LABELS_HE, LEGACY_HE_STAGE1]);
+    const extraStages = new Set();
+    const baseStatuses = new Set();
+    for (const c of casesWithRenewal) {
+      const detailed = String(c.detailedAdminStatus || '').trim();
+      if (detailed && !knownStages.has(detailed)) extraStages.add(detailed);
+      const base = String(c.status || '').trim().toLowerCase();
+      if (base) baseStatuses.add(base);
+    }
+    for (const label of extraStages) {
+      options.push({ value: `extra:${label}`, label });
+    }
+    for (const base of ['submitted', 'pending', 'approved', 'rejected', 'closed']) {
+      if (baseStatuses.has(base)) options.push({ value: `status:${base}`, label: statusLabel(base) });
+    }
+    return options;
+  })();
+  const caseMatchesStatus = (c) => {
+    if (caseStatusFilter === 'all') return true;
+    const detailed = String(c.detailedAdminStatus || '').trim();
+    if (caseStatusFilter.startsWith('stage:')) {
+      const stageNum = Number(caseStatusFilter.slice(6));
+      const label = PROCESSING_STAGE_LABELS_HE[stageNum - 1];
+      if (stageNum === 1 && detailed === LEGACY_HE_STAGE1) return true;
+      return detailed === label;
+    }
+    if (caseStatusFilter.startsWith('extra:')) return detailed === caseStatusFilter.slice(6);
+    if (caseStatusFilter.startsWith('status:')) {
+      return String(c.status || '').toLowerCase() === caseStatusFilter.slice(7);
+    }
+    return true;
+  };
   const filteredCases = (
     casesFilter === 'all'
       ? casesWithRenewal
       : casesWithRenewal.filter((c) => c.renewalStatus === casesFilter)
-  ).filter((c) => caseMatchesSearch(c, caseSearchQuery));
+  ).filter((c) => caseMatchesSearch(c, caseSearchQuery) && caseMatchesStatus(c));
   const sortedCases = [...filteredCases].sort((a, b) => {
-    const order = { [RENEWAL_NEEDS_NOW]: 0, [RENEWAL_PENDING_CONFIRMATION]: 1, [RENEWAL_IN_6_MONTHS]: 2, [RENEWAL_OK]: 3, [RENEWAL_DONE]: 4 };
-    const diff = (order[a.renewalStatus] ?? 2) - (order[b.renewalStatus] ?? 2);
-    if (diff !== 0) return diff;
-    return new Date(a.renewalDate || 0) - new Date(b.renewalDate || 0);
+    const aTime = new Date(a.createdAt || 0).getTime();
+    const bTime = new Date(b.createdAt || 0).getTime();
+    const aMs = Number.isNaN(aTime) ? 0 : aTime;
+    const bMs = Number.isNaN(bTime) ? 0 : bTime;
+    return caseSortOrder === 'oldest' ? aMs - bMs : bMs - aMs;
   });
+  const hasCaseQuery = Boolean(caseSearchQuery) || caseStatusFilter !== 'all';
 
   const countIn6Months = cases.filter((c) => getRenewalStatus(c) === RENEWAL_IN_6_MONTHS).length;
 
@@ -535,9 +581,37 @@ const AdminPanel = () => {
               placeholder="חיפוש לפי שם פרטי, שם משפחה, אימייל או מספר תיק"
               aria-label="חיפוש תיקים לפי שם, אימייל או מספר תיק"
             />
+            <select
+              className="admin-case-status-filter"
+              value={caseStatusFilter}
+              onChange={(e) => setCaseStatusFilter(e.target.value)}
+              aria-label="סינון לפי סטטוס התיק"
+            >
+              <option value="all">כל הסטטוסים</option>
+              {statusFilterOptions.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+            <button
+              type="button"
+              className="admin-case-sort-btn"
+              onClick={() => setCaseSortOrder((current) => (current === 'newest' ? 'oldest' : 'newest'))}
+              aria-label="החלפת סדר התיקים לפי תאריך יצירה"
+            >
+              {caseSortOrder === 'newest' ? 'מהחדש לישן' : 'מהישן לחדש'}
+            </button>
             <button type="submit">חיפוש</button>
-            {caseSearch.trim() ? (
-              <button type="button" className="admin-case-search-clear" onClick={() => setCaseSearch('')}>
+            {hasCaseQuery ? (
+              <button
+                type="button"
+                className="admin-case-search-clear"
+                onClick={() => {
+                  setCaseSearch('');
+                  setCaseStatusFilter('all');
+                }}
+              >
                 נקה
               </button>
             ) : null}
@@ -563,8 +637,8 @@ const AdminPanel = () => {
                     <td colSpan="9" className="empty-state">
                       {cases.length === 0
                         ? 'אין קייסים במערכת. כל תיק שאושר (נשלח) יופיע כאן.'
-                        : caseSearchQuery
-                          ? 'לא נמצא תיק לפי החיפוש. נסה שם פרטי, שם משפחה, אימייל או מספר תיק.'
+                        : hasCaseQuery
+                          ? 'לא נמצא תיק לפי החיפוש או הסטטוס. נסה שם, מספר תיק או סטטוס אחר.'
                           : 'אין תיקים בקטגוריה זו'}
                     </td>
                   </tr>

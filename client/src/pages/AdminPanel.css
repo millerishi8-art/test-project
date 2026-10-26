@@ -212,7 +212,7 @@
   gap: 0.6rem;
   justify-content: center;
   align-items: center;
-  width: min(720px, 100%);
+  width: min(1100px, 100%);
   margin: 0 auto 1.25rem;
 }
 
@@ -227,9 +227,27 @@
   color: #1a3a52;
 }
 
-.admin-case-search input:focus {
+.admin-case-search input:focus,
+.admin-case-status-filter:focus {
   outline: none;
   border-color: #1e6bb8;
+}
+
+.admin-case-status-filter {
+  flex: 1 1 220px;
+  min-height: var(--touch-min);
+  padding: 0.75rem 1rem;
+  border: 2px solid #d6e4f0;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  background: #fff;
+  color: #1a3a52;
+}
+
+.admin-case-sort-btn {
+  background: #fff !important;
+  color: #1565c0 !important;
+  border: 2px solid #1e6bb8 !important;
 }
 
 .admin-case-search button {
@@ -946,6 +964,7 @@
   }
 
   .admin-case-search input,
+  .admin-case-search select,
   .admin-case-search button {
     width: 100%;
   }
