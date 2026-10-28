@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useLanguage } from '../context/LanguageContext';
+import { useAuth } from '../context/AuthContext.jsx';
 import CaseStatusModal from '../components/CaseStatusModal.jsx';
 import { getCaseStageToneClass } from '../utils/caseProcessingStages';
 import '../styles/caseStageTones.css';
@@ -94,10 +95,16 @@ const AdminCaseDetail = () => {
   const { caseId } = useParams();
   const navigate = useNavigate();
   const { language } = useLanguage();
+  const { user: sessionUser } = useAuth();
+  const canEditSubmittedText = sessionUser?.canDeleteCases === true || sessionUser?.isPrimaryAdmin === true;
   const [caseData, setCaseData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [statusSaving, setStatusSaving] = useState(false);
+  const [editingText, setEditingText] = useState(false);
+  const [textDraft, setTextDraft] = useState(null);
+  const [textSaving, setTextSaving] = useState(false);
+  const [textError, setTextError] = useState('');
   const [confirmingCompleted, setConfirmingCompleted] = useState(false);
   const [enlargedImage, setEnlargedImage] = useState(null);
   const [statusModalOpen, setStatusModalOpen] = useState(false);
@@ -142,6 +149,63 @@ const AdminCaseDetail = () => {
       console.error(err);
     } finally {
       setStatusSaving(false);
+    }
+  };
+
+  const startTextEdit = () => {
+    const pd = caseData?.personalDetails && typeof caseData.personalDetails === 'object' ? caseData.personalDetails : {};
+    setTextDraft({
+      address: caseData?.address || pd.address || '',
+      fullName: pd.fullName || '',
+      dob: pd.dob || '',
+      birthPlace: pd.birthPlace || '',
+      fatherName: pd.fatherName || '',
+      motherName: pd.motherName || '',
+      maritalStatus: pd.maritalStatus || '',
+      dependentsCount: pd.dependentsCount != null ? String(pd.dependentsCount) : '',
+      additionalCitizenshipCountry: pd.additionalCitizenshipCountry || '',
+      familyBackground: caseData?.familyBackground || '',
+    });
+    setTextError('');
+    setEditingText(true);
+  };
+
+  const handleTextDraftChange = (key, value) => {
+    setTextDraft((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const saveTextEdit = async (e) => {
+    e.preventDefault();
+    if (!textDraft || textSaving) return;
+    const address = String(textDraft.address || '').trim();
+    if (!address) {
+      setTextError('כתובת המגורים לא יכולה להיות ריקה.');
+      return;
+    }
+    setTextSaving(true);
+    setTextError('');
+    try {
+      const res = await axios.patch(`/admin/cases/${caseId}/form-text`, {
+        address,
+        familyBackground: textDraft.familyBackground,
+        personalDetails: {
+          fullName: textDraft.fullName,
+          dob: textDraft.dob,
+          birthPlace: textDraft.birthPlace,
+          fatherName: textDraft.fatherName,
+          motherName: textDraft.motherName,
+          maritalStatus: textDraft.maritalStatus,
+          dependentsCount: textDraft.dependentsCount,
+          additionalCitizenshipCountry: textDraft.additionalCitizenshipCountry,
+        },
+      });
+      setCaseData((prev) => (prev && res.data.case ? { ...prev, ...res.data.case } : res.data.case || prev));
+      setEditingText(false);
+      setTextDraft(null);
+    } catch (err) {
+      setTextError(err.response?.data?.error || 'שגיאה בשמירת המלל');
+    } finally {
+      setTextSaving(false);
     }
   };
 
@@ -525,14 +589,83 @@ const AdminCaseDetail = () => {
         )}
 
         <section className="admin-case-detail-section">
-          <h2>תוכן הטופס</h2>
-          {!isCardOrderCase && (
+          <div className="admin-case-detail-section-head">
+            <h2>תוכן הטופס</h2>
+            {canEditSubmittedText && !editingText ? (
+              <button type="button" className="admin-case-detail-edit-text" onClick={startTextEdit}>
+                עריכת מלל
+              </button>
+            ) : null}
+          </div>
+          {editingText && textDraft ? (
+            <form className="admin-case-text-edit" onSubmit={saveTextEdit}>
+              <label className="admin-case-text-edit-field">
+                <span>כתובת מגורים</span>
+                <textarea
+                  value={textDraft.address}
+                  onChange={(e) => handleTextDraftChange('address', e.target.value)}
+                  rows={3}
+                  required
+                />
+              </label>
+              {!isCardOrderCase ? (
+                <div className="admin-case-text-edit-grid">
+                  {[
+                    ['fullName', 'שם מלא'],
+                    ['dob', 'תאריך לידה'],
+                    ['birthPlace', 'מקום לידה'],
+                    ['fatherName', 'שם האב'],
+                    ['motherName', 'שם האם'],
+                    ['maritalStatus', 'מצב משפחתי'],
+                    ['dependentsCount', 'מספר נתמכים'],
+                    ['additionalCitizenshipCountry', 'אזרחות נוספת (קוד מדינה)'],
+                  ].map(([key, label]) => (
+                    <label key={key} className="admin-case-text-edit-field">
+                      <span>{label}</span>
+                      <input
+                        type="text"
+                        value={textDraft[key]}
+                        onChange={(e) => handleTextDraftChange(key, e.target.value)}
+                      />
+                    </label>
+                  ))}
+                </div>
+              ) : null}
+              <label className="admin-case-text-edit-field">
+                <span>רקע משפחתי</span>
+                <textarea
+                  value={textDraft.familyBackground}
+                  onChange={(e) => handleTextDraftChange('familyBackground', e.target.value)}
+                  rows={3}
+                />
+              </label>
+              {textError ? <p className="admin-case-detail-error">{textError}</p> : null}
+              <div className="admin-case-text-edit-actions">
+                <button type="submit" disabled={textSaving}>
+                  {textSaving ? 'שומר...' : 'שמירת מלל'}
+                </button>
+                <button
+                  type="button"
+                  className="admin-case-text-edit-cancel"
+                  onClick={() => {
+                    setEditingText(false);
+                    setTextDraft(null);
+                    setTextError('');
+                  }}
+                  disabled={textSaving}
+                >
+                  ביטול
+                </button>
+              </div>
+            </form>
+          ) : null}
+          {!editingText && !isCardOrderCase && (
           <div className="admin-case-detail-field admin-case-detail-field-block">
             <span className="admin-case-detail-label">כתובת מגורים</span>
             <p className="admin-case-detail-value admin-case-detail-text">{c.address || '–'}</p>
           </div>
           )}
-          {typeof c.personalDetails === 'object' &&
+          {!editingText && typeof c.personalDetails === 'object' &&
             c.personalDetails !== null &&
             c.personalDetails.form === 'food_stamps_eligibility' &&
             c.personalDetails.additionalCitizenship === 'Yes' &&
@@ -546,13 +679,13 @@ const AdminCaseDetail = () => {
                 </span>
               </div>
             )}
-          {c.familyBackground != null && String(c.familyBackground).trim() !== '' && (
+          {!editingText && c.familyBackground != null && String(c.familyBackground).trim() !== '' && (
             <div className="admin-case-detail-field admin-case-detail-field-block">
               <span className="admin-case-detail-label">רקע משפחתי</span>
               <p className="admin-case-detail-value admin-case-detail-text">{c.familyBackground}</p>
             </div>
           )}
-          {!isCardOrderCase && (
+          {!editingText && !isCardOrderCase && (
           <div className="admin-case-detail-field admin-case-detail-field-block">
             <span className="admin-case-detail-label">פרטים נוספים</span>
             <div className="admin-case-detail-value admin-case-detail-text">

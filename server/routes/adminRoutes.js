@@ -5,6 +5,7 @@ import {
   getAllUsers,
   confirmCaseCompleted,
   updateCaseStatus,
+  updateCaseFormText,
   updateCaseProcessing,
   updateCaseHraDetails,
   addCaseInterimNote,
@@ -35,6 +36,7 @@ router.get('/cases/:id', getCaseById);
 router.get('/notices/unseen', getUnseenAdminNotices);
 router.post('/notices/:id/ack', ackAdminNotice);
 router.patch('/cases/:id', updateCaseStatus);
+router.patch('/cases/:id/form-text', updateCaseFormText);
 router.patch('/cases/:id/processing', updateCaseProcessing);
 router.patch('/cases/:id/hra', updateCaseHraDetails);
 router.post('/cases/:id/notes', addCaseInterimNote);

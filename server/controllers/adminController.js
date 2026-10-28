@@ -618,6 +618,69 @@ export const updateCaseStatus = async (req, res) => {
   }
 };
 
+const EDITABLE_FORM_TEXT_KEYS = [
+  'fullName',
+  'dob',
+  'birthPlace',
+  'fatherName',
+  'motherName',
+  'maritalStatus',
+  'dependentsCount',
+  'additionalCitizenshipCountry',
+];
+
+/**
+ * רק המנהל הראשי מתקן מלל בטופס שכבר נשלח (כתובת ושדות טקסט).
+ */
+export const updateCaseFormText = async (req, res) => {
+  try {
+    if (!isSuperAdminEmail(req.user?.email)) {
+      return res.status(403).json({ error: 'רק המנהל הראשי יכול לערוך מלל בטופס שנשלח.' });
+    }
+    const { id } = req.params;
+    const caseData = await findCaseById(id);
+    if (!caseData) {
+      return res.status(404).json({ error: 'תיק לא נמצא' });
+    }
+    const body = req.body || {};
+    const address = typeof body.address === 'string' ? body.address.trim() : '';
+    if (!address) {
+      return res.status(400).json({ error: 'כתובת המגורים לא יכולה להיות ריקה.' });
+    }
+    const currentPd =
+      caseData.personalDetails && typeof caseData.personalDetails === 'object' && !Array.isArray(caseData.personalDetails)
+        ? { ...caseData.personalDetails }
+        : {};
+    const incomingPd = body.personalDetails && typeof body.personalDetails === 'object' ? body.personalDetails : {};
+    for (const key of EDITABLE_FORM_TEXT_KEYS) {
+      if (typeof incomingPd[key] === 'string') currentPd[key] = incomingPd[key].trim();
+    }
+    currentPd.address = address;
+    const updates = { address, personalDetails: currentPd };
+    if (typeof body.familyBackground === 'string') {
+      updates.familyBackground = body.familyBackground.trim();
+    }
+    const updated = await updateCase(id, updates);
+    const { authorName } = await resolveActorName(req);
+    await recordAdminCaseChange({
+      req,
+      caseData,
+      actorName: authorName,
+      title: 'עודכן מלל בטופס שנשלח',
+      steps: [
+        `מי ערך: ${authorName}`,
+        `כייס של: ${currentPd.fullName || caseData.personalDetails?.fullName || 'לקוח'}`,
+        `כתובת קודמת: ${caseData.address || '–'}`,
+        `כתובת חדשה: ${address}`,
+      ],
+    });
+    return res.json({ message: 'המלל בטופס עודכן', case: updated });
+  } catch (error) {
+    console.error('updateCaseFormText error:', error);
+    return res.status(500).json({ error: 'שגיאה בעדכון המלל בטופס' });
+  }
+};
+
 /**
  * מסלול חידוש אוטומטי לחצי שנה אחרי החלטת ממשלה (אישור או סגירה).
  * מתבטל רק במחיקת התיק – לא בביטול שלב עיבוד.
