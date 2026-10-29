@@ -100,7 +100,7 @@ export function processingChangeSteps({
     const bits = [];
     if (approvedBenefits.rentAssistance) bits.push(`שכר דירה: ${approvedBenefits.rentAssistance}`);
     if (approvedBenefits.foodStamps) bits.push(`תלושי מזון: ${approvedBenefits.foodStamps}`);
-    if (approvedBenefits.financialAid) bits.push(`סיוע כלכלי: ${approvedBenefits.financialAid}`);
+    if (approvedBenefits.financialAid) bits.push(`מזומן לכרטיס: ${approvedBenefits.financialAid}`);
     if (approvedBenefits.totalDeposited) bits.push(`סה״כ שהופקד: ${approvedBenefits.totalDeposited}`);
     if (bits.length) steps.push(`פרטי אישור: ${bits.join(' · ')}`);
   }

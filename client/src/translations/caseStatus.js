@@ -48,7 +48,7 @@ export const caseStatusTranslations = {
     processStepSkippedHint: 'לא רלוונטי במסלול זה',
     benefitRentAssistance: 'סיוע בשכר דירה',
     benefitFoodStamps: 'תלושי מזון',
-    benefitFinancialAid: 'סיוע כלכלי',
+    benefitFinancialAid: 'מזומן לכרטיס',
     benefitTotalDeposited: 'סה״כ כסף שנכנס לחשבון',
   },
   en: {
@@ -96,7 +96,7 @@ export const caseStatusTranslations = {
     processStepSkippedHint: 'Not applicable on this path',
     benefitRentAssistance: 'Rent assistance',
     benefitFoodStamps: 'Food stamps',
-    benefitFinancialAid: 'Financial aid',
+    benefitFinancialAid: 'Cash to card',
     benefitTotalDeposited: 'Total money deposited into account',
   },
 };

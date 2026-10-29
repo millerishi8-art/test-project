@@ -287,7 +287,7 @@ const AdminCaseProcessing = () => {
               <input type="text" id="approval-rent" className="admin-processing-modal-input" placeholder="למשל: כן / ₪500" dir="rtl" />
               <label htmlFor="approval-food">תלושי מזון (כן/לא או סכום)</label>
               <input type="text" id="approval-food" className="admin-processing-modal-input" placeholder="למשל: כן / לא" dir="rtl" />
-              <label htmlFor="approval-financial">סיוע כלכלי (סכום)</label>
+              <label htmlFor="approval-financial">מזומן לכרטיס (סכום)</label>
               <input
                 type="text"
                 id="approval-financial"

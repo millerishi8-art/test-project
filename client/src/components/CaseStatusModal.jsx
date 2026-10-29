@@ -297,7 +297,7 @@ export default function CaseStatusModal({ caseItem: initialCase, onClose, onUpda
                 onChange={(e) => setBenefits((b) => ({ ...b, foodStamps: e.target.value }))}
                 disabled={busy}
               />
-              <label htmlFor="case-status-approval-financial">סיוע כלכלי (סכום)</label>
+              <label htmlFor="case-status-approval-financial">מזומן לכרטיס (סכום)</label>
               <input
                 id="case-status-approval-financial"
                 type="text"
