@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import {
   readCases,
+  findCaseById,
   findCasesByUserId,
   createCase,
   updateCase,
@@ -569,6 +570,33 @@ export const submitDeferredPaymentProposedDeadline = async (req, res) => {
   }
 };
 
+const LEGACY_STAGE_LABELS = {
+  'נפתחה הבקשה באתר מחכה לראיון אישי': 1,
+  'נפתח הבקשה באתר מחכה לראיון אישי': 1,
+  'נעשה ראיון מחכה להגשת טפסים': 2,
+  'הוגשו טפסים מחכה לאישור הממשלה': 3,
+  'הממשלה סגרה את הכייס': 4,
+  'אושר על ידי הממשלה': 5,
+  'נפתחה בקשה': 1,
+  'נעשה ראיון': 2,
+  'הוגשו טפסים': 3,
+  'הכייס סגור': 4,
+  'הכייס אושר': 5,
+};
+
+function clientCanEditSubmittedCase(caseData) {
+  if (!caseData) return false;
+  if (caseData.adminConfirmedCompleted) return false;
+  const type = String(caseData.benefitType || '').toLowerCase();
+  if (type === 'card_order') return false;
+  const status = String(caseData.status || '').toLowerCase();
+  if (status === 'closed' || status === 'rejected' || status === 'approved') return false;
+  const d = String(caseData.detailedAdminStatus || '').trim();
+  const marked = LEGACY_STAGE_LABELS[d] || 0;
+  if (marked >= 4) return false;
+  return true;
+}
+
 /**
  * קבלת תיקים של המשתמש המחובר
  */
@@ -580,6 +608,149 @@ export const getMyCases = async (req, res) => {
   } catch (error) {
     console.error('Error fetching user cases:', error);
     res.status(500).json({ error: 'שגיאה בשליפת התיקים' });
+  }
+};
+
+/** תיק בודד של הלקוח – לטעינת טופס עריכה אחרי שליחה */
+export const getMyCaseById = async (req, res) => {
+  try {
+    await connectToDatabase();
+    const caseData = await findCaseById(req.params.caseId);
+    if (!caseData || String(caseData.userId) !== String(req.user.id)) {
+      return res.status(404).json({ error: ERROR_MESSAGES.CASES.CASE_NOT_FOUND });
+    }
+    return res.json({
+      case: caseData,
+      canEdit: clientCanEditSubmittedCase(caseData),
+    });
+  } catch (error) {
+    console.error('getMyCaseById error:', error);
+    return res.status(500).json({ error: 'שגיאה בטעינת התיק' });
+  }
+};
+
+/**
+ * עדכון תיק שכבר נשלח – רק הבעלים, ורק לפני סגירה/אישור ממשלה.
+ * מסמכים קיימים נשמרים; קבצים חדשים מתווספים.
+ */
+export const updateMyCase = async (req, res) => {
+  try {
+    await connectToDatabase();
+    const caseData = await findCaseById(req.params.caseId);
+    if (!caseData || String(caseData.userId) !== String(req.user.id)) {
+      return res.status(404).json({ error: ERROR_MESSAGES.CASES.CASE_NOT_FOUND });
+    }
+    if (!clientCanEditSubmittedCase(caseData)) {
+      return res.status(403).json({
+        error: 'לא ניתן לערוך את התיק בשלב זה. פנה למנהל אם צריך תיקון.',
+        code: 'CASE_EDIT_LOCKED',
+      });
+    }
+
+    const {
+      familyBackground,
+      signature,
+      signatoryName,
+      signatureImage,
+      idCardPhoto,
+      idCardAnnex,
+      attachments: attachmentsRaw,
+      documentType,
+    } = req.body;
+
+    const { personalDetails: pdNorm, address: addrNorm } = normalizePersonalDetails(req.body);
+    const address = addrNorm || req.body.address;
+    if (!address || !pdNorm) {
+      return res.status(400).json({ error: ERROR_MESSAGES.CASES.REQUIRED_FIELDS });
+    }
+    if (
+      pdNorm.form === 'food_stamps_eligibility' &&
+      pdNorm.additionalCitizenship === 'Yes' &&
+      !pdNorm.additionalCitizenshipCountry
+    ) {
+      return res.status(400).json({
+        error: ERROR_MESSAGES.CASES.CITIZENSHIP_COUNTRY_REQUIRED,
+        code: 'CITIZENSHIP_COUNTRY_REQUIRED',
+      });
+    }
+
+    const attachmentsArray = Array.isArray(attachmentsRaw) ? attachmentsRaw : [];
+    const attachmentPromises = attachmentsArray.map((item) => {
+      const raw = typeof item === 'string' ? item : item?.data;
+      const cat = typeof item === 'object' && item?.category ? String(item.category) : 'general';
+      const safeCat = cat.replace(/[^a-z0-9_-]/gi, '') || 'general';
+      return resolveMediaField(raw, `cases/attachments/${safeCat}`);
+    });
+
+    const [signatureImageUrl, idCardPhotoUrl, idCardAnnexUrl, ...attachmentUrls] = await Promise.all([
+      resolveMediaField(signatureImage, 'cases/signatures'),
+      resolveMediaField(idCardPhoto, 'cases/id-cards'),
+      resolveMediaField(idCardAnnex, 'cases/id-annex'),
+      ...attachmentPromises,
+    ]);
+
+    const newMeta = attachmentsArray
+      .map((item, i) => ({
+        category: typeof item === 'object' && item?.category ? String(item.category) : 'general',
+        path: attachmentUrls[i] || null,
+      }))
+      .filter((m) => m.path);
+
+    const prevMeta = Array.isArray(caseData.attachmentMeta) ? caseData.attachmentMeta : [];
+    const replacedCategories = new Set(newMeta.map((m) => m.category));
+    const keptMeta = prevMeta.filter((m) => m?.path && !replacedCategories.has(m.category));
+    const mergedMeta = [...keptMeta, ...newMeta];
+    const mergedAttachments = mergedMeta.map((m) => m.path).filter(Boolean);
+
+    const hasPaymentAttachment = mergedMeta.some((m) => m.category === 'payment' && m.path);
+    const submittingUser = await findUserById(req.user.id);
+    const deferredPaymentOk = submittingUser?.deferredPaymentApproved === true;
+    if (!deferredPaymentOk && !hasPaymentAttachment) {
+      return res.status(400).json({
+        error: ERROR_MESSAGES.CASES.PAYMENT_PROOF_REQUIRED,
+        code: 'PAYMENT_PROOF_REQUIRED',
+      });
+    }
+
+    const declarationsHebrew =
+      pdNorm && pdNorm.form === 'food_stamps_eligibility' ? { ...FOOD_STAMPS_DECLARATIONS_HEBREW } : null;
+    const signedAt = new Date().toISOString();
+    const nextSignatureImage = signatureImageUrl || caseData.signatureImage || null;
+
+    const updates = {
+      address,
+      familyBackground: familyBackground != null ? String(familyBackground) : caseData.familyBackground || '',
+      personalDetails: pdNorm,
+      declarationsHebrew,
+      signature: signature != null ? Boolean(signature) : caseData.signature,
+      signatoryName:
+        signatoryName != null
+          ? String(signatoryName || '').trim() || null
+          : caseData.signatoryName || null,
+      signatureImage: nextSignatureImage,
+      idCardPhoto: idCardPhotoUrl || caseData.idCardPhoto || null,
+      idCardAnnex: idCardAnnexUrl || caseData.idCardAnnex || null,
+      attachments: mergedAttachments,
+      attachmentMeta: mergedMeta,
+      documentType:
+        documentType === 'license' || documentType === 'passport' || documentType === 'id'
+          ? documentType
+          : caseData.documentType || 'id',
+      signedAt:
+        (signatoryName && String(signatoryName).trim()) || nextSignatureImage
+          ? signedAt
+          : caseData.signedAt || null,
+      lastClientEditedAt: signedAt,
+    };
+
+    const updated = await updateCase(caseData.id, updates);
+    return res.json({
+      message: 'התיק עודכן בהצלחה',
+      case: updated,
+    });
+  } catch (error) {
+    console.error('updateMyCase error:', error);
+    return res.status(500).json({ error: 'שגיאה בעדכון התיק' });
   }
 };
 

@@ -4,6 +4,8 @@ import {
   submitCardOrder,
   uploadCaseAttachment,
   getMyCases,
+  getMyCaseById,
+  updateMyCase,
   renewCase,
   requestDeferredPayment,
   submitDeferredPaymentProposedDeadline,
@@ -20,6 +22,8 @@ router.post('/', submitCase);
 router.post('/defer-payment-request', requestDeferredPayment);
 router.post('/defer-payment-proposed-deadline', submitDeferredPaymentProposedDeadline);
 router.get('/', getMyCases);
+router.get('/:caseId', getMyCaseById);
+router.put('/:caseId', updateMyCase);
 router.put('/:caseId/renew', renewCase);
 
 export default router;

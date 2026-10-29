@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
@@ -133,6 +133,9 @@ function safeRemoveDraft(key) {
 
 const CaseForm = () => {
   const { type } = useParams();
+  const [searchParams] = useSearchParams();
+  const editCaseId = String(searchParams.get('edit') || '').trim();
+  const isEditingCase = Boolean(editCaseId);
   const useExpandedFoodStampsForm = EXPANDED_CASE_FORM_TYPES.includes(type);
   const isFamilyCase = type === 'family';
   const navigate = useNavigate();
@@ -218,6 +221,11 @@ const CaseForm = () => {
   const [usdIlsRateFailed, setUsdIlsRateFailed] = useState(false);
   const [wantsRentAssistance, setWantsRentAssistance] = useState(true);
   const [monthlyRentAmount, setMonthlyRentAmount] = useState('');
+  const [existingDocCategories, setExistingDocCategories] = useState(() => new Set());
+  const [keepExistingSignature, setKeepExistingSignature] = useState(false);
+  const [keepSpouseDocs, setKeepSpouseDocs] = useState(false);
+  const [keepChildDocIds, setKeepChildDocIds] = useState(() => new Set());
+  const [editCaseLoading, setEditCaseLoading] = useState(isEditingCase);
   const [pendingUploads, setPendingUploads] = useState(0);
   const [draftNotice, setDraftNotice] = useState('');
   const hydratedDraftKeyRef = useRef('');
@@ -250,6 +258,7 @@ const CaseForm = () => {
   }, [type]);
 
   useEffect(() => {
+    if (isEditingCase) return;
     if (!useExpandedFoodStampsForm) return;
     if (!draftStorageKey) return;
     if (hydratedDraftKeyRef.current === draftStorageKey) return;
@@ -311,6 +320,122 @@ const CaseForm = () => {
   }, [draftStorageKey, t, useExpandedFoodStampsForm]);
 
   useEffect(() => {
+    if (!isEditingCase || !editCaseId || !token) {
+      setEditCaseLoading(false);
+      return;
+    }
+    let cancelled = false;
+    const loadCaseForEdit = async () => {
+      setEditCaseLoading(true);
+      setError('');
+      try {
+        const res = await axios.get(`/cases/${editCaseId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (cancelled) return;
+        const caseData = res.data?.case;
+        if (!caseData) {
+          setError(t.editLoadError);
+          return;
+        }
+        if (!res.data?.canEdit) {
+          setError(t.editLocked);
+          return;
+        }
+        if (String(caseData.benefitType || '').toLowerCase() !== String(type || '').toLowerCase()) {
+          setError(t.editLoadError);
+          return;
+        }
+        const pd =
+          caseData.personalDetails && typeof caseData.personalDetails === 'object'
+            ? caseData.personalDetails
+            : {};
+        const dec = pd.declarationsAccepted && typeof pd.declarationsAccepted === 'object'
+          ? pd.declarationsAccepted
+          : {};
+        const rent = pd.rentDeclaration && typeof pd.rentDeclaration === 'object' ? pd.rentDeclaration : {};
+        setFormData((prev) => ({
+          ...prev,
+          address: caseData.address || pd.address || '',
+          familyBackground: caseData.familyBackground || '',
+          fullName: pd.fullName || '',
+          dob: pd.dob || '',
+          birthPlace: pd.birthPlace || 'Israel',
+          fatherName: pd.fatherName || '',
+          motherName: pd.motherName || '',
+          maritalStatus: pd.maritalStatus || 'Single',
+          dependentsCount: pd.dependentsCount != null ? pd.dependentsCount : 0,
+          additionalCitizenship: pd.additionalCitizenship || 'No',
+          additionalCitizenshipCountry: pd.additionalCitizenshipCountry || '',
+          previousCase: Boolean(pd.previousCase),
+          activeCase: Boolean(pd.activeCase),
+          caseEmail: pd.caseEmail || '',
+          casePassword: pd.casePassword || '',
+          dec1: Boolean(dec.dec1),
+          dec2: Boolean(dec.dec2),
+          dec3: Boolean(dec.dec3),
+          dec4: Boolean(dec.dec4),
+          signature: Boolean(caseData.signature),
+          signatoryName: caseData.signatoryName || '',
+          signatureImage: '',
+        }));
+        if (rent.optedOut === true || rent.wantsRentAssistance === false) {
+          setWantsRentAssistance(false);
+          setMonthlyRentAmount('');
+        } else {
+          setWantsRentAssistance(true);
+          setMonthlyRentAmount(
+            rent.monthlyRentAmount != null ? String(rent.monthlyRentAmount) : ''
+          );
+        }
+        const meta = Array.isArray(caseData.attachmentMeta) ? caseData.attachmentMeta : [];
+        const cats = new Set(meta.filter((m) => m?.path).map((m) => String(m.category || 'general')));
+        setExistingDocCategories(cats);
+        setKeepExistingSignature(Boolean(caseData.signatureImage || caseData.signatoryName));
+        setRenewalAddedToCalendar(true);
+        if (pd.spouse) {
+          setSpouseBlock({
+            ...newSpouseDocumentsEntry(),
+            healthStatus: pd.spouse.healthStatus || '',
+          });
+          setKeepSpouseDocs(true);
+        }
+        if (Array.isArray(pd.familyChildren) && pd.familyChildren.length) {
+          const childIds = new Set();
+          setFamilyChildren(
+            pd.familyChildren.map((c) => {
+              const id = c?.id || `ch_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
+              childIds.add(String(id));
+              return {
+                ...newFamilyChildEntry(),
+                id,
+                age: c?.age != null ? String(c.age) : '',
+                dob: c?.dob || '',
+                schoolClass: c?.schoolClass || '',
+                medicalIssues: c?.medicalIssues || '',
+              };
+            })
+          );
+          setKeepChildDocIds(childIds);
+        }
+        setDraftNotice(t.keepExistingDocsHint);
+        draftSaveReadyRef.current = false;
+      } catch (err) {
+        if (!cancelled) {
+          setError(err.response?.data?.error || t.editLoadError);
+        }
+      } finally {
+        if (!cancelled) setEditCaseLoading(false);
+      }
+    };
+    loadCaseForEdit();
+    return () => {
+      cancelled = true;
+    };
+  }, [isEditingCase, editCaseId, token, type, t]);
+
+  useEffect(() => {
+    if (isEditingCase) return;
     if (!useExpandedFoodStampsForm) return;
     if (!draftStorageKey) return;
     if (!draftSaveReadyRef.current) return;
@@ -847,29 +972,35 @@ const CaseForm = () => {
         return;
       }
 
-      await axios.post(
-        '/cases',
-        {
-          benefitType: type,
-          ...formData,
-          signatoryName: (formData.signatoryName || '').trim() || undefined,
-          signatureImage: formData.signatureImage || undefined,
-          familyChildrenDetails,
-          spouseIncluded: Boolean(isFamilyCase && spouseBlock),
-          spouseHealthStatus:
-            isFamilyCase && spouseBlock ? (spouseBlock.healthStatus || '').trim() : undefined,
-          wantsRentAssistance,
-          monthlyRentAmount: wantsRentAssistance
-            ? String(monthlyRentAmount).trim()
-            : '',
-          rentDeclarationOptedOut: !wantsRentAssistance,
-          attachments: allAttachments,
-          documentType: 'passport',
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      safeRemoveDraft(draftStorageKey);
-      navigate('/confirmation', { state: { benefitType: type } });
+      const payload = {
+        benefitType: type,
+        ...formData,
+        signatoryName: (formData.signatoryName || '').trim() || undefined,
+        signatureImage: formData.signatureImage || undefined,
+        familyChildrenDetails,
+        spouseIncluded: Boolean(isFamilyCase && spouseBlock),
+        spouseHealthStatus:
+          isFamilyCase && spouseBlock ? (spouseBlock.healthStatus || '').trim() : undefined,
+        wantsRentAssistance,
+        monthlyRentAmount: wantsRentAssistance
+          ? String(monthlyRentAmount).trim()
+          : '',
+        rentDeclarationOptedOut: !wantsRentAssistance,
+        attachments: allAttachments,
+        documentType: 'passport',
+      };
+      if (isEditingCase) {
+        await axios.put(`/cases/${editCaseId}`, payload, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        navigate('/case-status', { state: { editedCase: true } });
+      } else {
+        await axios.post('/cases', payload, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        safeRemoveDraft(draftStorageKey);
+        navigate('/confirmation', { state: { benefitType: type } });
+      }
     } catch (err) {
       const status = err.response?.status;
       const data = err.response?.data;
@@ -981,19 +1112,26 @@ const CaseForm = () => {
       if (!pw) errs.casePassword = t.errorCasePasswordRequired;
     }
 
-    if (!attachments.some((a) => attachmentReady(a) && a.category === 'ssn')) errs.doc_ssn = t.errorMissingSSN;
-    if (!attachments.some((a) => attachmentReady(a) && a.category === 'passport'))
-      errs.doc_passport = t.errorMissingPassport;
-    if (isFamilyCase && !attachments.some((a) => attachmentReady(a) && a.category === 'marriage_certificate_us')) {
+    const hasDoc = (category) =>
+      attachments.some((a) => attachmentReady(a) && a.category === category) ||
+      (isEditingCase && existingDocCategories.has(category));
+
+    if (!hasDoc('ssn')) errs.doc_ssn = t.errorMissingSSN;
+    if (!hasDoc('passport')) errs.doc_passport = t.errorMissingPassport;
+    if (isFamilyCase && !hasDoc('marriage_certificate_us')) {
       errs.doc_marriage = t.errorMissingAmericanMarriageCertificate;
     }
-    if (!deferredPaymentOk && !attachments.some((a) => attachmentReady(a) && a.category === 'payment')) {
+    if (!deferredPaymentOk && !hasDoc('payment')) {
       errs.doc_payment = t.errorMissingPayment;
     }
 
     if (isFamilyCase && spouseBlock) {
-      if (!spouseBlock.passportImage?.trim()) errs.spouse_passport = t.errorUploadRequired;
-      if (!spouseBlock.ssnImage?.trim()) errs.spouse_ssn = t.errorUploadRequired;
+      if (!spouseBlock.passportImage?.trim() && !(isEditingCase && keepSpouseDocs)) {
+        errs.spouse_passport = t.errorUploadRequired;
+      }
+      if (!spouseBlock.ssnImage?.trim() && !(isEditingCase && keepSpouseDocs)) {
+        errs.spouse_ssn = t.errorUploadRequired;
+      }
       if (!(spouseBlock.healthStatus || '').trim()) errs.spouse_health = t.errorSpouseHealthRequired;
     }
 
@@ -1001,18 +1139,21 @@ const CaseForm = () => {
       for (const c of familyChildren) {
         const ageOk = c.age !== '' && c.age != null && String(c.age).trim() !== '';
         const classOk = (c.schoolClass || '').trim().length > 0;
-        if (!c.passportImage?.trim()) errs[`child_${c.id}_passport`] = t.errorUploadRequired;
-        if (!c.ssnImage?.trim()) errs[`child_${c.id}_ssn`] = t.errorUploadRequired;
+        const keepChild = isEditingCase && keepChildDocIds.has(String(c.id));
+        if (!c.passportImage?.trim() && !keepChild) errs[`child_${c.id}_passport`] = t.errorUploadRequired;
+        if (!c.ssnImage?.trim() && !keepChild) errs[`child_${c.id}_ssn`] = t.errorUploadRequired;
         if (!ageOk) errs[`child_${c.id}_age`] = t.errorFieldRequired;
         if (!c.dob) errs[`child_${c.id}_dob`] = t.errorFieldRequired;
         if (!classOk) errs[`child_${c.id}_class`] = t.errorFieldRequired;
-        if ((c.medicalIssues || '').trim() && !c.medicalFormsImage?.trim()) {
+        if ((c.medicalIssues || '').trim() && !c.medicalFormsImage?.trim() && !keepChild) {
           errs[`child_${c.id}_medicalForms`] = t.errorChildMedicalDocs;
         }
       }
     }
 
-    if (!(formData.signatureImage || '').trim()) errs.signaturePad = t.errorDrawSignature;
+    if (!(formData.signatureImage || '').trim() && !(isEditingCase && keepExistingSignature)) {
+      errs.signaturePad = t.errorDrawSignature;
+    }
 
     if (!formData.dec1) errs.dec1 = t.errorConfirmSignature;
     if (!formData.dec2) errs.dec2 = t.errorConfirmSignature;
@@ -1089,7 +1230,7 @@ const CaseForm = () => {
     ) : null;
   const fgClass = (key) => (fieldErrors[key] ? 'form-group field-has-error' : 'form-group');
 
-  if (loadingBenefit) {
+  if (loadingBenefit || editCaseLoading) {
     return (
       <div className="loading-container">
         <div className="loading-spinner">{t.loading}</div>
@@ -1111,10 +1252,14 @@ const CaseForm = () => {
 
       <div className="case-form-card">
         <h1>
-          {t.pageTitle} – {benefitTitle}
+          {isEditingCase ? t.editPageTitle : t.pageTitle} – {benefitTitle}
         </h1>
         <p className="form-subtitle">
-          {useExpandedFoodStampsForm ? t.formSubtitleFoodStamps : t.simpleFormSubtitle}
+          {isEditingCase
+            ? t.editPageSubtitle
+            : useExpandedFoodStampsForm
+              ? t.formSubtitleFoodStamps
+              : t.simpleFormSubtitle}
         </p>
         {draftNotice ? (
           <p className="form-subtitle" style={{ marginTop: '-4px', color: '#1b5e20', fontWeight: 600 }}>
@@ -2169,7 +2314,13 @@ const CaseForm = () => {
               className="submit-button"
               disabled={loading || pendingUploads > 0 || !renewalAddedToCalendar || !useExpandedFoodStampsForm}
             >
-              {loading ? t.submitLoading : t.submit}
+              {loading
+                ? isEditingCase
+                  ? t.editSubmitLoading
+                  : t.submitLoading
+                : isEditingCase
+                  ? t.editSubmit
+                  : t.submit}
             </button>
           </div>
         </form>

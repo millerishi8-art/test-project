@@ -84,6 +84,22 @@ export function isOnSixMonthRenewalTrack(c) {
 }
 
 /**
+ * האם הלקוח יכול לערוך תיק שכבר נשלח (דרך חשבון המשתמש).
+ * נחסם אחרי סגירה / אישור ממשלה / סיום מנהל, ובהזמנת כרטיס.
+ */
+export function clientCanEditSubmittedCase(c) {
+  if (!c) return false;
+  if (c.adminConfirmedCompleted) return false;
+  const type = String(c.benefitType || '').toLowerCase();
+  if (type === 'card_order') return false;
+  const status = String(c.status || '').toLowerCase();
+  if (status === 'closed' || status === 'rejected' || status === 'approved') return false;
+  const marked = explicitStageNumberFromLabel(c.detailedAdminStatus);
+  if (marked >= 4) return false;
+  return true;
+}
+
+/**
  * מחלקת צבע לפי שלב שסומן בפועל.
  * לחיצה שנייה מבטלת את השלב — בלי תווית אין צבע, והמסגרת חוזרת ללבן.
  * סטטוס «ממתין» לבדו לא צובע את התיק.

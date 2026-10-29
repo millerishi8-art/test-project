@@ -408,6 +408,37 @@
   color: #991b1b;
 }
 
+.case-status-edit-row {
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.45rem;
+}
+
+.case-status-edit-btn {
+  min-height: var(--touch-min);
+  padding: 0.7rem 1rem;
+  border-radius: 12px;
+  border: 2px solid #1e6bb8;
+  background: #1e6bb8;
+  color: #fff;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.case-status-edit-btn:hover {
+  background: #1565c0;
+}
+
+.case-status-edit-hint {
+  margin: 0;
+  font-size: 0.88rem;
+  color: #64748b;
+  line-height: 1.4;
+}
+
 .case-status-actions {
   margin-top: 2rem;
   text-align: center;

@@ -4,7 +4,12 @@ import axios from 'axios';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
 import { caseStatusTranslations } from '../translations/caseStatus';
-import { getProcessingStageNumber, isCaseProcessingSuccessfulEnd, getCaseStageToneClass } from '../utils/caseProcessingStages';
+import {
+  getProcessingStageNumber,
+  isCaseProcessingSuccessfulEnd,
+  getCaseStageToneClass,
+  clientCanEditSubmittedCase,
+} from '../utils/caseProcessingStages';
 import AgentSupportInline from '../components/AgentSupportInline';
 import '../styles/caseStageTones.css';
 import './CaseStatus.css';
@@ -231,6 +236,20 @@ const CaseStatus = () => {
                         </span>
                       </div>
                     )}
+                    {clientCanEditSubmittedCase(c) ? (
+                      <div className="case-status-edit-row">
+                        <button
+                          type="button"
+                          className="case-status-edit-btn"
+                          onClick={() =>
+                            navigate(`/case-form/${c.benefitType}?edit=${encodeURIComponent(c.id)}`)
+                          }
+                        >
+                          {t.editCase}
+                        </button>
+                        <p className="case-status-edit-hint">{t.editCaseHint}</p>
+                      </div>
+                    ) : null}
                     {isCaseProcessingSuccessfulEnd(c) && (
                       <AgentSupportInline context="case-complete" />
                     )}
