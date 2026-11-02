@@ -5,7 +5,7 @@ alwaysApply: true
 
 # Commit and push every request
 
-When a request changes project files, finish by committing and pushing. Do this without asking again.
+When a request changes project files, finish by committing and pushing to GitHub. The user trusts this and asked that it happen every time, including on `main`. Never ask for confirmation first.
 
 - Stage the files that belong to the request. Leave secrets out (`.env`, credentials, keys). `.gitignore` already excludes them.
 - Write a 1–2 sentence commit message that says why the change was made.
