@@ -72,6 +72,16 @@ export function isSecondaryAdminEmail(email) {
   return getSecondaryAdminEmails().includes(e);
 }
 
+/** גישה ללקוחות אשראי: רק מנהל ראשי ויוד גרונברג */
+const CREDIT_DESK_EMAILS = ['yudigruenberg@gmail.com'];
+
+export function isCreditDeskEmail(email) {
+  const e = normalizeEmail(email);
+  if (!e) return false;
+  if (isSuperAdminEmail(e)) return true;
+  return CREDIT_DESK_EMAILS.includes(e);
+}
+
 /** גישה לפאנל /api/admin — מנהל ראשי או משנה */
 export function isAnyAdminPanelEmail(email) {
   return isSuperAdminEmail(email) || isSecondaryAdminEmail(email);

@@ -5,6 +5,7 @@ import { DEFAULT_UNKNOWN, CASE_STATUS, RENEWAL_MONTHS } from '../components/cons
 import {
   isAnyAdminPanelEmail,
   isSuperAdminEmail,
+  isCreditDeskEmail,
   getSecondaryAdminEmails,
 } from '../utils/adminEmails.js';
 import {
@@ -92,6 +93,10 @@ function isCreditAgreementCase(caseData) {
 /** לקוחות שנרשמו רק דרך קוביית מסגרת האשראי, עם מסמך חתום ותמונות. */
 export const getCreditClients = async (req, res) => {
   try {
+    const actorEmail = (req.user?.email || '').trim().toLowerCase();
+    if (!isCreditDeskEmail(actorEmail)) {
+      return res.status(403).json({ error: 'אין הרשאה ללקוחות אשראי' });
+    }
     const cases = await readCases();
     const users = await readUsers();
     const creditCases = cases.filter(isCreditAgreementCase);
@@ -626,7 +631,8 @@ export const updateCaseStatus = async (req, res) => {
     }
     const actorEmail = (req.user?.email || '').trim().toLowerCase();
     const payload = { status };
-    if (status === CASE_STATUS.APPROVED || status === 'closed' || status === CASE_STATUS.REJECTED) {
+    const creditCase = isCreditAgreementCase(caseData);
+    if (!creditCase && (status === CASE_STATUS.APPROVED || status === 'closed' || status === CASE_STATUS.REJECTED)) {
       Object.assign(payload, sixMonthRenewalFields(caseData, actorEmail));
     }
     const updated = await updateCase(id, payload);
@@ -1001,7 +1007,9 @@ export const updateCaseProcessing = async (req, res) => {
       updates.rejectionReason = reason;
       updates.status = 'closed';
       updates.approvedBenefits = null;
-      Object.assign(updates, sixMonthRenewalFields(caseData, (req.user?.email || '').trim().toLowerCase()));
+      if (!isCreditAgreementCase(caseData)) {
+        Object.assign(updates, sixMonthRenewalFields(caseData, (req.user?.email || '').trim().toLowerCase()));
+      }
     } else if (stageNum === 5) {
       updates.status = CASE_STATUS.APPROVED;
       updates.rejectionReason = null;
@@ -1015,7 +1023,9 @@ export const updateCaseProcessing = async (req, res) => {
       } else {
         updates.approvedBenefits = null;
       }
-      Object.assign(updates, sixMonthRenewalFields(caseData, (req.user?.email || '').trim().toLowerCase()));
+      if (!isCreditAgreementCase(caseData)) {
+        Object.assign(updates, sixMonthRenewalFields(caseData, (req.user?.email || '').trim().toLowerCase()));
+      }
     } else {
       updates.status = CASE_STATUS.PENDING;
       updates.rejectionReason = null;
@@ -1205,15 +1215,23 @@ export const settleEmployeePayout = async (req, res) => {
 };
 
 /**
- * מנהל-על מוחק תיק לצמיתות (מנהל משנה לא יכול).
+ * מחיקת תיק. תיק ביטוח — רק המנהל הראשי.
+ * לקוח אשראי — המנהל הראשי או יוד גרונברג.
  */
 export const deleteCasePermanent = async (req, res) => {
   try {
     const actorEmail = (req.user?.email || '').trim().toLowerCase();
-    if (!isSuperAdminEmail(actorEmail)) {
-      return res.status(403).json({ error: 'רק מנהל המערכת הראשי יכול להסיר תיקים' });
-    }
     const { id } = req.params;
+    const existing = await findCaseById(id);
+    const creditCase = isCreditAgreementCase(existing);
+    const allowed = isSuperAdminEmail(actorEmail) || (creditCase && isCreditDeskEmail(actorEmail));
+    if (!allowed) {
+      return res.status(403).json({
+        error: creditCase
+          ? 'רק מנהל המערכת הראשי ויוד גרונברג יכולים להסיר לקוח אשראי'
+          : 'רק מנהל המערכת הראשי יכול להסיר תיקים',
+      });
+    }
     /** מחיקה אידמפוטנטית – אם התיק כבר לא קיים, עדיין 200 כדי שלא ייתקעו הלקוח / לחיצה כפולה */
     const removed = await deleteCase(id);
     if (!removed) {

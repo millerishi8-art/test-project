@@ -27,6 +27,7 @@ const AdminEmployeeCases = lazy(() => import('./pages/AdminEmployeeCases'));
 const OrderCard = lazy(() => import('./pages/OrderCard'));
 const CreditAgreement = lazy(() => import('./pages/CreditAgreement'));
 const CreditAgreementPrint = lazy(() => import('./pages/CreditAgreementPrint'));
+const AdminCreditClients = lazy(() => import('./pages/AdminCreditClients'));
 const AccessibilityStatement = lazy(() => import('./pages/AccessibilityStatement'));
 
 const LoadingFallback = () => (
@@ -113,6 +114,14 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <CreditAgreementPrint />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/credit-clients"
+                element={
+                  <ProtectedRoute creditDeskOnly>
+                    <AdminCreditClients />
                   </ProtectedRoute>
                 }
               />

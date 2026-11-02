@@ -71,6 +71,11 @@ const Navbar = () => {
                     {t.navAdmin}
                   </Link>
                 )}
+                {user?.canAccessCreditClients && (
+                  <Link to="/admin/credit-clients" className="navbar-link">
+                    {t.navCreditClients}
+                  </Link>
+                )}
                 <span className="navbar-user">{t.navHello}, {user?.name}</span>
                 <button type="button" onClick={handleLogout} className="navbar-button">
                   {t.navLogout}
@@ -113,6 +118,11 @@ const Navbar = () => {
               {isAdmin && (
                 <Link to="/admin" className="navbar-drawer-link" onClick={closeMenu}>
                   {t.navAdmin}
+                </Link>
+              )}
+              {user?.canAccessCreditClients && (
+                <Link to="/admin/credit-clients" className="navbar-drawer-link" onClick={closeMenu}>
+                  {t.navCreditClients}
                 </Link>
               )}
               <button type="button" onClick={handleLogout} className="navbar-drawer-button">

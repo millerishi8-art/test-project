@@ -5,8 +5,6 @@ import { useAuth } from '../context/AuthContext.jsx';
 import HraDetailsModal, { hasHraContent } from '../components/HraDetailsModal.jsx';
 import { CaseInterimNotesButton } from '../components/CaseInterimNotes.jsx';
 import CaseStatusModal from '../components/CaseStatusModal.jsx';
-import CreditAgreementSheet from '../components/CreditAgreementSheet.jsx';
-import { idDocLabel } from '../data/creditAgreement';
 import {
   getCaseStageToneClass,
   isOnSixMonthRenewalTrack,
@@ -30,16 +28,6 @@ function isCreditAgreementCase(c) {
     String(c?.benefitType || '').toLowerCase() === 'credit_agreement' ||
     c?.personalDetails?.form === 'credit_agreement'
   );
-}
-
-function creditAttachmentLabel(category, idDocType) {
-  if (category === 'ssn') return 'סושיאל סקיוריטי';
-  if (category === 'id_doc') return idDocLabel(idDocType) || 'מסמך זיהוי';
-  return 'מסמך מצורף';
-}
-
-function looksLikePdf(url) {
-  return /\.pdf($|\?)/i.test(String(url || ''));
 }
 
 function caseMatchesSearch(c, query) {
@@ -105,10 +93,6 @@ const AdminPanel = () => {
   const [caseSearch, setCaseSearch] = useState('');
   const [caseStatusFilter, setCaseStatusFilter] = useState('all');
   const [caseSortOrder, setCaseSortOrder] = useState('newest');
-  const [creditClients, setCreditClients] = useState([]);
-  const [creditLoading, setCreditLoading] = useState(false);
-  const [creditError, setCreditError] = useState('');
-  const [enlargedCreditImage, setEnlargedCreditImage] = useState(null);
 
   const handleInterimNotesChange = (caseId, interimNotes) => {
     setCases((prev) =>
@@ -131,33 +115,9 @@ const AdminPanel = () => {
   useEffect(() => {
     if (stateTab === 'cases') setMainSection('cases');
     if (stateTab === 'users') setMainSection('users');
-    if (stateTab === 'credit') setMainSection('credit');
     if (stateFilter === 'renewal_in_6_months') setCasesFilter(stateFilter);
     if (stateFilter === 'needs_renewal') setCasesFilter('all');
   }, [stateTab, stateFilter]);
-
-  useEffect(() => {
-    if (mainSection !== 'credit') return undefined;
-    let cancelled = false;
-    (async () => {
-      setCreditLoading(true);
-      setCreditError('');
-      try {
-        const res = await axios.get('/admin/credit-clients');
-        if (!cancelled) setCreditClients(Array.isArray(res.data) ? res.data : []);
-      } catch (err) {
-        if (!cancelled) {
-          setCreditClients([]);
-          setCreditError(err.response?.data?.error || 'שגיאה בטעינת לקוחות האשראי');
-        }
-      } finally {
-        if (!cancelled) setCreditLoading(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [mainSection]);
 
   const fetchData = async () => {
     setLoadError('');
@@ -296,7 +256,10 @@ const AdminPanel = () => {
   };
 
   const insuranceCases = cases.filter((c) => !isCreditAgreementCase(c));
-  const creditCaseCount = cases.filter(isCreditAgreementCase).length;
+  const panelUsers = users.filter((user) => {
+    const list = Array.isArray(user.cases) ? user.cases : [];
+    return list.length === 0 || list.some((c) => !isCreditAgreementCase(c));
+  });
   const casesWithRenewal = insuranceCases.map((c) => ({ ...c, renewalStatus: getRenewalStatus(c) }));
   const caseSearchQuery = caseSearch.trim().toLowerCase();
   const statusFilterOptions = (() => {
@@ -390,13 +353,6 @@ const AdminPanel = () => {
           >
             מעקב כייסים ותשלומים
           </button>
-          <button
-            type="button"
-            className={`admin-credit-clients-btn${mainSection === 'credit' ? ' active' : ''}`}
-            onClick={() => setMainSection('credit')}
-          >
-            לקוחות לאשראי ({creditCaseCount})
-          </button>
         </div>
       </div>
 
@@ -418,7 +374,7 @@ const AdminPanel = () => {
             className={mainSection === 'users' ? 'active' : ''}
             onClick={() => setMainSection('users')}
           >
-            משתמשים ({users.length})
+            משתמשים ({panelUsers.length})
           </button>
         </div>
         {mainSection === 'cases' && (
@@ -462,14 +418,14 @@ const AdminPanel = () => {
               </tr>
             </thead>
             <tbody>
-              {users.length === 0 ? (
+              {panelUsers.length === 0 ? (
                 <tr>
                   <td colSpan="8" className="empty-state">
                     אין משתמשים במערכת.
                   </td>
                 </tr>
               ) : (
-                users.map((user) => {
+                panelUsers.map((user) => {
                   const userInsuranceCases = (Array.isArray(user.cases) ? user.cases : []).filter(
                     (c) => !isCreditAgreementCase(c)
                   );
@@ -782,110 +738,6 @@ const AdminPanel = () => {
         </>
       )}
 
-      {mainSection === 'credit' && (
-        <div className="admin-credit-clients">
-          {creditError ? (
-            <div className="admin-load-error" role="alert">
-              {creditError}
-            </div>
-          ) : null}
-          {creditLoading ? (
-            <div className="loading-container">
-              <div className="loading-spinner">טוען לקוחות אשראי...</div>
-            </div>
-          ) : creditClients.length === 0 ? (
-            <div className="admin-table-container">
-              <p className="empty-state">עדיין אין לקוחות שנרשמו דרך קוביית האשראי.</p>
-            </div>
-          ) : (
-            creditClients.map((client) => {
-              const images = (Array.isArray(client.attachmentMeta) ? client.attachmentMeta : [])
-                .map((item) => ({
-                  url: typeof item?.path === 'string' ? item.path : '',
-                  label: creditAttachmentLabel(item?.category, client.personalDetails?.idDocType),
-                }))
-                .filter((item) => item.url);
-              const ssnNumber =
-                client.personalDetails?.ssnMode === 'number' ? client.personalDetails?.ssnNumber : '';
-              return (
-                <article key={client.id} className="admin-credit-client-card">
-                  <header className="admin-credit-client-head">
-                    <h2>{client.personalDetails?.fullName || client.userName}</h2>
-                    <p>
-                      {client.userEmail} · {client.userPhone} · {formatDate(client.createdAt)}
-                    </p>
-                  </header>
-                  <CreditAgreementSheet
-                    readOnly
-                    clientName={client.personalDetails?.fullName || client.signatoryName || ''}
-                    signDate={client.personalDetails?.signDate || ''}
-                    clientSignatureUrl={client.signatureImage || ''}
-                    agentSignatureUrl={client.agentSignatureImage || ''}
-                  />
-                  <div className="admin-credit-client-files">
-                    <h3>תמונות שצורפו</h3>
-                    {ssnNumber ? (
-                      <p className="admin-credit-ssn-number">סושיאל סקיוריטי: {ssnNumber}</p>
-                    ) : null}
-                    {images.length === 0 ? (
-                      <p className="admin-credit-no-images">לא צורפו תמונות ללקוח זה.</p>
-                    ) : (
-                      <div className="admin-credit-image-grid">
-                        {images.map((image, index) =>
-                          looksLikePdf(image.url) ? (
-                            <a
-                              key={`${image.url}-${index}`}
-                              className="admin-credit-file-link"
-                              href={image.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                            >
-                              {image.label}
-                            </a>
-                          ) : (
-                            <button
-                              key={`${image.url}-${index}`}
-                              type="button"
-                              className="admin-credit-image-btn"
-                              onClick={() => setEnlargedCreditImage(image.url)}
-                            >
-                              <img src={image.url} alt={image.label} />
-                              <span>{image.label}</span>
-                            </button>
-                          )
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </article>
-              );
-            })
-          )}
-          {enlargedCreditImage ? (
-            <div
-              className="admin-credit-lightbox"
-              onClick={() => setEnlargedCreditImage(null)}
-              role="dialog"
-              aria-modal="true"
-              aria-label="תצוגה מוגדלת של התמונה"
-            >
-              <button
-                type="button"
-                onClick={() => setEnlargedCreditImage(null)}
-                aria-label="סגור"
-              >
-                ×
-              </button>
-              <img
-                src={enlargedCreditImage}
-                alt="תצוגה מוגדלת"
-                onClick={(event) => event.stopPropagation()}
-              />
-            </div>
-          ) : null}
-        </div>
-      )}
-
       {hraModalCase ? (
         <HraDetailsModal
           caseId={hraModalCase.id}
@@ -925,7 +777,7 @@ const AdminPanel = () => {
       <div className="admin-stats">
         <div className="stat-card">
           <h3>סה"כ משתמשים</h3>
-          <p className="stat-number">{users.length}</p>
+          <p className="stat-number">{panelUsers.length}</p>
         </div>
         <div className="stat-card">
           <h3>כל התיקים</h3>

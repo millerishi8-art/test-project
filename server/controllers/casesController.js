@@ -502,8 +502,6 @@ export const submitCreditAgreement = async (req, res) => {
       attachments.unshift(ssnPath);
     }
 
-    const renewalDate = new Date();
-    renewalDate.setMonth(renewalDate.getMonth() + RENEWAL_MONTHS);
     const signedAt = new Date().toISOString();
 
     const newCase = {
@@ -534,7 +532,7 @@ export const submitCreditAgreement = async (req, res) => {
       signedAt,
       status: CASE_STATUS.SUBMITTED,
       createdAt: signedAt,
-      renewalDate: renewalDate.toISOString(),
+      renewalDate: null,
       isRenewed: false,
     };
 

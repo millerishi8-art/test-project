@@ -79,6 +79,8 @@ export function isGovernmentFinalDecision(c) {
 /** יופיע ב«חידוש עתידי (חצי שנה)» עד מחיקת התיק */
 export function isOnSixMonthRenewalTrack(c) {
   if (!c) return false;
+  const type = String(c.benefitType || '').toLowerCase();
+  if (type === 'credit_agreement' || c.personalDetails?.form === 'credit_agreement') return false;
   if (c.adminConfirmedCompleted) return true;
   return isGovernmentFinalDecision(c);
 }
