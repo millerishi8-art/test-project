@@ -1,0 +1,16 @@
+---
+description: Commit and push each completed request to GitHub
+alwaysApply: true
+---
+
+# Commit and push every request
+
+When a request changes project files, finish by committing and pushing. Do this without asking again.
+
+- Stage the files that belong to the request. Leave secrets out (`.env`, credentials, keys). `.gitignore` already excludes them.
+- Write a 1–2 sentence commit message that says why the change was made.
+- Push the current branch to `origin`. Never force-push.
+- If there is nothing new to commit, do not create an empty commit.
+- If the push fails, say so and leave the commit in place.
+
+A stop hook (`.cursor/hooks/auto-commit.ps1`) repeats this if it was skipped. A clear commit made before the turn ends is enough; the hook then only pushes what is still ahead of GitHub.
