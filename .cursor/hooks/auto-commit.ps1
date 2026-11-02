@@ -25,14 +25,11 @@ if ($dirty) {
   }
 }
 
-git rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>$null | Out-Null
-if ($LASTEXITCODE -ne 0) {
-  git push -u origin HEAD | Out-Null
-} else {
-  $ahead = (git rev-list --count '@{u}..HEAD' 2>$null).Trim()
-  if ($ahead -match '^\d+$' -and [int]$ahead -gt 0) {
-    git push | Out-Null
-  }
+$remoteRef = "refs/heads/$branch"
+$local = (git rev-parse HEAD).Trim()
+$remote = (git rev-parse "origin/$branch" 2>$null).Trim()
+if ($LASTEXITCODE -ne 0 -or $local -ne $remote) {
+  git push origin "HEAD:$remoteRef" | Out-Null
 }
 
 Finish
