@@ -13,6 +13,7 @@ import {
   getSecondaryAdminEmails,
 } from '../utils/adminEmails.js';
 import { getInitials } from '../utils/initials.js';
+import { isUserRoleAdmin } from '../components/constants.js';
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -62,22 +63,37 @@ export const listEmployeeCases = async (req, res) => {
       users.map((u) => [String(u.email || '').trim().toLowerCase(), u])
     );
 
-    /* רק שלושת העובדים – לא מציגים את כרטיס המנהל הראשי */
-    const managers = getSecondaryAdminEmails().map((email) => {
-      const u = userByEmail.get(email);
-      const name = staffDisplayName(email, u?.name || '');
-      const userId = u?.id != null ? String(u.id) : null;
-      return {
+    /*
+     * כל עובד שהוא מנהל משנה: גם המיילים הקבועים, וגם כל חשבון עם role=admin
+     * (למשל עובד חדש כמו מנחם פפר) — בלי המנהל הראשי.
+     * השם לתצוגה הוא השם השמור בחשבון, אלא אם יש שם קבוע למייל המוכר.
+     */
+    const managers = [];
+    const seenEmails = new Set();
+    const addManager = (email, user) => {
+      const normalized = String(email || '').trim().toLowerCase();
+      if (!normalized || seenEmails.has(normalized) || isSuperAdminEmail(normalized)) return;
+      seenEmails.add(normalized);
+      const name = staffDisplayName(normalized, user?.name || '');
+      const userId = user?.id != null ? String(user.id) : null;
+      managers.push({
         /* לעולם לא מחזירים מייל כ-id (user_id הוא UUID) */
         id: userId,
         name,
-        email,
-        initials: getInitials(name || email),
+        email: normalized,
+        initials: getInitials(name || normalized),
         isPrimaryAdmin: false,
         userAccountMissing: !userId,
         cases: [],
-      };
-    });
+      });
+    };
+    for (const email of getSecondaryAdminEmails()) {
+      addManager(email, userByEmail.get(email));
+    }
+    for (const user of users) {
+      if (!isUserRoleAdmin(user?.role)) continue;
+      addManager(user?.email, user);
+    }
 
     const managerByUserId = new Map();
     const managerByEmail = new Map();

@@ -280,6 +280,7 @@ export const caseFormTranslations = {
       family: 'משפחה',
       individual: 'בן אדם יחיד',
       minor: 'צעיר',
+      credit_agreement: 'הטבה לשימוש מסגרת האשראי',
     },
 
     // Simple form (family / minor)
@@ -575,6 +576,7 @@ export const caseFormTranslations = {
       family: 'Family',
       individual: 'Single person',
       minor: 'Youth',
+      credit_agreement: 'Credit line benefit',
     },
 
     simpleFormSubtitle: 'Please fill in the required details',

@@ -91,7 +91,7 @@ export function clientCanEditSubmittedCase(c) {
   if (!c) return false;
   if (c.adminConfirmedCompleted) return false;
   const type = String(c.benefitType || '').toLowerCase();
-  if (type === 'card_order') return false;
+  if (type === 'card_order' || type === 'credit_agreement') return false;
   const status = String(c.status || '').toLowerCase();
   if (status === 'closed' || status === 'rejected' || status === 'approved') return false;
   const marked = explicitStageNumberFromLabel(c.detailedAdminStatus);

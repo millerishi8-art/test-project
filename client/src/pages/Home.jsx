@@ -115,6 +115,26 @@ const Home = () => {
         </div>
 
         <div
+          className="benefit-cube benefit-cube-credit"
+          onClick={() => navigate('/credit-agreement')}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              navigate('/credit-agreement');
+            }
+          }}
+        >
+          <div className="cube-icon">💳</div>
+          <h2>{t.creditAgreementTitle}</h2>
+          <p className="cube-description">{t.creditAgreementDesc}</p>
+          <div className="cube-price">
+            <span>{t.creditAgreementPrice}</span>
+          </div>
+        </div>
+
+        <div
           className="benefit-cube benefit-cube-order-card"
           onClick={() => navigate('/order-card')}
           role="button"

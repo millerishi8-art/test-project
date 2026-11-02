@@ -5,6 +5,8 @@ import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext.jsx';
 import CaseStatusModal from '../components/CaseStatusModal.jsx';
 import { getCaseStageToneClass } from '../utils/caseProcessingStages';
+import CreditAgreementSheet from '../components/CreditAgreementSheet';
+import { idDocLabel } from '../data/creditAgreement';
 import '../styles/caseStageTones.css';
 import './AdminCaseDetail.css';
 
@@ -13,6 +15,7 @@ const benefitTitles = {
   individual: 'בגיר מעל 21',
   minor: 'צעיר',
   card_order: 'הזמנת כרטיס',
+  credit_agreement: 'הטבה לשימוש מסגרת האשראי',
 };
 
 const cardIssueLabels = {
@@ -386,6 +389,35 @@ const AdminCaseDetail = () => {
       return renderCardOrderDetails(pd);
     }
 
+    if (pd.form === 'credit_agreement') {
+      const ssnText =
+        pd.ssnMode === 'number' && pd.ssnNumber
+          ? pd.ssnNumber
+          : 'הועלתה תמונה של הכרטיס';
+      return (
+        <div className="admin-case-detail-pd-structured">
+          <div className="admin-case-detail-grid">
+            <div className="admin-case-detail-field">
+              <span className="admin-case-detail-label">שם הלקוח בהסכם</span>
+              <span className="admin-case-detail-value">{pd.fullName || '–'}</span>
+            </div>
+            <div className="admin-case-detail-field">
+              <span className="admin-case-detail-label">תאריך חתימה</span>
+              <span className="admin-case-detail-value">{pd.signDate || '–'}</span>
+            </div>
+            <div className="admin-case-detail-field">
+              <span className="admin-case-detail-label">סושיאל סקיוריטי</span>
+              <span className="admin-case-detail-value">{ssnText}</span>
+            </div>
+            <div className="admin-case-detail-field">
+              <span className="admin-case-detail-label">מסמך זיהוי</span>
+              <span className="admin-case-detail-value">{idDocLabel(pd.idDocType) || '–'}</span>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     if (pd.form === 'food_stamps_eligibility') {
       const dec = pd.declarationsAccepted;
       const rows = [
@@ -457,6 +489,9 @@ const AdminCaseDetail = () => {
     c?.benefitType === 'card_order' ||
     c?.personalDetails?.form === 'card_order' ||
     Boolean(c?.personalDetails?.cardOrder);
+  const isCreditCase =
+    c?.benefitType === 'credit_agreement' || c?.personalDetails?.form === 'credit_agreement';
+  const creditIdLabel = idDocLabel(c?.personalDetails?.idDocType) || 'זיהוי (דרכון/ת״ז/רישיון)';
 
   return (
     <div className="admin-case-detail-container">
@@ -659,7 +694,7 @@ const AdminCaseDetail = () => {
               </div>
             </form>
           ) : null}
-          {!editingText && !isCardOrderCase && (
+          {!editingText && !isCardOrderCase && !isCreditCase && (
           <div className="admin-case-detail-field admin-case-detail-field-block">
             <span className="admin-case-detail-label">כתובת מגורים</span>
             <p className="admin-case-detail-value admin-case-detail-text">{c.address || '–'}</p>
@@ -775,7 +810,7 @@ const AdminCaseDetail = () => {
                   <div className="admin-case-detail-attachments">
                     {mainDocs.birth.map((r, i) => renderMediaCard(r, `תעודת לידה ${i + 1}`, i))}
                     {mainDocs.id_doc.map((r, i) =>
-                      renderMediaCard(r, `זיהוי (דרכון/ת״ז/רישיון) ${i + 1}`, i)
+                      renderMediaCard(r, `${creditIdLabel} ${i + 1}`, i)
                     )}
                     {mainDocs.ssn.map((r, i) => renderMediaCard(r, `כרטיס סושיאל ${i + 1}`, i))}
                     {mainDocs.passport.map((r, i) => renderMediaCard(r, `דרכון ${i + 1}`, i))}
@@ -840,6 +875,23 @@ const AdminCaseDetail = () => {
             </>
           )}
         </section>
+
+        {isCreditCase && (
+          <section className="admin-case-detail-section">
+            <div className="credit-skip" style={{ marginBottom: '12px' }}>
+              <button type="button" className="admin-view-form-btn" onClick={() => window.print()}>
+                הדפסת ההסכם החתום
+              </button>
+            </div>
+            <CreditAgreementSheet
+              readOnly
+              clientName={c.personalDetails?.fullName || c.signatoryName || ''}
+              signDate={c.personalDetails?.signDate || ''}
+              clientSignatureUrl={mediaFieldToUrl(c.signatureImage)}
+              agentSignatureUrl={mediaFieldToUrl(c.agentSignatureImage)}
+            />
+          </section>
+        )}
 
         {(c.signatoryName || mediaFieldToUrl(c.signatureImage)) && (
           <section className="admin-case-detail-section">

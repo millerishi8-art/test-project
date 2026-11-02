@@ -2,6 +2,7 @@ import { Router } from 'express';
 import {
   submitCase,
   submitCardOrder,
+  submitCreditAgreement,
   uploadCaseAttachment,
   getMyCases,
   getMyCaseById,
@@ -18,6 +19,7 @@ router.use(authenticateToken);
 
 router.post('/upload-attachment', uploadCaseAttachment);
 router.post('/card-order', submitCardOrder);
+router.post('/credit-agreement', submitCreditAgreement);
 router.post('/', submitCase);
 router.post('/defer-payment-request', requestDeferredPayment);
 router.post('/defer-payment-proposed-deadline', submitDeferredPaymentProposedDeadline);

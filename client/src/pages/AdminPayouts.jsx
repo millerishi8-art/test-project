@@ -61,6 +61,7 @@ const AdminPayouts = () => {
       individual: 'בגיר מעל 21',
       minor: 'צעיר',
       card_order: 'הזמנת כרטיס',
+      credit_agreement: 'הטבה לשימוש מסגרת האשראי',
     };
     return titles[type] || type || '–';
   };

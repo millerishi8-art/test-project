@@ -1,0 +1,147 @@
+.credit-page {
+  width: min(920px, 100%);
+  margin: 0 auto;
+  padding: 16px 12px 72px;
+}
+
+.credit-bar {
+  width: min(190mm, 100%);
+  margin: 0 auto 12px;
+  display: flex;
+  gap: 8px;
+}
+
+.credit-bar button,
+.credit-submit,
+.credit-file-btn,
+.credit-remove-btn {
+  min-height: 48px;
+  border: none;
+  border-radius: 12px;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.credit-print-btn {
+  flex: 1;
+  background: #16324f;
+  color: #fff;
+}
+
+.credit-back-btn {
+  flex: 1;
+  background: #e7edf2;
+  color: #16324f;
+}
+
+.credit-extra {
+  width: min(190mm, 100%);
+  margin: 16px auto 0;
+  background: #fff;
+  border-radius: 16px;
+  padding: 20px 18px 24px;
+  box-shadow: 0 10px 28px rgba(16, 32, 48, 0.08);
+}
+
+.credit-extra h2 {
+  margin: 18px 0 0;
+  color: #16324f;
+  font-size: 1.15rem;
+}
+
+.credit-extra-intro,
+.credit-extra-hint {
+  margin: 8px 0 0;
+  color: #3d4b5c;
+  line-height: 1.55;
+}
+
+.credit-choice {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  margin-top: 12px;
+}
+
+.credit-choice label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  color: #16324f;
+}
+
+.credit-ssn-input {
+  width: 100%;
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid #cfd6de;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 16px;
+}
+
+.credit-upload {
+  margin-top: 12px;
+}
+
+.credit-upload-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.credit-file-btn {
+  background: #16324f;
+  color: #fff;
+  padding: 0 16px;
+}
+
+.credit-remove-btn {
+  background: transparent;
+  color: #8a2b2b;
+  padding: 0 12px;
+}
+
+.credit-preview {
+  margin-top: 10px;
+}
+
+.credit-preview img {
+  max-width: 220px;
+  max-height: 160px;
+  border-radius: 8px;
+  border: 1px solid #d5dee6;
+}
+
+.credit-field-error,
+.credit-form-error,
+.credit-form-errors p {
+  color: #9b2335;
+  margin: 8px 0 0;
+}
+
+.credit-form-errors {
+  width: min(190mm, 100%);
+  margin: 8px auto 0;
+}
+
+.credit-submit {
+  width: 100%;
+  margin-top: 18px;
+  background: #1fa855;
+  color: #04210f;
+}
+
+.credit-submit:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+.has-error .credit-ssn-input,
+.credit-upload.has-error {
+  outline: 2px solid #e57373;
+  border-radius: 8px;
+}

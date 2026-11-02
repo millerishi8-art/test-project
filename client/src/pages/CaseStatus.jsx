@@ -236,6 +236,17 @@ const CaseStatus = () => {
                         </span>
                       </div>
                     )}
+                    {String(c.benefitType || '').toLowerCase() === 'credit_agreement' ? (
+                      <div className="case-status-edit-row">
+                        <button
+                          type="button"
+                          className="case-status-edit-btn"
+                          onClick={() => navigate(`/credit-agreement/print/${c.id}`)}
+                        >
+                          {t.printAgreement}
+                        </button>
+                      </div>
+                    ) : null}
                     {clientCanEditSubmittedCase(c) ? (
                       <div className="case-status-edit-row">
                         <button

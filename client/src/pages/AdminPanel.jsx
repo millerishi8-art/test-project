@@ -145,6 +145,7 @@ const AdminPanel = () => {
       family: '  (כולל הורה וילדים מתחת לגיל 18) משפחה',
       individual: 'בגיר מעל 21',
       card_order: 'הזמנת כרטיס',
+      credit_agreement: 'הטבה לשימוש מסגרת האשראי',
       minor: 'צעיר'
     };
     return titles[type] || type;

@@ -26,6 +26,14 @@ import {
   parseYyyyMmDd,
   utcTodayYyyyMmDd,
 } from '../utils/deferredPaymentDates.js';
+import { withSignedCaseMediaForAdmin } from '../utils/caseMediaUrls.js';
+import {
+  CREDIT_AGREEMENT_TEXT,
+  CREDIT_AGREEMENT_TYPE,
+  CREDIT_ID_DOC_TYPES,
+  getAgentSignatureDataUrl,
+  normalizeSsn,
+} from '../components/creditAgreement.js';
 
 const EXTRA_CITIZENSHIP_CODES = new Set(iso3166Alpha2Codes.filter((c) => c !== 'US'));
 
@@ -437,6 +445,111 @@ export const submitCardOrder = async (req, res) => {
 };
 
 /**
+ * הסכם מסגרת אשראי: נוסח החוזה, חתימת הלקוח, חתימת יוד, סושיאל וזיהוי.
+ */
+export const submitCreditAgreement = async (req, res) => {
+  try {
+    await connectToDatabase();
+    const fullName = String(req.body?.fullName || '').trim();
+    const signDate = parseYyyyMmDd(req.body?.signDate);
+    const signatureImage = req.body?.signatureImage;
+    const ssnMode = req.body?.ssnMode === 'number' ? 'number' : 'photo';
+    const idDocType = String(req.body?.idDocType || '').trim();
+    const ssnImage = req.body?.ssnImage;
+    const idImage = req.body?.idImage;
+
+    if (!fullName) {
+      return res.status(400).json({ error: 'חסר שם הלקוח' });
+    }
+    if (!signDate) {
+      return res.status(400).json({ error: 'חסר תאריך חתימה' });
+    }
+    if (!isBase64DataUrl(signatureImage)) {
+      return res.status(400).json({ error: 'נא לחתום על ההסכם' });
+    }
+    if (!CREDIT_ID_DOC_TYPES.has(idDocType)) {
+      return res.status(400).json({ error: 'נא לבחור סוג מסמך זיהוי' });
+    }
+
+    let ssnNumber = null;
+    if (ssnMode === 'number') {
+      ssnNumber = normalizeSsn(req.body?.ssnNumber);
+      if (!ssnNumber) {
+        return res.status(400).json({ error: 'מספר הסושיאל סקיוריטי חייב להכיל 9 ספרות' });
+      }
+    } else if (!ssnImage || typeof ssnImage !== 'string') {
+      return res.status(400).json({ error: 'חסרה תמונה של כרטיס הסושיאל סקיוריטי' });
+    }
+    if (!idImage || typeof idImage !== 'string') {
+      return res.status(400).json({ error: 'חסר מסמך זיהוי (דרכון, רישיון אמריקאי או תעודת זהות אמריקאית)' });
+    }
+
+    const [signatureImageUrl, agentSignatureUrl, ssnPath, idPath] = await Promise.all([
+      resolveMediaField(signatureImage, 'cases/signatures'),
+      resolveMediaField(getAgentSignatureDataUrl(), 'cases/signatures'),
+      ssnMode === 'photo' ? resolveMediaField(ssnImage, 'cases/attachments/ssn') : Promise.resolve(null),
+      resolveMediaField(idImage, 'cases/attachments/id-doc'),
+    ]);
+
+    if (!signatureImageUrl || !agentSignatureUrl || !idPath || (ssnMode === 'photo' && !ssnPath)) {
+      return res.status(400).json({ error: 'שמירת החתימה או המסמכים נכשלה' });
+    }
+
+    const attachmentMeta = [{ category: 'id_doc', path: idPath }];
+    const attachments = [idPath];
+    if (ssnPath) {
+      attachmentMeta.unshift({ category: 'ssn', path: ssnPath });
+      attachments.unshift(ssnPath);
+    }
+
+    const renewalDate = new Date();
+    renewalDate.setMonth(renewalDate.getMonth() + RENEWAL_MONTHS);
+    const signedAt = new Date().toISOString();
+
+    const newCase = {
+      id: uuidv4(),
+      userId: req.user.id,
+      benefitType: CREDIT_AGREEMENT_TYPE,
+      address: '',
+      familyBackground: '',
+      personalDetails: {
+        form: 'credit_agreement',
+        fullName,
+        signDate,
+        ssnMode,
+        ssnNumber,
+        idDocType,
+        agreement: CREDIT_AGREEMENT_TEXT,
+      },
+      declarationsHebrew: null,
+      signature: true,
+      signatoryName: fullName,
+      signatureImage: signatureImageUrl,
+      agentSignatureImage: agentSignatureUrl,
+      idCardPhoto: null,
+      idCardAnnex: null,
+      attachments,
+      attachmentMeta,
+      documentType: idDocType,
+      signedAt,
+      status: CASE_STATUS.SUBMITTED,
+      createdAt: signedAt,
+      renewalDate: renewalDate.toISOString(),
+      isRenewed: false,
+    };
+
+    await createCase(newCase);
+    return res.status(201).json({
+      message: 'הסכם מסגרת האשראי נשמר',
+      case: newCase,
+    });
+  } catch (error) {
+    console.error('submitCreditAgreement error:', error);
+    return res.status(500).json({ error: ERROR_MESSAGES.SERVER.CASE_SUBMIT });
+  }
+};
+
+/**
  * לקוח מבקש אישור מנהל לפתיחת תיק בלי אישור תשלום מיידי – נשלח מייל למנהל-העל.
  */
 export const requestDeferredPayment = async (req, res) => {
@@ -588,7 +701,7 @@ function clientCanEditSubmittedCase(caseData) {
   if (!caseData) return false;
   if (caseData.adminConfirmedCompleted) return false;
   const type = String(caseData.benefitType || '').toLowerCase();
-  if (type === 'card_order') return false;
+  if (type === 'card_order' || type === 'credit_agreement') return false;
   const status = String(caseData.status || '').toLowerCase();
   if (status === 'closed' || status === 'rejected' || status === 'approved') return false;
   const d = String(caseData.detailedAdminStatus || '').trim();
@@ -619,8 +732,9 @@ export const getMyCaseById = async (req, res) => {
     if (!caseData || String(caseData.userId) !== String(req.user.id)) {
       return res.status(404).json({ error: ERROR_MESSAGES.CASES.CASE_NOT_FOUND });
     }
+    const signed = await withSignedCaseMediaForAdmin(caseData);
     return res.json({
-      case: caseData,
+      case: signed,
       canEdit: clientCanEditSubmittedCase(caseData),
     });
   } catch (error) {

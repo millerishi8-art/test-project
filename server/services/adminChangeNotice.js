@@ -23,6 +23,7 @@ export function benefitTypeLabelHe(type) {
     individual: 'בגיר מעל 21',
     minor: 'צעיר',
     card_order: 'הזמנת כרטיס',
+    credit_agreement: 'הטבה לשימוש מסגרת האשראי',
   };
   return map[type] || type || '—';
 }

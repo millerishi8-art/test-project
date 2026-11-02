@@ -217,6 +217,10 @@
   background: linear-gradient(135deg, #00838f 0%, #006064 100%);
 }
 
+.benefit-cube-credit::before {
+  background: linear-gradient(135deg, #16324f 0%, #0e2236 100%);
+}
+
 .cube-image-wrap {
   display: flex;
   justify-content: center;

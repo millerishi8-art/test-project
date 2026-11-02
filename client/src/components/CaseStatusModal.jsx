@@ -31,7 +31,13 @@ function currentStageLabel(c) {
 }
 
 function benefitTitle(type) {
-  const t = { family: 'משפחה', individual: 'בגיר מעל 21', minor: 'צעיר', card_order: 'הזמנת כרטיס' };
+  const t = {
+    family: 'משפחה',
+    individual: 'בגיר מעל 21',
+    minor: 'צעיר',
+    card_order: 'הזמנת כרטיס',
+    credit_agreement: 'הטבה לשימוש מסגרת האשראי',
+  };
   return t[(type || '').toLowerCase()] || type || '–';
 }
 

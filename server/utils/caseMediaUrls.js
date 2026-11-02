@@ -27,12 +27,14 @@ export async function withSignedCaseMediaForAdmin(caseData, expiresSec = ADMIN_M
 
   const out = { ...caseData };
 
-  const [signatureImage, idCardPhoto, idCardAnnex] = await Promise.all([
+  const [signatureImage, agentSignatureImage, idCardPhoto, idCardAnnex] = await Promise.all([
     signMediaIfStoragePath(caseData.signatureImage, expiresSec),
+    signMediaIfStoragePath(caseData.agentSignatureImage, expiresSec),
     signMediaIfStoragePath(caseData.idCardPhoto, expiresSec),
     signMediaIfStoragePath(caseData.idCardAnnex, expiresSec),
   ]);
   out.signatureImage = signatureImage;
+  out.agentSignatureImage = agentSignatureImage;
   out.idCardPhoto = idCardPhoto;
   out.idCardAnnex = idCardAnnex;
 

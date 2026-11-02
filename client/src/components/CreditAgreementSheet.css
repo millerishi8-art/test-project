@@ -1,0 +1,187 @@
+.credit-sheet {
+  width: min(190mm, 100%);
+  margin: 0 auto;
+  background: #fff;
+  padding: 22px 18px 28px;
+  border-top: 6px solid #16324f;
+  box-shadow: 0 10px 28px rgba(16, 32, 48, 0.08);
+  color: #1c2430;
+  font-family: "Segoe UI", "Arial Hebrew", Arial, sans-serif;
+  font-size: 16px;
+  text-align: right;
+}
+
+.credit-kicker {
+  margin: 0;
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  color: #5d6b7a;
+  font-weight: 700;
+}
+
+.credit-sheet h1 {
+  margin: 6px 0 0;
+  font-size: 28px;
+  line-height: 1.2;
+  color: #16324f;
+}
+
+.credit-sub {
+  margin: 6px 0 0;
+  color: #5d6b7a;
+  font-size: 14px;
+}
+
+.credit-lead {
+  margin: 16px 0 0;
+  line-height: 1.65;
+}
+
+.credit-sheet label {
+  display: block;
+  margin-top: 14px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #16324f;
+}
+
+.credit-sheet input[type='text'],
+.credit-sheet input[type='date'] {
+  width: 100%;
+  margin-top: 6px;
+  padding: 12px;
+  border: 1px solid #cfd6de;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 16px;
+  background: #f8fafc;
+  color: inherit;
+}
+
+.credit-filled {
+  margin: 6px 0 0;
+  min-height: 1.4em;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.credit-terms {
+  margin: 18px 0 0;
+  padding: 0 22px 0 0;
+}
+
+.credit-terms > li {
+  margin: 0 0 14px;
+  line-height: 1.65;
+}
+
+.credit-terms > li > b {
+  color: #16324f;
+}
+
+.credit-inner {
+  margin: 6px 0 0;
+  padding: 0 18px 0 0;
+}
+
+.credit-inner li {
+  margin: 0 0 4px;
+}
+
+.credit-signs {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 18px;
+  margin-top: 8px;
+}
+
+.credit-signer {
+  border-top: 1px solid #16324f;
+  padding-top: 10px;
+}
+
+.credit-who {
+  font-weight: 700;
+  color: #16324f;
+}
+
+.credit-hint {
+  margin-top: 6px;
+  font-size: 13px;
+  color: #5d6b7a;
+}
+
+.credit-ink,
+.credit-sign-img {
+  display: block;
+  width: 100%;
+  height: 140px;
+  margin-top: 8px;
+  background: #fff;
+  border: 1px dashed #9aabbb;
+  border-radius: 10px;
+  object-fit: contain;
+  touch-action: none;
+}
+
+.credit-wipe {
+  margin-top: 8px;
+  min-height: 44px;
+  padding: 0 12px;
+  border: none;
+  background: none;
+  color: #16324f;
+  font: inherit;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+@media (min-width: 800px) {
+  .credit-signs {
+    grid-template-columns: 1fr 1fr;
+    gap: 22px;
+  }
+
+  .credit-sheet {
+    padding: 28px 32px 32px;
+  }
+}
+
+@media print {
+  body:has(.credit-sheet) {
+    background: #fff !important;
+  }
+
+  body:has(.credit-sheet) * {
+    visibility: hidden;
+  }
+
+  body:has(.credit-sheet) .credit-sheet,
+  body:has(.credit-sheet) .credit-sheet * {
+    visibility: visible;
+  }
+
+  body:has(.credit-sheet) .credit-sheet {
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 100%;
+    box-shadow: none;
+    border-top: none;
+    padding: 0;
+  }
+
+  body:has(.credit-sheet) .credit-skip {
+    display: none !important;
+  }
+
+  .credit-sheet input {
+    border: none;
+    background: transparent;
+    padding: 0;
+  }
+
+  .credit-ink,
+  .credit-sign-img {
+    border-style: solid;
+  }
+}

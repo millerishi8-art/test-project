@@ -30,6 +30,7 @@ export const confirmationTranslations = {
       individual: 'בן אדם יחיד',
       minor: 'צעיר',
       card_order: 'הזמנת כרטיס',
+      credit_agreement: 'הטבה לשימוש מסגרת האשראי',
     },
   },
   en: {
@@ -60,6 +61,7 @@ export const confirmationTranslations = {
       individual: 'Single person',
       minor: 'Youth',
       card_order: 'Card order',
+      credit_agreement: 'Credit line benefit',
     },
   },
 };

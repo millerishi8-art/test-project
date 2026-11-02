@@ -41,6 +41,7 @@ export const BENEFIT_TYPES = {
   INDIVIDUAL: 'individual',
   MINOR: 'minor',
   CARD_ORDER: 'card_order',
+  CREDIT_AGREEMENT: 'credit_agreement',
 };
 
 /** הודעות שגיאה (עברית) */
