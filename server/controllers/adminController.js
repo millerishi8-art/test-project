@@ -766,7 +766,11 @@ const LEGACY_STAGE_LABELS = {
 };
 
 /** מנהלי ראיונות – מקבלים מייל כשתיק ממתין לראיון אישי */
-const INTERVIEW_STAFF_EMAILS = ['lapidwoldenberg@gmail.com', 'abergelyuda7@gmail.com'];
+const INTERVIEW_STAFF_EMAILS = [
+  'lapidwoldenberg@gmail.com',
+  'abergelyuda7@gmail.com',
+  'workmiller770@gmail.com',
+];
 /** מנהל טפסים – מקבל מייל אחרי שנעשה ראיון ומחכים להגשת טפסים */
 const FORMS_STAFF_EMAILS = [];
 
@@ -1086,14 +1090,26 @@ export const getEmployeePayouts = async (req, res) => {
       }))
       .sort((a, b) => b.casesCount - a.casesCount);
 
+    const actorEmail = String(req.user?.email || '').trim().toLowerCase();
+    const fullAccess = isSuperAdminEmail(actorEmail);
+    const visibleEmployees = fullAccess
+      ? employees
+      : employees.filter((emp) => String(emp.email || '').trim().toLowerCase() === actorEmail);
+    const visibleHistory = fullAccess
+      ? history
+      : (Array.isArray(history) ? history : []).filter(
+          (row) => String(row?.employeeEmail || row?.email || '').trim().toLowerCase() === actorEmail
+        );
+
     return res.json({
       ratePerCase: EMPLOYEE_RATE_PER_CASE_USD,
-      employees,
+      employees: visibleEmployees,
+      personalView: !fullAccess,
       totals: {
-        casesCount: employees.reduce((sum, e) => sum + e.casesCount, 0),
-        amountDue: employees.reduce((sum, e) => sum + e.totalDue, 0),
+        casesCount: visibleEmployees.reduce((sum, e) => sum + e.casesCount, 0),
+        amountDue: visibleEmployees.reduce((sum, e) => sum + e.totalDue, 0),
       },
-      history,
+      history: visibleHistory,
     });
   } catch (error) {
     console.error('getEmployeePayouts error:', error);

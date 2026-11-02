@@ -25,8 +25,9 @@ function looksLikeUuid(value) {
 const STAFF_DISPLAY_NAMES = {
   'abergelyuda7@gmail.com': 'יהודה אברגל',
   'lapidwoldenberg@gmail.com': 'לפיד וולדנברג',
-  'lioranwork770@gmail.com': 'ליאור',
+  'lioranwork770@gmail.com': ' ליאורה לוי',
   'michalhezi2@gmail.com': 'מיכל',
+  'workmiller770@gmail.com': 'מנחם פפר',
 };
 
 function staffDisplayName(email, fallbackName = '') {
@@ -123,18 +124,25 @@ export const listEmployeeCases = async (req, res) => {
       m.casesCount = m.cases.length;
     }
 
-    managers.sort((a, b) => {
+    const actorEmail = String(req.user?.email || '').trim().toLowerCase();
+    const fullAccess = isSuperAdminEmail(actorEmail);
+    const visibleManagers = fullAccess
+      ? managers
+      : managers.filter((m) => String(m.email || '').trim().toLowerCase() === actorEmail);
+
+    visibleManagers.sort((a, b) => {
       if (b.casesCount !== a.casesCount) return b.casesCount - a.casesCount;
       return String(a.name || a.email).localeCompare(String(b.name || b.email), 'he');
     });
 
-    /* סיכומים רק לפי כייסים שמוצגים (עובדים) – בלי כייסי המנהל הראשי */
-    const visibleCases = managers.flatMap((m) => m.cases);
+    /* עובד רואה רק את הכייסים שלו. מנהל ראשי רואה את כולם לצורך תשלום. */
+    const visibleCases = visibleManagers.flatMap((m) => m.cases);
     const unpaidTotal = visibleCases.filter((c) => !c.isPaid).length;
     const paidPendingArchive = visibleCases.filter((c) => c.isPaid).length;
 
     return res.json({
-      managers,
+      managers: visibleManagers,
+      personalView: !fullAccess,
       totals: {
         casesCount: visibleCases.length,
         unpaidCount: unpaidTotal,

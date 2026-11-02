@@ -116,13 +116,14 @@ const AdminPayouts = () => {
       <div className="admin-header">
         <h1>תשלומי עובדים</h1>
         <p className="admin-welcome">
-          מעקב אחרי <strong>כייסים שהושלמו</strong> על ידי כל עובד — <strong>${ratePerCase} לכייס</strong>.
-          ביום התשלום מאשרים את התשלום והמונה של העובד מתאפס.
+          {isPrimaryAdmin
+            ? <>מעקב אחרי <strong>כייסים שהושלמו</strong> של כל העובדים — <strong>${ratePerCase} לכייס</strong>. ביום התשלום מאשרים תשלום והמונה מתאפס.</>
+            : <>מוצגים רק הכייסים שהושלמו על ידך — <strong>${ratePerCase} לכייס</strong>.</>}
         </p>
         <p className="admin-sub">יום התשלום הקרוב: {nextPayDate}</p>
         {!isPrimaryAdmin && (
           <p className="admin-secondary-notice" role="status">
-            מנהל משנה: צפייה בלבד. <strong>אישור תשלום ואיפוס המונה</strong> — רק למנהל הראשי.
+            מוצגים רק הכייסים שלך. אישור תשלום נשאר אצל מנהל המערכת.
           </p>
         )}
         <div className="admin-header-actions">

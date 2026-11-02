@@ -170,14 +170,15 @@ const AdminEmployeeCases = () => {
   return (
     <div className="admin-panel-container emp-cases-page">
       <div className="admin-header">
-        <h1>מעקב כייסים ותשלומים</h1>
+        <h1>{isPrimaryAdmin ? 'מעקב כייסים ותשלומים' : 'הכייסים שלי'}</h1>
         <p className="admin-welcome">
-          רישום כייסים לפי מנהל — <strong>ראיונות</strong> ו<strong>הגשת טפסים</strong>.
-          סימון תשלום ואיפוס פרטני לכל מנהל — רק למנהל הראשי.
+          {isPrimaryAdmin
+            ? 'כל הכייסים של העובדים — כדי לדעת כמה לשלם לכל אחד. סימון תשלום ואיפוס רק למנהל הראשי.'
+            : 'מוצגים רק הכייסים שאתה פתחת ורשמת. אין כאן גישה לכייסים של עובדים אחרים.'}
         </p>
         {!isPrimaryAdmin && (
           <p className="admin-secondary-notice" role="status">
-            מנהל משנה: ניתן לרשום כייסים חדשים ולצפות בסטטוס. שינוי תשלום / איפוס פרטני — רק למנהל הראשי.
+            אפשר לרשום כייס חדש ולעקוב אחרי הסטטוס שלו. סימון תשלום נשאר אצל מנהל המערכת.
           </p>
         )}
         <div className="admin-header-actions">
@@ -226,7 +227,11 @@ const AdminEmployeeCases = () => {
 
       <div className="emp-managers-grid">
         {managers.length === 0 ? (
-          <div className="emp-empty-state">אין מנהלים להצגה. ודא שמנהלי המשנה מוגדרים במערכת.</div>
+          <div className="emp-empty-state">
+            {isPrimaryAdmin
+              ? 'אין מנהלים להצגה. ודא שמנהלי המשנה מוגדרים במערכת.'
+              : 'עדיין אין כייסים שנרשמו על שמך.'}
+          </div>
         ) : (
           managers.map((manager) => (
             <section key={manager.id || manager.email} className="emp-manager-card">
