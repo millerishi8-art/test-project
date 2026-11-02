@@ -82,6 +82,39 @@ export const getAllCases = async (req, res) => {
   }
 };
 
+function isCreditAgreementCase(caseData) {
+  return (
+    String(caseData?.benefitType || '').toLowerCase() === 'credit_agreement' ||
+    caseData?.personalDetails?.form === 'credit_agreement'
+  );
+}
+
+/** לקוחות שנרשמו רק דרך קוביית מסגרת האשראי, עם מסמך חתום ותמונות. */
+export const getCreditClients = async (req, res) => {
+  try {
+    const cases = await readCases();
+    const users = await readUsers();
+    const creditCases = cases.filter(isCreditAgreementCase);
+    const enriched = await Promise.all(
+      creditCases.map(async (c) => {
+        const user = users.find((u) => u.id === c.userId);
+        const signed = await withSignedCaseMediaForAdmin(c);
+        return {
+          ...signed,
+          userName: user?.name ?? DEFAULT_UNKNOWN,
+          userEmail: user?.email ?? DEFAULT_UNKNOWN,
+          userPhone: user?.phone ?? DEFAULT_UNKNOWN,
+        };
+      })
+    );
+    enriched.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
+    res.json(enriched);
+  } catch (error) {
+    console.error('getCreditClients error:', error);
+    res.status(500).json({ error: 'שגיאה בשליפת לקוחות האשראי' });
+  }
+};
+
 /**
  * קבלת כל המשתמשים (עם מספר תיקים ותיקיהם) – נתונים מ-models
  */

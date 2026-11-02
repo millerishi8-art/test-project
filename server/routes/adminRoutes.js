@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import {
   getAllCases,
+  getCreditClients,
   getCaseById,
   getAllUsers,
   confirmCaseCompleted,
@@ -32,6 +33,7 @@ router.use(authenticateToken);
 router.use(isAdmin);
 
 router.get('/cases', getAllCases);
+router.get('/credit-clients', getCreditClients);
 router.get('/cases/:id', getCaseById);
 router.get('/notices/unseen', getUnseenAdminNotices);
 router.post('/notices/:id/ack', ackAdminNotice);

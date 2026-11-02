@@ -32,7 +32,14 @@ const AdminCaseProcessing = () => {
   const fetchCases = async () => {
     try {
       const res = await axios.get('/admin/cases');
-      setCases(Array.isArray(res.data) ? res.data : []);
+      const rows = Array.isArray(res.data) ? res.data : [];
+      setCases(
+        rows.filter(
+          (c) =>
+            String(c?.benefitType || '').toLowerCase() !== 'credit_agreement' &&
+            c?.personalDetails?.form !== 'credit_agreement'
+        )
+      );
       setLoadError('');
     } catch (err) {
       console.error('Failed to fetch cases:', err);
