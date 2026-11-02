@@ -425,6 +425,24 @@ export async function updateUserById(id, updateFields) {
   }
 }
 
+/** שומר שדות נוספים (הסכם עובד וכו') בתוך data JSONB, בלי למחוק את שאר המשתמש. */
+export async function mergeUserExtraData(id, fields) {
+  const sb = getSupabaseAdmin();
+  const current = await findUserById(id);
+  if (!current) return null;
+  const next = { ...current, ...fields };
+  const data = normalizeUserPayload(next);
+  const usesJsonb = await usersTableUsesJsonbData(sb);
+  if (!usesJsonb) {
+    const err = new Error('NO_JSONB');
+    err.code = 'NO_JSONB';
+    throw err;
+  }
+  const { data: out, error } = await sb.from(TABLE).update({ data }).eq('id', id).select('*').single();
+  if (error) throw error;
+  return rowToUser(out);
+}
+
 export async function updateUserByEmail(email, updateFields) {
   try {
     const sb = getSupabaseAdmin();

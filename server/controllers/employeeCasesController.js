@@ -26,8 +26,9 @@ function looksLikeUuid(value) {
 const STAFF_DISPLAY_NAMES = {
   'abergelyuda7@gmail.com': 'יהודה אברגל',
   'lapidwoldenberg@gmail.com': 'לפיד וולדנברג',
-  'lioranwork770@gmail.com': 'ליאור',
+  'lioranwork770@gmail.com': 'ליאור הלוי',
   'michalhezi2@gmail.com': 'מיכל',
+  'workmiller770@gmail.com': 'מנחם פפר',
   'yudigruenberg@gmail.com': 'יוד גרונברג',
 };
 

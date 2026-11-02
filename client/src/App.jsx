@@ -24,6 +24,7 @@ const AdminPanel = lazy(() => import('./pages/AdminPanel'));
 const AdminCaseDetail = lazy(() => import('./pages/AdminCaseDetail'));
 const AdminCaseProcessing = lazy(() => import('./pages/AdminCaseProcessing'));
 const AdminEmployeeCases = lazy(() => import('./pages/AdminEmployeeCases'));
+const AdminStaffAgreements = lazy(() => import('./pages/AdminStaffAgreements'));
 const OrderCard = lazy(() => import('./pages/OrderCard'));
 const CreditAgreement = lazy(() => import('./pages/CreditAgreement'));
 const CreditAgreementPrint = lazy(() => import('./pages/CreditAgreementPrint'));
@@ -154,6 +155,14 @@ function App() {
                 element={
                   <ProtectedRoute adminOnly>
                     <AdminEmployeeCases />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/staff-agreements"
+                element={
+                  <ProtectedRoute adminOnly>
+                    <AdminStaffAgreements />
                   </ProtectedRoute>
                 }
               />

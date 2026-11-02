@@ -1,0 +1,284 @@
+.staff-agreements-page {
+  background: #f6f1e8;
+}
+
+.staff-error {
+  margin: 0 auto 1rem;
+  max-width: 860px;
+  padding: 0.85rem 1rem;
+  border-radius: 10px;
+  background: #fde8e6;
+  color: #7a1f16;
+}
+
+.staff-roster {
+  display: grid;
+  gap: 0.75rem;
+  max-width: 860px;
+  margin: 0 auto;
+}
+
+.staff-roster-card {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  width: 100%;
+  text-align: right;
+  padding: 0.9rem 1rem;
+  border: 1px solid #e4d5c4;
+  border-radius: 14px;
+  background: #fffaf4;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+
+.staff-roster-card strong,
+.staff-roster-card small {
+  display: block;
+}
+
+.staff-roster-card small {
+  color: #6d645b;
+  margin-top: 0.15rem;
+}
+
+.staff-initials {
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #1e3a5f;
+  color: #fff;
+  font-weight: 700;
+  flex: 0 0 auto;
+}
+
+.staff-status {
+  margin-inline-start: auto;
+  border-radius: 999px;
+  padding: 0.25rem 0.7rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  background: #efe7dc;
+  color: #5c3317;
+}
+
+.staff-status--locked {
+  background: #e5f2ea;
+  color: #1c5c3a;
+}
+
+.staff-status--waiting {
+  background: #fff1d6;
+  color: #8a5a00;
+}
+
+.staff-sheet {
+  width: min(860px, 100%);
+  margin: 1rem auto 2rem;
+  background: #fffaf4;
+  border: 1px solid #e4d5c4;
+  box-shadow: 0 14px 36px rgba(60, 40, 20, 0.08);
+  padding: 1.6rem 1.3rem 2rem;
+  color: #24302b;
+}
+
+.staff-sheet-head {
+  text-align: center;
+}
+
+.staff-kicker {
+  margin: 0;
+  color: #8d4b32;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.staff-sheet h2 {
+  margin: 0.35rem 0 0;
+  color: #1e3a5f;
+  font-size: clamp(1.7rem, 4vw, 2.3rem);
+}
+
+.staff-date {
+  margin: 0.4rem 0 0;
+  color: #6d645b;
+}
+
+.staff-intro,
+.staff-sections,
+.staff-witness {
+  font-size: 1.05rem;
+  line-height: 1.75;
+}
+
+.staff-parties {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.8rem;
+  margin: 1rem 0;
+}
+
+.staff-parties > div {
+  background: #f7f1e8;
+  border: 1px solid #e4d5c4;
+  padding: 0.85rem 1rem;
+}
+
+.staff-parties strong {
+  color: #1e3a5f;
+}
+
+.staff-parties p {
+  margin: 0.35rem 0 0;
+}
+
+.staff-sections {
+  margin: 0;
+  padding-inline-start: 1.2rem;
+}
+
+.staff-sections > li {
+  margin: 0 0 0.85rem;
+}
+
+.staff-sections ol {
+  margin: 0.25rem 0 0;
+  padding-inline-start: 1.1rem;
+}
+
+.staff-witness {
+  margin-top: 1.2rem;
+}
+
+.staff-signs {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  margin-top: 0.8rem;
+}
+
+.staff-sign-box {
+  border-top: 1px solid #1e3a5f;
+  padding-top: 0.7rem;
+}
+
+.staff-who {
+  font-weight: 700;
+  color: #1e3a5f;
+}
+
+.staff-sign-box img {
+  display: block;
+  width: 100%;
+  height: 120px;
+  object-fit: contain;
+  margin-top: 0.5rem;
+  background: #fff;
+  border: 1px solid #e4d5c4;
+}
+
+.staff-sign-date,
+.staff-unsigned {
+  margin-top: 0.45rem;
+  color: #6d645b;
+}
+
+.staff-edit-bar,
+.staff-inline-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
+
+.staff-edit-bar button,
+.staff-editor button,
+.staff-sign-box button {
+  min-height: 44px;
+  border: none;
+  border-radius: 10px;
+  padding: 0.45rem 0.9rem;
+  background: #1e3a5f;
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.staff-quiet,
+.staff-editor .staff-quiet {
+  background: transparent;
+  color: #5c3317;
+  border: 1px solid #c4a48a;
+}
+
+.staff-editor {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.staff-editor label,
+.staff-section-edit label {
+  display: grid;
+  gap: 0.3rem;
+  font-weight: 700;
+}
+
+.staff-editor input,
+.staff-editor textarea,
+.staff-section-edit input,
+.staff-section-edit textarea {
+  width: 100%;
+  font: inherit;
+  font-weight: 400;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid #e4d5c4;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.staff-id-row {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.staff-section-edit {
+  border: 1px solid #e4d5c4;
+  border-radius: 12px;
+  padding: 0.8rem;
+  display: grid;
+  gap: 0.6rem;
+}
+
+.staff-empty {
+  text-align: center;
+  color: #6d645b;
+}
+
+@media (min-width: 760px) {
+  .staff-parties,
+  .staff-signs,
+  .staff-id-row {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .staff-sheet {
+    padding: 2.2rem 2.4rem 2.4rem;
+  }
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  .staff-agreements-page,
+  .staff-sheet {
+    background: #fff;
+    box-shadow: none;
+    border: none;
+  }
+}

@@ -353,6 +353,13 @@ const AdminPanel = () => {
           >
             מעקב כייסים ותשלומים
           </button>
+          <button
+            type="button"
+            className="admin-staff-agreements-btn"
+            onClick={() => navigate('/admin/staff-agreements')}
+          >
+            הסכם עובדים
+          </button>
         </div>
       </div>
 

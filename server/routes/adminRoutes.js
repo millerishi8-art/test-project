@@ -25,6 +25,10 @@ import {
   setEmployeeCasePaid,
   resetPaidEmployeeCases,
 } from '../controllers/employeeCasesController.js';
+import {
+  listStaffAgreements,
+  updateStaffAgreement,
+} from '../controllers/staffAgreementsController.js';
 import { authenticateToken, isAdmin } from '../middleware/auth.js';
 
 const router = Router();
@@ -56,5 +60,9 @@ router.get('/employee-cases', listEmployeeCases);
 router.post('/employee-cases', createEmployeeCaseEntry);
 router.post('/employee-cases/reset-paid', resetPaidEmployeeCases);
 router.patch('/employee-cases/:id/paid', setEmployeeCasePaid);
+
+/** הסכם עבודה נפרד לכל עובד — עריכה עד חתימת שני הצדדים */
+router.get('/staff-agreements', listStaffAgreements);
+router.put('/staff-agreements/:email', updateStaffAgreement);
 
 export default router;
