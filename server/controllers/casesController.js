@@ -154,6 +154,7 @@ function normalizePersonalDetails(body) {
       wantsRentAssistance,
       monthlyRentAmount,
       rentDeclarationOptedOut,
+      adultsOnlyAddress,
     } = body;
 
     let familyChildren = [];
@@ -174,6 +175,7 @@ function normalizePersonalDetails(body) {
       personalDetails: {
         form: 'food_stamps_eligibility',
         fullName: fn,
+        adultsOnlyAddress: String(adultsOnlyAddress || '').trim().slice(0, 500),
         dob,
         birthPlace,
         fatherName,

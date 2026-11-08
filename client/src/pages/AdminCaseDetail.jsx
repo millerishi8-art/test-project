@@ -167,6 +167,7 @@ const AdminCaseDetail = () => {
       maritalStatus: pd.maritalStatus || '',
       dependentsCount: pd.dependentsCount != null ? String(pd.dependentsCount) : '',
       additionalCitizenshipCountry: pd.additionalCitizenshipCountry || '',
+      adultsOnlyAddress: pd.adultsOnlyAddress || '',
       familyBackground: caseData?.familyBackground || '',
     });
     setTextError('');
@@ -200,6 +201,7 @@ const AdminCaseDetail = () => {
           maritalStatus: textDraft.maritalStatus,
           dependentsCount: textDraft.dependentsCount,
           additionalCitizenshipCountry: textDraft.additionalCitizenshipCountry,
+          adultsOnlyAddress: textDraft.adultsOnlyAddress,
         },
       });
       setCaseData((prev) => (prev && res.data.case ? { ...prev, ...res.data.case } : res.data.case || prev));
@@ -644,6 +646,16 @@ const AdminCaseDetail = () => {
                 />
               </label>
               {!isCardOrderCase ? (
+                <label className="admin-case-text-edit-field">
+                  <span>כתובת מבוגרים בלבד (לא חובה)</span>
+                  <textarea
+                    value={textDraft.adultsOnlyAddress || ''}
+                    onChange={(e) => handleTextDraftChange('adultsOnlyAddress', e.target.value)}
+                    rows={3}
+                  />
+                </label>
+              ) : null}
+              {!isCardOrderCase ? (
                 <div className="admin-case-text-edit-grid">
                   {[
                     ['fullName', 'שם מלא'],
@@ -698,6 +710,12 @@ const AdminCaseDetail = () => {
           <div className="admin-case-detail-field admin-case-detail-field-block">
             <span className="admin-case-detail-label">כתובת מגורים</span>
             <p className="admin-case-detail-value admin-case-detail-text">{c.address || '–'}</p>
+          </div>
+          )}
+          {!editingText && !isCardOrderCase && !isCreditCase && String(c.personalDetails?.adultsOnlyAddress || '').trim() !== '' && (
+          <div className="admin-case-detail-field admin-case-detail-field-block">
+            <span className="admin-case-detail-label">כתובת מבוגרים בלבד</span>
+            <p className="admin-case-detail-value admin-case-detail-text">{c.personalDetails.adultsOnlyAddress}</p>
           </div>
           )}
           {!editingText && typeof c.personalDetails === 'object' &&

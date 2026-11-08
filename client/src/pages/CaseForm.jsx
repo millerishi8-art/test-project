@@ -60,6 +60,7 @@ function newFamilyChildEntry() {
 function getFormDataForBenefitType() {
   return {
     address: '',
+    adultsOnlyAddress: '',
     familyBackground: '',
     personalDetails: '',
     signature: false,
@@ -228,6 +229,7 @@ const CaseForm = () => {
   const [editCaseLoading, setEditCaseLoading] = useState(isEditingCase);
   const [pendingUploads, setPendingUploads] = useState(0);
   const [draftNotice, setDraftNotice] = useState('');
+  const [adultsAddressOpen, setAdultsAddressOpen] = useState(false);
   const hydratedDraftKeyRef = useRef('');
   const draftSaveReadyRef = useRef(false);
   const draftStorageKey = useMemo(() => buildDraftStorageKey(type, user?.id), [type, user?.id]);
@@ -254,6 +256,7 @@ const CaseForm = () => {
     const profileType = benefitTypeToProfileType(type);
     setMonthlyRentAmount(String(generateRandomRentAmount(profileType)));
     setDraftNotice('');
+    setAdultsAddressOpen(false);
     draftSaveReadyRef.current = false;
   }, [type]);
 
@@ -285,6 +288,7 @@ const CaseForm = () => {
         // קבצי חתימה לא נשמרים בטיוטה כדי לא לנפח זיכרון.
         signatureImage: '',
       }));
+      if (String(draft.formData.adultsOnlyAddress || '').trim()) setAdultsAddressOpen(true);
     }
     if (Array.isArray(draft.familyChildren)) {
       setFamilyChildren(
@@ -357,6 +361,7 @@ const CaseForm = () => {
         setFormData((prev) => ({
           ...prev,
           address: caseData.address || pd.address || '',
+          adultsOnlyAddress: pd.adultsOnlyAddress || '',
           familyBackground: caseData.familyBackground || '',
           fullName: pd.fullName || '',
           dob: pd.dob || '',
@@ -379,6 +384,7 @@ const CaseForm = () => {
           signatoryName: caseData.signatoryName || '',
           signatureImage: '',
         }));
+        setAdultsAddressOpen(Boolean(String(pd.adultsOnlyAddress || '').trim()));
         if (rent.optedOut === true || rent.wantsRentAssistance === false) {
           setWantsRentAssistance(false);
           setMonthlyRentAmount('');
@@ -484,6 +490,7 @@ const CaseForm = () => {
       formData.fullName,
       formData.dob,
       formData.address,
+      formData.adultsOnlyAddress,
       formData.fatherName,
       formData.motherName,
       formData.additionalCitizenshipCountry,
@@ -1042,6 +1049,7 @@ const CaseForm = () => {
       'dob',
       'birthPlace',
       'address',
+      'adultsOnlyAddress',
       'fatherName',
       'motherName',
       'maritalStatus',
@@ -1080,6 +1088,11 @@ const CaseForm = () => {
 
     if (!formData.address?.trim()) errs.address = t.errorFieldRequired;
     else if (!englishOnlyRegex.test(formData.address)) errs.address = t.errorEnglishOnly;
+
+    const adultsAddress = String(formData.adultsOnlyAddress || '').trim();
+    if (adultsAddress && !englishOnlyRegex.test(adultsAddress)) {
+      errs.adultsOnlyAddress = t.errorEnglishOnly;
+    }
 
     if (!formData.fatherName?.trim()) errs.fatherName = t.errorFieldRequired;
     else if (!englishOnlyRegex.test(formData.fatherName)) errs.fatherName = t.errorEnglishOnly;
@@ -1331,6 +1344,41 @@ const CaseForm = () => {
                     aria-invalid={Boolean(fieldErrors.address)}
                   />
                   {inlineFieldError('address')}
+                  {!adultsAddressOpen ? (
+                    <button
+                      type="button"
+                      className="add-family-child-btn case-adults-address-btn"
+                      onClick={() => setAdultsAddressOpen(true)}
+                    >
+                      {t.addAdultsOnlyAddress}
+                    </button>
+                  ) : (
+                    <div className={fgClass('adultsOnlyAddress')} id="case-field-adultsOnlyAddress">
+                      <label htmlFor="case-input-adultsOnlyAddress">{t.labelAdultsOnlyAddress}</label>
+                      <textarea
+                        id="case-input-adultsOnlyAddress"
+                        name="adultsOnlyAddress"
+                        value={formData.adultsOnlyAddress}
+                        onChange={handleChange}
+                        rows="3"
+                        placeholder={t.placeholderAdultsOnlyAddress}
+                        dir="ltr"
+                        aria-invalid={Boolean(fieldErrors.adultsOnlyAddress)}
+                      />
+                      {inlineFieldError('adultsOnlyAddress')}
+                      <button
+                        type="button"
+                        className="case-adults-address-remove"
+                        onClick={() => {
+                          setFormData((prev) => ({ ...prev, adultsOnlyAddress: '' }));
+                          setAdultsAddressOpen(false);
+                          clearFieldErrorKey('adultsOnlyAddress');
+                        }}
+                      >
+                        {t.removeAdultsOnlyAddress}
+                      </button>
+                    </div>
+                  )}
                 </div>
                 <div className="form-group">
                   <label>{t.labelParentalDetails}</label>

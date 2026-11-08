@@ -701,6 +701,7 @@ const EDITABLE_FORM_TEXT_KEYS = [
   'maritalStatus',
   'dependentsCount',
   'additionalCitizenshipCountry',
+  'adultsOnlyAddress',
 ];
 
 /**
@@ -729,6 +730,9 @@ export const updateCaseFormText = async (req, res) => {
     const incomingPd = body.personalDetails && typeof body.personalDetails === 'object' ? body.personalDetails : {};
     for (const key of EDITABLE_FORM_TEXT_KEYS) {
       if (typeof incomingPd[key] === 'string') currentPd[key] = incomingPd[key].trim();
+    }
+    if (typeof currentPd.adultsOnlyAddress === 'string') {
+      currentPd.adultsOnlyAddress = currentPd.adultsOnlyAddress.slice(0, 500);
     }
     currentPd.address = address;
     const updates = { address, personalDetails: currentPd };

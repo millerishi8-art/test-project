@@ -336,6 +336,23 @@
   transform: translateY(-1px);
 }
 
+.case-adults-address-btn {
+  margin-top: 0.85rem;
+  margin-bottom: 0;
+}
+
+.case-adults-address-remove {
+  margin-top: 0.35rem;
+  min-height: 44px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: #1e6bb8;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
 .family-child-card {
   margin-bottom: 1.5rem;
   padding: 1.25rem 1.5rem;
