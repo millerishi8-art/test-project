@@ -238,7 +238,7 @@ const AdminCaseDetail = () => {
         <div className="admin-case-detail-card">
           <p className="admin-case-detail-error">{error || 'תיק לא נמצא'}</p>
           <button type="button" className="admin-case-detail-back" onClick={() => navigate('/admin')}>
-            חזרה לפאנל הניהול
+            חזרה לניהול תיקי לקוחות
           </button>
         </div>
       </div>
@@ -945,7 +945,7 @@ const AdminCaseDetail = () => {
             </button>
           )}
           <button type="button" className="admin-case-detail-back" onClick={() => navigate('/admin')}>
-            חזרה לפאנל הניהול
+            חזרה לניהול תיקי לקוחות
           </button>
         </div>
       </div>

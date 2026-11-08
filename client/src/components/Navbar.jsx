@@ -71,10 +71,21 @@ const Navbar = () => {
                     {t.navAdmin}
                   </Link>
                 )}
-                {user?.canAccessCreditClients && (
+                {isAdmin && (
+                  <Link to="/admin/staff" className="navbar-link">
+                    {t.navStaff}
+                  </Link>
+                )}
+                {user?.canAccessCreditClients ? (
                   <Link to="/admin/credit-clients" className="navbar-link">
                     {t.navCreditClients}
                   </Link>
+                ) : (
+                  !isAdmin && (
+                    <Link to="/credit-agreement" className="navbar-link">
+                      {t.navCreditClients}
+                    </Link>
+                  )
                 )}
                 <span className="navbar-user">{t.navHello}, {user?.name}</span>
                 <button type="button" onClick={handleLogout} className="navbar-button">
@@ -120,10 +131,21 @@ const Navbar = () => {
                   {t.navAdmin}
                 </Link>
               )}
-              {user?.canAccessCreditClients && (
+              {isAdmin && (
+                <Link to="/admin/staff" className="navbar-drawer-link" onClick={closeMenu}>
+                  {t.navStaff}
+                </Link>
+              )}
+              {user?.canAccessCreditClients ? (
                 <Link to="/admin/credit-clients" className="navbar-drawer-link" onClick={closeMenu}>
                   {t.navCreditClients}
                 </Link>
+              ) : (
+                !isAdmin && (
+                  <Link to="/credit-agreement" className="navbar-drawer-link" onClick={closeMenu}>
+                    {t.navCreditClients}
+                  </Link>
+                )
               )}
               <button type="button" onClick={handleLogout} className="navbar-drawer-button">
                 {t.navLogout}

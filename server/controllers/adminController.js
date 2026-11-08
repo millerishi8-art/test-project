@@ -1121,6 +1121,8 @@ export const getEmployeePayouts = async (req, res) => {
       });
     }
 
+    const actorEmail = String(req.user?.email || '').trim().toLowerCase();
+    const isPrimary = isSuperAdminEmail(actorEmail);
     const employees = [...byEmployee.values()]
       .map((emp) => ({
         ...emp,
@@ -1128,7 +1130,13 @@ export const getEmployeePayouts = async (req, res) => {
         casesCount: emp.cases.length,
         totalDue: emp.cases.length * EMPLOYEE_RATE_PER_CASE_USD,
       }))
+      .filter((emp) => isPrimary || emp.email === actorEmail)
       .sort((a, b) => b.casesCount - a.casesCount);
+    const visibleHistory = isPrimary
+      ? history
+      : (history || []).filter(
+          (row) => String(row?.employeeEmail || '').trim().toLowerCase() === actorEmail
+        );
 
     return res.json({
       ratePerCase: EMPLOYEE_RATE_PER_CASE_USD,
@@ -1137,7 +1145,7 @@ export const getEmployeePayouts = async (req, res) => {
         casesCount: employees.reduce((sum, e) => sum + e.casesCount, 0),
         amountDue: employees.reduce((sum, e) => sum + e.totalDue, 0),
       },
-      history,
+      history: visibleHistory,
     });
   } catch (error) {
     console.error('getEmployeePayouts error:', error);

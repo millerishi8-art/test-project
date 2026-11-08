@@ -172,15 +172,10 @@ const AdminEmployeeCases = () => {
       <div className="admin-header">
         <h1>מעקב כייסים ותשלומים</h1>
         <p className="admin-welcome">
-          רישום כייסים לפי מנהל — <strong>ראיונות</strong> ו<strong>הגשת טפסים</strong>.
-          כל חשבון מנהל, מלבד המנהל הראשי, מופיע כאן עם השם שנשמר בחשבון.
-          סימון תשלום ואיפוס פרטני לכל מנהל — רק למנהל הראשי.
+          {isPrimaryAdmin
+            ? 'רישום כייסים לפי עובד — ראיונות והגשת טפסים. סימון תשלום ואיפוס — רק למנהל הראשי.'
+            : 'מוצגים רק הכייסים והתשלומים שלך. אפשר לרשום כייס חדש. סימון תשלום ואיפוס — רק למנהל הראשי.'}
         </p>
-        {!isPrimaryAdmin && (
-          <p className="admin-secondary-notice" role="status">
-            מנהל משנה: ניתן לרשום כייסים חדשים ולצפות בסטטוס. שינוי תשלום / איפוס פרטני — רק למנהל הראשי.
-          </p>
-        )}
         <div className="admin-header-actions">
           <button type="button" className="emp-cases-add-btn" onClick={openModal}>
             רישום כייס חדש
@@ -188,18 +183,20 @@ const AdminEmployeeCases = () => {
           <button
             type="button"
             className="admin-case-processing-btn"
-            onClick={() => navigate('/admin')}
+            onClick={() => navigate('/admin/staff')}
           >
-            חזרה לפאנל הניהול
+            חזרה לעובדים
           </button>
         </div>
       </div>
 
       <div className="admin-stats payouts-stats-top">
-        <div className="stat-card">
-          <h3>מנהלים</h3>
-          <p className="stat-number">{managers.length}</p>
-        </div>
+        {isPrimaryAdmin && (
+          <div className="stat-card">
+            <h3>עובדים</h3>
+            <p className="stat-number">{managers.length}</p>
+          </div>
+        )}
         <div className="stat-card stat-info">
           <h3>כייסים פעילים</h3>
           <p className="stat-number">{totals.casesCount}</p>
@@ -227,7 +224,9 @@ const AdminEmployeeCases = () => {
 
       <div className="emp-managers-grid">
         {managers.length === 0 ? (
-          <div className="emp-empty-state">אין מנהלים להצגה. ודא שמנהלי המשנה מוגדרים במערכת.</div>
+          <div className="emp-empty-state">
+            {isPrimaryAdmin ? 'אין עובדים להצגה.' : 'אין כייסים בחשבון הזה.'}
+          </div>
         ) : (
           managers.map((manager) => (
             <section key={manager.id || manager.email} className="emp-manager-card">

@@ -178,7 +178,7 @@ const AdminCaseProcessing = () => {
           className="admin-case-processing-back"
           onClick={() => navigate('/admin')}
         >
-          ← חזרה לפאנל ניהול
+          ← חזרה לניהול תיקי לקוחות
         </button>
       </div>
 

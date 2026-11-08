@@ -326,15 +326,14 @@ const AdminPanel = () => {
   return (
     <div className="admin-panel-container">
       <div className="admin-header">
-        <h1>פאנל ניהול</h1>
+        <h1>ניהול תיקי לקוחות</h1>
         <p className="admin-welcome">
-          כניסה כמנהל. כאן מופיעים <strong>כל התיקים</strong> וכן
-          <strong> טפסים לחידוש עתידי (חצי שנה)</strong>.
+          כאן מופיעים <strong>תיקי הלקוחות</strong>, הסטטוסים, וטפסים לחידוש עתידי (חצי שנה).
         </p>
-        <p className="admin-sub">משתמשים ותיקים במערכת — מנהל ראשי או מנהל משנה.</p>
+        <p className="admin-sub">עובדים לך על הכייס הוא תור העבודה על התיקים הפתוחים.</p>
         {sessionUser?.isSecondaryAdmin && (
           <p className="admin-secondary-notice" role="status">
-            מנהל משנה: ניהול מלא של תיקים ואישורים; <strong>מחיקת תיק</strong> מהמערכת — רק למנהל הראשי.
+            מנהל משנה: ניהול תיקי הלקוחות והעבודה עליהם. מחיקת תיק מהמערכת — רק למנהל הראשי.
           </p>
         )}
         <div className="admin-header-actions">
@@ -345,20 +344,6 @@ const AdminPanel = () => {
             title="רשימה מרוכזת – אפשר גם לעדכן סטטוס מכל תיק בכפתור סטטוס הכייס"
           >
             עובדים לך על הכייס
-          </button>
-          <button
-            type="button"
-            className="admin-employee-cases-nav-btn"
-            onClick={() => navigate('/admin/employee-cases')}
-          >
-            מעקב כייסים ותשלומים
-          </button>
-          <button
-            type="button"
-            className="admin-staff-agreements-btn"
-            onClick={() => navigate('/admin/staff-agreements')}
-          >
-            הסכם עובדים
           </button>
         </div>
       </div>

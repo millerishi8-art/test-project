@@ -144,10 +144,10 @@ const CaseStatus = () => {
         {isAdmin && (
           <p className="case-status-admin-hint">
             {language === 'he'
-              ? 'מחובר כמנהל — כל התיקים מופיעים בפאנל הניהול.'
-              : 'Signed in as admin — all cases are in the admin panel.'}{' '}
+              ? 'מחובר כמנהל — כל התיקים מופיעים בניהול תיקי לקוחות.'
+              : 'Signed in as admin — all cases are in client-case management.'}{' '}
             <button type="button" className="case-status-admin-link" onClick={() => navigate('/admin')}>
-              {language === 'he' ? 'מעבר לפאנל ניהול' : 'Open admin panel'}
+              {language === 'he' ? 'מעבר לניהול תיקי לקוחות' : 'Open client cases'}
             </button>
           </p>
         )}

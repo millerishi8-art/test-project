@@ -146,19 +146,27 @@ export const listEmployeeCases = async (req, res) => {
       return String(a.name || a.email).localeCompare(String(b.name || b.email), 'he');
     });
 
-    /* סיכומים רק לפי כייסים שמוצגים (עובדים) – בלי כייסי המנהל הראשי */
-    const visibleCases = managers.flatMap((m) => m.cases);
+    /*
+     * מנהל ראשי רואה את כל העובדים.
+     * עובד רואה רק את הכייסים והתשלומים של עצמו.
+     */
+    const viewerEmail = String(req.user?.email || '').trim().toLowerCase();
+    const isPrimary = isSuperAdminEmail(viewerEmail);
+    const visibleManagers = isPrimary
+      ? managers
+      : managers.filter((m) => m.email === viewerEmail);
+    const visibleCases = visibleManagers.flatMap((m) => m.cases);
     const unpaidTotal = visibleCases.filter((c) => !c.isPaid).length;
     const paidPendingArchive = visibleCases.filter((c) => c.isPaid).length;
 
     return res.json({
-      managers,
+      managers: visibleManagers,
       totals: {
         casesCount: visibleCases.length,
         unpaidCount: unpaidTotal,
         paidPendingArchive,
       },
-      canManagePayouts: isSuperAdminEmail(req.user?.email),
+      canManagePayouts: isPrimary,
     });
   } catch (error) {
     console.error('listEmployeeCases error:', error);

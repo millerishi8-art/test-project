@@ -84,7 +84,7 @@ const AdminCreditClients = () => {
         <p className="admin-sub">אין כאן חידוש לחצי שנה. הגישה שמורה למנהל הראשי וליוד גרונברג.</p>
         <div className="admin-header-actions">
           <button type="button" className="admin-case-processing-btn" onClick={() => navigate('/admin')}>
-            חזרה לפאנל הניהול
+            חזרה לניהול תיקי לקוחות
           </button>
         </div>
       </div>

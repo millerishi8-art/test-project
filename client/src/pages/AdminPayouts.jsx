@@ -130,9 +130,9 @@ const AdminPayouts = () => {
           <button
             type="button"
             className="admin-case-processing-btn"
-            onClick={() => navigate('/admin')}
+            onClick={() => navigate('/admin/staff')}
           >
-            חזרה לפאנל הניהול
+            חזרה לעובדים
           </button>
         </div>
       </div>

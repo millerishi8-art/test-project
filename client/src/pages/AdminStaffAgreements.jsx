@@ -205,8 +205,8 @@ export default function AdminStaffAgreements() {
               כל העובדים
             </button>
           )}
-          <button type="button" className="admin-case-processing-btn" onClick={() => navigate('/admin')}>
-            חזרה לפאנל הניהול
+          <button type="button" className="admin-case-processing-btn" onClick={() => navigate('/admin/staff')}>
+            חזרה לעובדים
           </button>
         </div>
       </div>

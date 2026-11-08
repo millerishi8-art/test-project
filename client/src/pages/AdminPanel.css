@@ -173,6 +173,20 @@
   background: linear-gradient(135deg, #a85a3c 0%, #8d4b32 100%);
 }
 
+.admin-section-back {
+  background: rgba(255, 255, 255, 0.16);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  width: 100%;
+  max-width: 360px;
+  padding: var(--space-4) var(--space-5);
+  min-height: var(--touch-min);
+  border-radius: 12px;
+  font-size: clamp(1rem, 2.5vw, 1.1rem);
+  font-weight: 600;
+  cursor: pointer;
+}
+
 .admin-credit-clients-btn {
   background: linear-gradient(135deg, #6a1b9a 0%, #4a148c 100%);
   color: white;
@@ -1015,6 +1029,7 @@
   .admin-payouts-nav-btn,
   .admin-employee-cases-nav-btn,
   .admin-staff-agreements-btn,
+  .admin-section-back,
   .admin-credit-clients-btn {
     width: auto;
     max-width: none;
@@ -1059,6 +1074,7 @@
   .admin-payouts-nav-btn,
   .admin-employee-cases-nav-btn,
   .admin-staff-agreements-btn,
+  .admin-section-back,
   .admin-credit-clients-btn {
     max-width: 100%;
     width: 100%;
