@@ -12,7 +12,8 @@ const Home = () => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { language, toggleLanguage } = useLanguage();
-  const { isAdmin } = useAuth();
+  const { user } = useAuth();
+  const canAccessClientCases = user?.canAccessClientCases === true;
   const t = homeTranslations[language];
 
   useEffect(() => {
@@ -157,7 +158,7 @@ const Home = () => {
           <p className="cube-description">{t.orderCardDesc}</p>
         </div>
 
-        {isAdmin && (
+        {canAccessClientCases && (
           <div
             className="benefit-cube admin-cube admin-cube-entry"
             onClick={handleAdminCubeClick}

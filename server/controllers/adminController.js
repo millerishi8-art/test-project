@@ -6,6 +6,7 @@ import {
   isAnyAdminPanelEmail,
   isSuperAdminEmail,
   isCreditDeskEmail,
+  canAccessInsuranceCases,
   getSecondaryAdminEmails,
 } from '../utils/adminEmails.js';
 import {
@@ -28,6 +29,25 @@ import {
 } from '../models/AdminNotice.js';
 import crypto from 'crypto';
 
+function insuranceDeskDenied(req, res) {
+  const email = String(req.user?.email || '').trim().toLowerCase();
+  if (canAccessInsuranceCases(email)) return false;
+  res.status(403).json({ error: 'אין הרשאה לתיקי לקוחות רגילים' });
+  return true;
+}
+
+function caseDeskDenied(req, res, caseData) {
+  const email = String(req.user?.email || '').trim().toLowerCase();
+  if (isCreditAgreementCase(caseData)) {
+    if (isCreditDeskEmail(email)) return false;
+    res.status(403).json({ error: 'אין הרשאה ללקוחות אשראי' });
+    return true;
+  }
+  if (canAccessInsuranceCases(email)) return false;
+  res.status(403).json({ error: 'אין הרשאה לתיקי לקוחות רגילים' });
+  return true;
+}
+
 /**
  * קבלת תיק בודד לפי מזהה (מנהל בלבד) – כולל כל פרטי הטופס
  */
@@ -38,6 +58,7 @@ export const getCaseById = async (req, res) => {
     if (!caseData) {
       return res.status(404).json({ error: 'תיק לא נמצא' });
     }
+    if (caseDeskDenied(req, res, caseData)) return;
     const users = await readUsers();
     const user = users.find((u) => u.id === caseData.userId);
     const caseWithUrls = await withSignedCaseMediaForAdmin(caseData);
@@ -57,6 +78,7 @@ export const getCaseById = async (req, res) => {
  */
 export const getAllCases = async (req, res) => {
   try {
+    if (insuranceDeskDenied(req, res)) return;
     let cases = await readCases();
     const users = await readUsers();
     const userIdSet = new Set(users.map((u) => u.id));
@@ -67,7 +89,9 @@ export const getAllCases = async (req, res) => {
       cases = await readCases();
     }
 
-    const enrichedCases = cases.map((c) => {
+    const actorSeesCredit = isCreditDeskEmail(actorEmail);
+    const visibleCases = actorSeesCredit ? cases : cases.filter((c) => !isCreditAgreementCase(c));
+    const enrichedCases = visibleCases.map((c) => {
       const user = users.find((u) => u.id === c.userId);
       return {
         ...c,
@@ -125,11 +149,16 @@ export const getCreditClients = async (req, res) => {
  */
 export const getAllUsers = async (req, res) => {
   try {
+    if (insuranceDeskDenied(req, res)) return;
+    const actorEmail = String(req.user?.email || '').trim().toLowerCase();
+    const actorSeesCredit = isCreditDeskEmail(actorEmail);
     const users = await readUsers();
     
     // בגלל שזה במערך ולולאה, נעשה את זה בצורה אסינכרונית בטוחה
     const enrichedUsers = await Promise.all(users.map(async (user) => {
-      const userCases = await findCasesByUserId(user.id);
+      const userCases = (await findCasesByUserId(user.id)).filter(
+        (c) => actorSeesCredit || !isCreditAgreementCase(c)
+      );
       return {
         id: user.id,
         name: user.name,
@@ -168,6 +197,7 @@ export const patchUserDeferredPayment = async (req, res) => {
     if (!isAnyAdminPanelEmail(actorEmail)) {
       return res.status(403).json({ error: 'נדרשת הרשאת מנהל' });
     }
+    if (insuranceDeskDenied(req, res)) return;
     const { id } = req.params;
     const body = req.body || {};
     const user = await findUserById(id);
@@ -341,6 +371,7 @@ export const updateCaseHraDetails = async (req, res) => {
     if (!caseData) {
       return res.status(404).json({ error: 'תיק לא נמצא' });
     }
+    if (caseDeskDenied(req, res, caseData)) return;
 
     const prev =
       caseData.hraDetails && typeof caseData.hraDetails === 'object' ? caseData.hraDetails : {};
@@ -453,6 +484,7 @@ export const addCaseInterimNote = async (req, res) => {
     if (!caseData) {
       return res.status(404).json({ error: 'תיק לא נמצא' });
     }
+    if (caseDeskDenied(req, res, caseData)) return;
 
     const { authorEmail, authorName } = await resolveActorName(req);
 
@@ -517,6 +549,7 @@ export const updateCaseInterimNote = async (req, res) => {
     if (!caseData) {
       return res.status(404).json({ error: 'תיק לא נמצא' });
     }
+    if (caseDeskDenied(req, res, caseData)) return;
 
     const prev = normalizeInterimNotes(caseData.interimNotes);
     const idx = prev.findIndex((n) => String(n.id) === String(noteId));
@@ -569,6 +602,7 @@ export const deleteCaseInterimNote = async (req, res) => {
     if (!caseData) {
       return res.status(404).json({ error: 'תיק לא נמצא' });
     }
+    if (caseDeskDenied(req, res, caseData)) return;
 
     const prev = normalizeInterimNotes(caseData.interimNotes);
     const idx = prev.findIndex((n) => String(n.id) === String(noteId));
@@ -629,6 +663,7 @@ export const updateCaseStatus = async (req, res) => {
     if (!caseData) {
       return res.status(404).json({ error: 'תיק לא נמצא' });
     }
+    if (caseDeskDenied(req, res, caseData)) return;
     const actorEmail = (req.user?.email || '').trim().toLowerCase();
     const payload = { status };
     const creditCase = isCreditAgreementCase(caseData);
@@ -681,6 +716,7 @@ export const updateCaseFormText = async (req, res) => {
     if (!caseData) {
       return res.status(404).json({ error: 'תיק לא נמצא' });
     }
+    if (caseDeskDenied(req, res, caseData)) return;
     const body = req.body || {};
     const address = typeof body.address === 'string' ? body.address.trim() : '';
     if (!address) {
@@ -753,6 +789,7 @@ export const confirmCaseCompleted = async (req, res) => {
     if (!caseData) {
       return res.status(404).json({ error: 'תיק לא נמצא' });
     }
+    if (caseDeskDenied(req, res, caseData)) return;
     /* אידמפוטנטי: אישור חוזר לא דורס את שיוך העובד ולא מאפס תשלום ששולם */
     if (caseData.adminConfirmedCompleted === true) {
       return res.json({ message: 'הקייס כבר אושר כהושלם', case: caseData });
@@ -931,6 +968,7 @@ export const updateCaseProcessing = async (req, res) => {
     if (!caseData) {
       return res.status(404).json({ error: 'תיק לא נמצא' });
     }
+    if (caseDeskDenied(req, res, caseData)) return;
 
     const prevStage = previousProcessingStageNumber(caseData);
     const wantsClear =
@@ -1295,6 +1333,7 @@ export const deleteCasePermanent = async (req, res) => {
 export const getUnseenAdminNotices = async (req, res) => {
   try {
     const email = (req.user?.email || '').trim().toLowerCase();
+    if (!canAccessInsuranceCases(email)) return res.json({ notices: [] });
     const notices = await listUnseenAdminNotices(email);
     return res.json({ notices });
   } catch (error) {

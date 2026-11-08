@@ -130,7 +130,7 @@ function App() {
               <Route
                 path="/admin"
                 element={
-                  <ProtectedRoute adminOnly>
+                  <ProtectedRoute adminOnly clientCasesOnly>
                     <AdminPanel />
                   </ProtectedRoute>
                 }
@@ -138,7 +138,7 @@ function App() {
               <Route
                 path="/admin/cases/:caseId"
                 element={
-                  <ProtectedRoute adminOnly>
+                  <ProtectedRoute adminOnly clientCasesOnly>
                     <AdminCaseDetail />
                   </ProtectedRoute>
                 }
@@ -146,7 +146,7 @@ function App() {
               <Route
                 path="/admin/case-processing"
                 element={
-                  <ProtectedRoute adminOnly>
+                  <ProtectedRoute adminOnly clientCasesOnly>
                     <AdminCaseProcessing />
                   </ProtectedRoute>
                 }

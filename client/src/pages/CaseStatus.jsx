@@ -85,7 +85,8 @@ function getTimelineSteps(c, t) {
 const CaseStatus = () => {
   const navigate = useNavigate();
   const { language, toggleLanguage } = useLanguage();
-  const { isAdmin } = useAuth();
+  const { user } = useAuth();
+  const canAccessClientCases = user?.canAccessClientCases === true;
   const t = caseStatusTranslations[language];
   const [cases, setCases] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -141,7 +142,7 @@ const CaseStatus = () => {
       <div className="case-status-card">
         <h1>{t.pageTitle}</h1>
         <p className="case-status-subtitle">{t.pageSubtitle}</p>
-        {isAdmin && (
+        {canAccessClientCases && (
           <p className="case-status-admin-hint">
             {language === 'he'
               ? 'מחובר כמנהל — כל התיקים מופיעים בניהול תיקי לקוחות.'

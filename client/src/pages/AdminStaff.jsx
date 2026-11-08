@@ -6,6 +6,7 @@ export default function AdminStaff() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const isPrimary = user?.isPrimaryAdmin === true;
+  const canAccessClientCases = user?.canAccessClientCases === true;
 
   return (
     <div className="admin-panel-container">
@@ -31,9 +32,11 @@ export default function AdminStaff() {
           >
             הסכם עובדים
           </button>
-          <button type="button" className="admin-section-back" onClick={() => navigate('/admin')}>
-            חזרה לניהול תיקי לקוחות
-          </button>
+          {canAccessClientCases && (
+            <button type="button" className="admin-section-back" onClick={() => navigate('/admin')}>
+              חזרה לניהול תיקי לקוחות
+            </button>
+          )}
         </div>
       </div>
     </div>

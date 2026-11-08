@@ -83,6 +83,18 @@ export function isCreditDeskEmail(email) {
   return CREDIT_DESK_EMAILS.includes(e);
 }
 
+/** יוד גרונברג נכנס רק ללקוחות אשראי, בלי תיקי הלקוחות הרגילים */
+export function isCreditOnlyStaffEmail(email) {
+  return CREDIT_DESK_EMAILS.includes(normalizeEmail(email));
+}
+
+/** תיקי לקוחות רגילים: מנהל ראשי וכל העובדים, מלבד יוד */
+export function canAccessInsuranceCases(email) {
+  if (isSuperAdminEmail(email)) return true;
+  if (!isSecondaryAdminEmail(email)) return false;
+  return !isCreditOnlyStaffEmail(email);
+}
+
 /** גישה לפאנל /api/admin — מנהל ראשי או משנה */
 export function isAnyAdminPanelEmail(email) {
   return isSuperAdminEmail(email) || isSecondaryAdminEmail(email);

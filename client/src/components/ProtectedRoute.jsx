@@ -1,7 +1,7 @@
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
-const ProtectedRoute = ({ children, adminOnly = false, creditDeskOnly = false }) => {
+const ProtectedRoute = ({ children, adminOnly = false, creditDeskOnly = false, clientCasesOnly = false }) => {
   const { isAuthenticated, isAdmin, user, loading } = useAuth();
 
   if (loading) {
@@ -28,7 +28,14 @@ const ProtectedRoute = ({ children, adminOnly = false, creditDeskOnly = false })
   }
 
   if (creditDeskOnly && user?.canAccessCreditClients !== true) {
-    return <Navigate to={isAdmin ? '/admin' : '/dashboard'} replace />;
+    return <Navigate to={user?.canAccessClientCases ? '/admin' : '/dashboard'} replace />;
+  }
+
+  if (clientCasesOnly && user?.canAccessClientCases !== true) {
+    if (user?.canAccessCreditClients === true) {
+      return <Navigate to="/admin/credit-clients" replace />;
+    }
+    return <Navigate to={isAdmin ? '/admin/staff' : '/dashboard'} replace />;
   }
 
   return children;

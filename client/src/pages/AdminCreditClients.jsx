@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { useAuth } from '../context/AuthContext.jsx';
 import CreditAgreementSheet from '../components/CreditAgreementSheet.jsx';
 import { idDocLabel } from '../data/creditAgreement';
 import './AdminPanel.css';
@@ -26,6 +27,7 @@ function formatDate(dateString) {
 
 const AdminCreditClients = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -83,9 +85,11 @@ const AdminCreditClients = () => {
         </p>
         <p className="admin-sub">אין כאן חידוש לחצי שנה. הגישה שמורה למנהל הראשי וליוד גרונברג.</p>
         <div className="admin-header-actions">
-          <button type="button" className="admin-case-processing-btn" onClick={() => navigate('/admin')}>
-            חזרה לניהול תיקי לקוחות
-          </button>
+          {user?.canAccessClientCases && (
+            <button type="button" className="admin-case-processing-btn" onClick={() => navigate('/admin')}>
+              חזרה לניהול תיקי לקוחות
+            </button>
+          )}
         </div>
       </div>
 
