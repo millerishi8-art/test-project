@@ -183,7 +183,7 @@ const AdminCaseDetail = () => {
     if (!textDraft || textSaving) return;
     const address = String(textDraft.address || '').trim();
     if (!address) {
-      setTextError('כתובת המגורים לא יכולה להיות ריקה.');
+      setTextError('כתובת למשלוח הכרטיס לא יכולה להיות ריקה.');
       return;
     }
     setTextSaving(true);
@@ -637,7 +637,7 @@ const AdminCaseDetail = () => {
           {editingText && textDraft ? (
             <form className="admin-case-text-edit" onSubmit={saveTextEdit}>
               <label className="admin-case-text-edit-field">
-                <span>כתובת מגורים</span>
+                <span>כתובת למשלוח הכרטיס בלבד</span>
                 <textarea
                   value={textDraft.address}
                   onChange={(e) => handleTextDraftChange('address', e.target.value)}
@@ -708,7 +708,7 @@ const AdminCaseDetail = () => {
           ) : null}
           {!editingText && !isCardOrderCase && !isCreditCase && (
           <div className="admin-case-detail-field admin-case-detail-field-block">
-            <span className="admin-case-detail-label">כתובת מגורים</span>
+            <span className="admin-case-detail-label">כתובת למשלוח הכרטיס בלבד</span>
             <p className="admin-case-detail-value admin-case-detail-text">{c.address || '–'}</p>
           </div>
           )}

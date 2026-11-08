@@ -721,7 +721,7 @@ export const updateCaseFormText = async (req, res) => {
     const body = req.body || {};
     const address = typeof body.address === 'string' ? body.address.trim() : '';
     if (!address) {
-      return res.status(400).json({ error: 'כתובת המגורים לא יכולה להיות ריקה.' });
+      return res.status(400).json({ error: 'כתובת למשלוח הכרטיס לא יכולה להיות ריקה.' });
     }
     const currentPd =
       caseData.personalDetails && typeof caseData.personalDetails === 'object' && !Array.isArray(caseData.personalDetails)
