@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 import HraDetailsModal, { hasHraContent } from '../components/HraDetailsModal.jsx';
 import { CaseInterimNotesButton } from '../components/CaseInterimNotes.jsx';
 import CaseStatusModal from '../components/CaseStatusModal.jsx';
+import CaseProcessingTimer from '../components/CaseProcessingTimer.jsx';
 import {
   getCaseStageToneClass,
   isOnSixMonthRenewalTrack,
@@ -503,6 +504,7 @@ const AdminPanel = () => {
                                       <span className={`status-badge ${caseItem.status || ''}`}>
                                         {statusLabel(caseItem.status)}
                                       </span>
+                                      <CaseProcessingTimer caseItem={caseItem} compact />
                                     </td>
                                     <td data-label="פעולות">
                                       <div className="admin-actions-cell">
@@ -672,6 +674,7 @@ const AdminPanel = () => {
                         <span className={`status-badge ${caseItem.status}`}>
                           {statusLabel(caseItem.status)}
                         </span>
+                        <CaseProcessingTimer caseItem={caseItem} compact />
                       </td>
                       <td data-label="פעולות">
                         <div className="admin-actions-cell">

@@ -856,6 +856,16 @@ const DEFAULT_STAFF_PHONES = {
   'lapidwoldenberg@gmail.com': '0545882718', // לפיד וולדנברג
 };
 
+/** הטיימר רץ מפתיחת הבקשה ונעצר ב«הוגשו טפסים» ומעלה. ביטול השלב מחדש אותו. */
+function processingTimerFields(caseData, stageNum) {
+  if (stageNum >= 3) {
+    if (caseData?.processingTimerStoppedAt) return {};
+    if (previousProcessingStageNumber(caseData) >= 3) return {};
+    return { processingTimerStoppedAt: new Date().toISOString() };
+  }
+  return { processingTimerStoppedAt: null };
+}
+
 /**
  * מחזיר את מספר שלב העיבוד הנוכחי (1–5) או 0 אם אין שלב.
  * מזהה גם את הנוסח הקצר וגם את הנוסח הארוך הישן.
@@ -991,6 +1001,7 @@ export const updateCaseProcessing = async (req, res) => {
         rejectionReason: null,
         approvedBenefits: null,
         status: CASE_STATUS.PENDING,
+        processingTimerStoppedAt: null,
       });
       const { authorName } = await resolveActorName(req);
       await recordAdminCaseChange({
@@ -1021,6 +1032,7 @@ export const updateCaseProcessing = async (req, res) => {
         rejectionReason: null,
         approvedBenefits: null,
         status: CASE_STATUS.PENDING,
+        processingTimerStoppedAt: null,
       });
       const { authorName } = await resolveActorName(req);
       await recordAdminCaseChange({
@@ -1040,7 +1052,7 @@ export const updateCaseProcessing = async (req, res) => {
     }
 
     const detailedAdminStatus = PROCESSING_STAGES[stageNum];
-    const updates = { detailedAdminStatus };
+    const updates = { detailedAdminStatus, ...processingTimerFields(caseData, stageNum) };
     if (stageNum === 4) {
       const reason = (rejectionReason || '').trim();
       if (!reason) {

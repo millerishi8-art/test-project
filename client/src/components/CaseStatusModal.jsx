@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { explicitStageNumberFromLabel, getCaseStageToneClass, shortStageLabel } from '../utils/caseProcessingStages';
+import CaseProcessingTimer from './CaseProcessingTimer';
 import '../styles/caseStageTones.css';
 import '../pages/AdminCaseProcessing.css';
 import './CaseStatusModal.css';
@@ -198,6 +199,8 @@ export default function CaseStatusModal({ caseItem: initialCase, onClose, onUpda
               <span className="case-status-modal-current-label">סטטוס נוכחי</span>
               <strong className="case-status-modal-current-value">{currentStageLabel(caseItem)}</strong>
             </div>
+
+            <CaseProcessingTimer caseItem={caseItem} />
 
             <p className="case-status-modal-hint">
               לחיצה על שלב מעדכנת את הסטטוס ושולחת התראות לעובדים. לחיצה שנייה על שלב פעיל מבטלת

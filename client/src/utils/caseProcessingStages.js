@@ -106,6 +106,49 @@ export function clientCanEditSubmittedCase(c) {
  * לחיצה שנייה מבטלת את השלב — בלי תווית אין צבע, והמסגרת חוזרת ללבן.
  * סטטוס «ממתין» לבדו לא צובע את התיק.
  */
+const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+
+/**
+ * טיימר מפתיחת הבקשה. נעצר בשלב «הוגשו טפסים» ומעלה.
+ * אחרי שבוע: כתום. אחרי שבועיים: אדום.
+ */
+export function caseProcessingTimer(caseItem, now = Date.now()) {
+  const start = new Date(caseItem?.createdAt || 0).getTime();
+  if (!start || Number.isNaN(start)) return null;
+  const stage = getProcessingStageNumber(caseItem);
+  const stopped = stage >= 3;
+  const storedStop = new Date(caseItem?.processingTimerStoppedAt || 0).getTime();
+  const hasStoredStop = Boolean(storedStop) && !Number.isNaN(storedStop);
+  const end = stopped ? (hasStoredStop ? storedStop : start) : now;
+  const elapsed = Math.max(0, end - start);
+  let tone = 'ok';
+  if (!stopped || hasStoredStop) {
+    if (elapsed >= 2 * WEEK_MS) tone = 'late';
+    else if (elapsed >= WEEK_MS) tone = 'warn';
+  }
+  return { elapsed, tone, stopped, hasDuration: !stopped || hasStoredStop };
+}
+
+function hebrewCount(n, one, two, many) {
+  if (n === 1) return one;
+  if (n === 2) return two;
+  return `${n} ${many}`;
+}
+
+export function formatProcessingElapsed(ms) {
+  const totalMinutes = Math.max(0, Math.floor(Number(ms) / 60000));
+  const days = Math.floor(totalMinutes / (60 * 24));
+  const hours = Math.floor((totalMinutes - days * 60 * 24) / 60);
+  const minutes = totalMinutes % 60;
+  const parts = [];
+  if (days > 0) parts.push(hebrewCount(days, 'יום', 'יומיים', 'ימים'));
+  if (hours > 0) parts.push(hebrewCount(hours, 'שעה', 'שעתיים', 'שעות'));
+  if (minutes > 0 && days === 0) parts.push(hebrewCount(minutes, 'דקה', 'שתי דקות', 'דקות'));
+  if (parts.length === 0) return 'פחות מדקה';
+  if (parts.length === 1) return parts[0];
+  return `${parts.slice(0, -1).join(', ')} ו־${parts[parts.length - 1]}`;
+}
+
 export function getCaseStageToneClass(c) {
   if (!c) return '';
   const d = (c.detailedAdminStatus || '').trim();

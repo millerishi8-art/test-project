@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { explicitStageNumberFromLabel, getCaseStageToneClass, shortStageLabel } from '../utils/caseProcessingStages';
+import CaseProcessingTimer from '../components/CaseProcessingTimer';
 import '../styles/caseStageTones.css';
 import './AdminPanel.css';
 import './AdminCaseProcessing.css';
@@ -228,6 +229,7 @@ const AdminCaseProcessing = () => {
                     <span className="admin-processing-current-status">
                       {currentStageLabel(caseItem)}
                     </span>
+                    <CaseProcessingTimer caseItem={caseItem} compact />
                   </td>
                   <td data-label="שלבי עיבוד">
                     <div className="admin-processing-buttons">
