@@ -98,12 +98,11 @@ export function processingChangeSteps({
     steps.push(`סיבת הסגירה: ${rejectionReason}`);
   }
   if (stageNum === 5 && approvedBenefits && typeof approvedBenefits === 'object') {
-    const bits = [];
-    if (approvedBenefits.rentAssistance) bits.push(`שכר דירה: ${approvedBenefits.rentAssistance}`);
-    if (approvedBenefits.foodStamps) bits.push(`תלושי מזון: ${approvedBenefits.foodStamps}`);
-    if (approvedBenefits.financialAid) bits.push(`מזומן לכרטיס: ${approvedBenefits.financialAid}`);
-    if (approvedBenefits.totalDeposited) bits.push(`סה״כ שהופקד: ${approvedBenefits.totalDeposited}`);
-    if (bits.length) steps.push(`פרטי אישור: ${bits.join(' · ')}`);
+    if (approvedBenefits.renewalDate) {
+      const [y, m, d] = String(approvedBenefits.renewalDate).split('-');
+      if (y && m && d) steps.push(`מועד חידוש: ${d}.${m}.${y}`);
+    }
+    if (approvedBenefits.amountImagePath) steps.push('צורפה תמונה של הסכום שאושר לכייס.');
   }
   return steps;
 }

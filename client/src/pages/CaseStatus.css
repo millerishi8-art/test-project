@@ -285,6 +285,16 @@
   min-width: 140px;
 }
 
+.case-status-approved-image {
+  display: block;
+  flex: 1 1 100%;
+  width: min(100%, 360px);
+  margin-top: 0.35rem;
+  border-radius: 8px;
+  border: 1px solid #a5d6a7;
+  background: #fff;
+}
+
 .case-status-benefit-value {
   color: #1b5e20;
 }

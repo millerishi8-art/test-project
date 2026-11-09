@@ -66,6 +66,17 @@ export async function withSignedCaseMediaForAdmin(caseData, expiresSec = ADMIN_M
     );
   }
 
+  if (caseData.approvedBenefits && typeof caseData.approvedBenefits === 'object') {
+    const benefits = caseData.approvedBenefits;
+    const amountImageUrl = benefits.amountImagePath
+      ? await signMediaIfStoragePath(benefits.amountImagePath, expiresSec)
+      : null;
+    out.approvedBenefits = {
+      ...benefits,
+      amountImageUrl: amountImageUrl || null,
+    };
+  }
+
   /* פרטי HRA – נתיבי storage נשארים; imageUrl/fileUrl לחתימה זמנית לתצוגה */
   if (caseData.hraDetails && typeof caseData.hraDetails === 'object') {
     const h = caseData.hraDetails;

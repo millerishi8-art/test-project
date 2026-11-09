@@ -26,7 +26,7 @@ import {
   parseYyyyMmDd,
   utcTodayYyyyMmDd,
 } from '../utils/deferredPaymentDates.js';
-import { withSignedCaseMediaForAdmin } from '../utils/caseMediaUrls.js';
+import { signMediaIfStoragePath, withSignedCaseMediaForAdmin } from '../utils/caseMediaUrls.js';
 import {
   CREDIT_AGREEMENT_TEXT,
   CREDIT_AGREEMENT_TYPE,
@@ -717,7 +717,18 @@ export const getMyCases = async (req, res) => {
   try {
     await connectToDatabase();
     const userCases = await findCasesByUserId(req.user.id);
-    res.json(userCases);
+    const withApprovalImage = await Promise.all(
+      userCases.map(async (c) => {
+        const path = c?.approvedBenefits?.amountImagePath;
+        if (!path) return c;
+        const amountImageUrl = await signMediaIfStoragePath(path);
+        return {
+          ...c,
+          approvedBenefits: { ...c.approvedBenefits, amountImageUrl: amountImageUrl || null },
+        };
+      })
+    );
+    res.json(withApprovalImage);
   } catch (error) {
     console.error('Error fetching user cases:', error);
     res.status(500).json({ error: 'שגיאה בשליפת התיקים' });

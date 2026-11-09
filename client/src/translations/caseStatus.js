@@ -52,6 +52,8 @@ export const caseStatusTranslations = {
     benefitFoodStamps: 'תלושי מזון',
     benefitFinancialAid: 'מזומן לכרטיס',
     benefitTotalDeposited: 'סה״כ כסף שנכנס לחשבון',
+    benefitExactRenewal: 'מועד מדויק לחידוש הכייס',
+    benefitApprovedAmount: 'הסכום שאושר לכייס',
   },
   en: {
     pageTitle: 'Case Status',
@@ -102,5 +104,7 @@ export const caseStatusTranslations = {
     benefitFoodStamps: 'Food stamps',
     benefitFinancialAid: 'Cash to card',
     benefitTotalDeposited: 'Total money deposited into account',
+    benefitExactRenewal: 'Exact case renewal date',
+    benefitApprovedAmount: 'Approved amount for the case',
   },
 };

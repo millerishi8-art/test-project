@@ -189,6 +189,24 @@ const CaseStatus = () => {
                             {step.desc ? <span className="timeline-desc">{step.desc}</span> : null}
                             {step.key === '5' && step.state === 'completed' && c.approvedBenefits && (
                               <div className="case-status-approved-benefits">
+                                {c.approvedBenefits.renewalDate ? (
+                                  <div className="case-status-benefit-row">
+                                    <span className="case-status-benefit-label">{t.benefitExactRenewal}:</span>
+                                    <span className="case-status-benefit-value">
+                                      {new Date(`${c.approvedBenefits.renewalDate}T12:00:00.000Z`).toLocaleDateString(locale, { timeZone: 'UTC' })}
+                                    </span>
+                                  </div>
+                                ) : null}
+                                {c.approvedBenefits.amountImageUrl ? (
+                                  <div className="case-status-benefit-row">
+                                    <span className="case-status-benefit-label">{t.benefitApprovedAmount}:</span>
+                                    <img
+                                      src={c.approvedBenefits.amountImageUrl}
+                                      alt={t.benefitApprovedAmount}
+                                      className="case-status-approved-image"
+                                    />
+                                  </div>
+                                ) : null}
                                 {c.approvedBenefits.rentAssistance != null && String(c.approvedBenefits.rentAssistance).trim() !== '' && (
                                   <div className="case-status-benefit-row">
                                     <span className="case-status-benefit-label">{t.benefitRentAssistance}:</span>

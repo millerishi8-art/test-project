@@ -295,6 +295,35 @@
   padding: 0.5rem 0.75rem;
 }
 
+.case-approval-date {
+  direction: ltr;
+  text-align: right;
+}
+
+.case-approval-file {
+  font: inherit;
+}
+
+.case-approval-note {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #546e7a;
+}
+
+.case-approval-note-error {
+  color: #b71c1c;
+}
+
+.case-approval-preview {
+  display: block;
+  width: 100%;
+  max-height: 220px;
+  object-fit: contain;
+  border-radius: 10px;
+  border: 1px solid #cfd8dc;
+  background: #fff;
+}
+
 .admin-processing-modal-approve {
   padding: 0.65rem 1.25rem;
   min-height: var(--touch-min);

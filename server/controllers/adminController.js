@@ -1065,20 +1065,25 @@ export const updateCaseProcessing = async (req, res) => {
         Object.assign(updates, sixMonthRenewalFields(caseData, (req.user?.email || '').trim().toLowerCase()));
       }
     } else if (stageNum === 5) {
+      const renewalYmd = parseYyyyMmDd(approvedBenefitsRaw?.renewalDate);
+      const amountImagePath = String(approvedBenefitsRaw?.amountImagePath || '').trim();
+      if (!renewalYmd) {
+        return res.status(400).json({ error: 'נא לבחור מועד מדויק לחידוש הכייס.' });
+      }
+      if (!isStoragePath(amountImagePath)) {
+        return res.status(400).json({ error: 'נא להעלות תמונה של הסכום שאושר לכייס.' });
+      }
       updates.status = CASE_STATUS.APPROVED;
       updates.rejectionReason = null;
-      if (approvedBenefitsRaw && typeof approvedBenefitsRaw === 'object') {
-        updates.approvedBenefits = {
-          rentAssistance: approvedBenefitsRaw.rentAssistance != null ? String(approvedBenefitsRaw.rentAssistance).trim() : '',
-          foodStamps: approvedBenefitsRaw.foodStamps != null ? String(approvedBenefitsRaw.foodStamps).trim() : '',
-          financialAid: approvedBenefitsRaw.financialAid != null ? String(approvedBenefitsRaw.financialAid).trim() : '',
-          totalDeposited: approvedBenefitsRaw.totalDeposited != null ? String(approvedBenefitsRaw.totalDeposited).trim() : '',
-        };
-      } else {
-        updates.approvedBenefits = null;
-      }
+      updates.approvedBenefits = {
+        renewalDate: renewalYmd,
+        amountImagePath,
+      };
+      const exactRenewalIso = new Date(`${renewalYmd}T12:00:00.000Z`).toISOString();
+      updates.renewalDate = exactRenewalIso;
       if (!isCreditAgreementCase(caseData)) {
         Object.assign(updates, sixMonthRenewalFields(caseData, (req.user?.email || '').trim().toLowerCase()));
+        updates.renewalDate = exactRenewalIso;
       }
     } else {
       updates.status = CASE_STATUS.PENDING;
@@ -1098,8 +1103,12 @@ export const updateCaseProcessing = async (req, res) => {
       rejectionReason: updates.rejectionReason,
       approvedBenefits: updates.approvedBenefits,
     });
-    if (stageNum === 4 || stageNum === 5) {
+    if (stageNum === 4) {
       noticeSteps.push('מה לעשות: הכייס הועבר אוטומטית לחידוש בעוד חצי שנה. ביטול המסלול רק במחיקת התיק.');
+    }
+    if (stageNum === 5 && updates.approvedBenefits?.renewalDate) {
+      const [y, m, d] = String(updates.approvedBenefits.renewalDate).split('-');
+      noticeSteps.push(`מה לעשות: מועד החידוש נקבע ל־${d}.${m}.${y}. ביטול המסלול רק במחיקת התיק.`);
     }
     await recordAdminCaseChange({
       req,

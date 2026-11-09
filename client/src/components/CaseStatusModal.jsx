@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { explicitStageNumberFromLabel, getCaseStageToneClass, shortStageLabel } from '../utils/caseProcessingStages';
 import CaseProcessingTimer from './CaseProcessingTimer';
+import CaseApprovalFields from './CaseApprovalFields';
 import '../styles/caseStageTones.css';
 import '../pages/AdminCaseProcessing.css';
 import './CaseStatusModal.css';
@@ -53,12 +54,9 @@ export default function CaseStatusModal({ caseItem: initialCase, onClose, onUpda
   const [error, setError] = useState('');
   const [subView, setSubView] = useState(null); // null | 'reject' | 'approve'
   const [rejectionReason, setRejectionReason] = useState('');
-  const [benefits, setBenefits] = useState({
-    rentAssistance: '',
-    foodStamps: '',
-    financialAid: '',
-    totalDeposited: '',
-  });
+  const [renewalDate, setRenewalDate] = useState('');
+  const [amountImagePath, setAmountImagePath] = useState('');
+  const [amountPreview, setAmountPreview] = useState('');
 
   useEffect(() => {
     setCaseItem(initialCase);
@@ -102,7 +100,9 @@ export default function CaseStatusModal({ caseItem: initialCase, onClose, onUpda
       setMessage(res.data?.cleared ? 'שלב העיבוד בוטל.' : 'סטטוס העיבוד עודכן בהצלחה.');
       setSubView(null);
       setRejectionReason('');
-      setBenefits({ rentAssistance: '', foodStamps: '', financialAid: '', totalDeposited: '' });
+      setRenewalDate('');
+      setAmountImagePath('');
+      setAmountPreview('');
     } catch (err) {
       setError(err.response?.data?.error || 'שגיאה בעדכון הסטטוס');
     } finally {
@@ -140,13 +140,18 @@ export default function CaseStatusModal({ caseItem: initialCase, onClose, onUpda
   };
 
   const handleApprovalSubmit = () => {
-    const next = {
-      rentAssistance: benefits.rentAssistance.trim(),
-      foodStamps: benefits.foodStamps.trim(),
-      financialAid: benefits.financialAid.trim(),
-      totalDeposited: benefits.totalDeposited.trim(),
-    };
-    submitProcessing({ stage: 5, approvedBenefits: next });
+    if (!renewalDate) {
+      setError('נא לבחור מועד מדויק לחידוש הכייס.');
+      return;
+    }
+    if (!amountImagePath) {
+      setError('נא להעלות תמונה של הסכום שאושר לכייס.');
+      return;
+    }
+    submitProcessing({
+      stage: 5,
+      approvedBenefits: { renewalDate, amountImagePath },
+    });
   };
 
   const onOverlayClick = (e) => {
@@ -279,68 +284,21 @@ export default function CaseStatusModal({ caseItem: initialCase, onClose, onUpda
 
         {subView === 'approve' && (
           <div className="case-status-modal-sub">
-            <h3>הכייס אושר – פרטי הטבות</h3>
+            <h3>הכייס אושר</h3>
             <p className="admin-processing-modal-desc">
-              הפרטים יוצגו ללקוח בדף סטטוס הכייס תחת שלב &quot;הכייס אושר&quot;.
+              המועד והתמונה יוצגו ללקוח בדף סטטוס הכייס תחת שלב &quot;הכייס אושר&quot;.
             </p>
-            <div className="admin-processing-benefits-form">
-              <label htmlFor="case-status-approval-rent">סיוע בשכר דירה (כן/לא או סכום)</label>
-              <input
-                id="case-status-approval-rent"
-                type="text"
-                className="admin-processing-modal-input"
-                placeholder="למשל: כן / ₪500"
-                dir="rtl"
-                value={benefits.rentAssistance}
-                onChange={(e) => setBenefits((b) => ({ ...b, rentAssistance: e.target.value }))}
-                disabled={busy}
-              />
-              <label htmlFor="case-status-approval-food">תלושי מזון (כן/לא או סכום)</label>
-              <input
-                id="case-status-approval-food"
-                type="text"
-                className="admin-processing-modal-input"
-                placeholder="למשל: כן / לא"
-                dir="rtl"
-                value={benefits.foodStamps}
-                onChange={(e) => setBenefits((b) => ({ ...b, foodStamps: e.target.value }))}
-                disabled={busy}
-              />
-              <label htmlFor="case-status-approval-financial">מזומן לכרטיס (סכום)</label>
-              <input
-                id="case-status-approval-financial"
-                type="text"
-                className="admin-processing-modal-input"
-                placeholder="1200 $"
-                dir="rtl"
-                value={benefits.financialAid}
-                onChange={(e) => setBenefits((b) => ({ ...b, financialAid: e.target.value }))}
-                onBlur={(e) => {
-                  const v = e.target.value.trim();
-                  if (v && !v.endsWith(' $')) {
-                    setBenefits((b) => ({ ...b, financialAid: `${v} $` }));
-                  }
-                }}
-                disabled={busy}
-              />
-              <label htmlFor="case-status-approval-total">סה״כ כסף שנכנס לחשבון</label>
-              <input
-                id="case-status-approval-total"
-                type="text"
-                className="admin-processing-modal-input"
-                placeholder="2000 $"
-                dir="rtl"
-                value={benefits.totalDeposited}
-                onChange={(e) => setBenefits((b) => ({ ...b, totalDeposited: e.target.value }))}
-                onBlur={(e) => {
-                  const v = e.target.value.trim();
-                  if (v && !v.endsWith(' $')) {
-                    setBenefits((b) => ({ ...b, totalDeposited: `${v} $` }));
-                  }
-                }}
-                disabled={busy}
-              />
-            </div>
+            <CaseApprovalFields
+              idPrefix="case-status-approval"
+              renewalDate={renewalDate}
+              onRenewalDateChange={setRenewalDate}
+              amountPreview={amountPreview}
+              onAmountImagePath={(path, preview) => {
+                setAmountImagePath(path);
+                setAmountPreview(preview || '');
+              }}
+              disabled={busy}
+            />
             <div className="admin-processing-modal-actions">
               <button
                 type="button"

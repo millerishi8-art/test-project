@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { explicitStageNumberFromLabel, getCaseStageToneClass, shortStageLabel } from '../utils/caseProcessingStages';
 import CaseProcessingTimer from '../components/CaseProcessingTimer';
+import CaseApprovalFields from '../components/CaseApprovalFields';
 import '../styles/caseStageTones.css';
 import './AdminPanel.css';
 import './AdminCaseProcessing.css';
@@ -25,6 +26,9 @@ const AdminCaseProcessing = () => {
   const [successMessage, setSuccessMessage] = useState('');
   const [rejectionModal, setRejectionModal] = useState(null);
   const [approvalModal, setApprovalModal] = useState(null);
+  const [renewalDate, setRenewalDate] = useState('');
+  const [amountImagePath, setAmountImagePath] = useState('');
+  const [amountPreview, setAmountPreview] = useState('');
 
   useEffect(() => {
     fetchCases();
@@ -96,6 +100,9 @@ const AdminCaseProcessing = () => {
       return;
     }
     if (stageNum === 5) {
+      setRenewalDate('');
+      setAmountImagePath('');
+      setAmountPreview('');
       setApprovalModal({ caseItem, stage: 5 });
       return;
     }
@@ -136,13 +143,15 @@ const AdminCaseProcessing = () => {
 
   const handleApprovalSubmit = () => {
     if (!approvalModal?.caseItem?.id) return;
-    const benefits = {
-      rentAssistance: (document.getElementById('approval-rent')?.value ?? '').trim(),
-      foodStamps: (document.getElementById('approval-food')?.value ?? '').trim(),
-      financialAid: (document.getElementById('approval-financial')?.value ?? '').trim(),
-      totalDeposited: (document.getElementById('approval-total')?.value ?? '').trim(),
-    };
-    submitProcessing(approvalModal.caseItem.id, 5, '', benefits);
+    if (!renewalDate) {
+      alert('נא לבחור מועד מדויק לחידוש הכייס.');
+      return;
+    }
+    if (!amountImagePath) {
+      alert('נא להעלות תמונה של הסכום שאושר לכייס.');
+      return;
+    }
+    submitProcessing(approvalModal.caseItem.id, 5, '', { renewalDate, amountImagePath });
   };
 
   const handleRejectionSubmit = () => {
@@ -295,38 +304,19 @@ const AdminCaseProcessing = () => {
       {approvalModal && (
         <div className="admin-processing-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="approval-modal-title">
           <div className="admin-processing-modal admin-processing-modal-benefits">
-            <h2 id="approval-modal-title">הכייס אושר – פרטי הטבות</h2>
-            <p className="admin-processing-modal-desc">הפרטים יוצגו ללקוח בדף סטטוס הכייס תחת שלב &quot;הכייס אושר&quot;.</p>
-            <div className="admin-processing-benefits-form">
-              <label htmlFor="approval-rent">סיוע בשכר דירה (כן/לא או סכום)</label>
-              <input type="text" id="approval-rent" className="admin-processing-modal-input" placeholder="למשל: כן / ₪500" dir="rtl" />
-              <label htmlFor="approval-food">תלושי מזון (כן/לא או סכום)</label>
-              <input type="text" id="approval-food" className="admin-processing-modal-input" placeholder="למשל: כן / לא" dir="rtl" />
-              <label htmlFor="approval-financial">מזומן לכרטיס (סכום)</label>
-              <input
-                type="text"
-                id="approval-financial"
-                className="admin-processing-modal-input"
-                placeholder="1200 $"
-                dir="rtl"
-                onBlur={(e) => {
-                  const v = e.target.value.trim();
-                  if (v && !v.endsWith(' $')) e.target.value = v + ' $';
-                }}
-              />
-              <label htmlFor="approval-total">סה״כ כסף שנכנס לחשבון</label>
-              <input
-                type="text"
-                id="approval-total"
-                className="admin-processing-modal-input"
-                placeholder="2000 $"
-                dir="rtl"
-                onBlur={(e) => {
-                  const v = e.target.value.trim();
-                  if (v && !v.endsWith(' $')) e.target.value = v + ' $';
-                }}
-              />
-            </div>
+            <h2 id="approval-modal-title">הכייס אושר</h2>
+            <p className="admin-processing-modal-desc">המועד והתמונה יוצגו ללקוח בדף סטטוס הכייס תחת שלב &quot;הכייס אושר&quot;.</p>
+            <CaseApprovalFields
+              idPrefix="approval"
+              renewalDate={renewalDate}
+              onRenewalDateChange={setRenewalDate}
+              amountPreview={amountPreview}
+              onAmountImagePath={(path, preview) => {
+                setAmountImagePath(path);
+                setAmountPreview(preview || '');
+              }}
+              disabled={updatingId != null}
+            />
             <div className="admin-processing-modal-actions">
               <button
                 type="button"
