@@ -247,12 +247,14 @@
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
+  width: 100%;
   padding: 0.5rem;
   border: 1px solid #d7dee6;
   border-radius: 12px;
   background: #f7f9fb;
   cursor: pointer;
   text-align: center;
+  overflow: hidden;
 }
 
 .admin-credit-image-btn img {
@@ -261,6 +263,7 @@
   object-fit: contain;
   background: #fff;
   border-radius: 8px;
+  transition: transform 0.2s ease;
 }
 
 .admin-credit-file-link,

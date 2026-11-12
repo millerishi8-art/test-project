@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { useAuth } from '../context/AuthContext.jsx';
 import CreditAgreementSheet from '../components/CreditAgreementSheet.jsx';
+import { ImageLightbox, RotateControls, useImageRotation } from '../components/RotatableImage.jsx';
 import { idDocLabel } from '../data/creditAgreement';
 import './AdminPanel.css';
 
@@ -33,6 +34,7 @@ const AdminCreditClients = () => {
   const [error, setError] = useState('');
   const [deletingId, setDeletingId] = useState(null);
   const [enlargedImage, setEnlargedImage] = useState(null);
+  const { turnOf, rotate } = useImageRotation();
 
   const loadClients = async () => {
     setError('');
@@ -171,15 +173,24 @@ const AdminCreditClients = () => {
                             {image.label}
                           </a>
                         ) : (
-                          <button
-                            key={`${image.url}-${index}`}
-                            type="button"
-                            className="admin-credit-image-btn"
-                            onClick={() => setEnlargedImage(image.url)}
-                          >
-                            <img src={image.url} alt={image.label} />
-                            <span>{image.label}</span>
-                          </button>
+                          <div key={`${image.url}-${index}`} className="admin-credit-image-card">
+                            <button
+                              type="button"
+                              className="admin-credit-image-btn"
+                              onClick={() => setEnlargedImage(image.url)}
+                            >
+                              <img
+                                src={image.url}
+                                alt={image.label}
+                                style={{ transform: `rotate(${turnOf(image.url) * 90}deg)` }}
+                              />
+                              <span>{image.label}</span>
+                            </button>
+                            <RotateControls
+                              onLeft={() => rotate(image.url, -1)}
+                              onRight={() => rotate(image.url, 1)}
+                            />
+                          </div>
                         )
                       )}
                     </div>
@@ -192,18 +203,12 @@ const AdminCreditClients = () => {
       )}
 
       {enlargedImage ? (
-        <div
-          className="admin-credit-lightbox"
-          onClick={() => setEnlargedImage(null)}
-          role="dialog"
-          aria-modal="true"
-          aria-label="תצוגה מוגדלת של התמונה"
-        >
-          <button type="button" onClick={() => setEnlargedImage(null)} aria-label="סגור">
-            ×
-          </button>
-          <img src={enlargedImage} alt="תצוגה מוגדלת" onClick={(event) => event.stopPropagation()} />
-        </div>
+        <ImageLightbox
+          src={enlargedImage}
+          turn={turnOf(enlargedImage)}
+          onRotate={(direction) => rotate(enlargedImage, direction)}
+          onClose={() => setEnlargedImage(null)}
+        />
       ) : null}
     </div>
   );

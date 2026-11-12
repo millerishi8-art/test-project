@@ -4,6 +4,7 @@ import axios from 'axios';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext.jsx';
 import CaseStatusModal from '../components/CaseStatusModal.jsx';
+import { DocumentImage, ImageLightbox, useImageRotation } from '../components/RotatableImage.jsx';
 import { getCaseStageToneClass } from '../utils/caseProcessingStages';
 import CreditAgreementSheet from '../components/CreditAgreementSheet';
 import { idDocLabel } from '../data/creditAgreement';
@@ -110,6 +111,7 @@ const AdminCaseDetail = () => {
   const [textError, setTextError] = useState('');
   const [confirmingCompleted, setConfirmingCompleted] = useState(false);
   const [enlargedImage, setEnlargedImage] = useState(null);
+  const { turnOf, rotate } = useImageRotation();
   const [statusModalOpen, setStatusModalOpen] = useState(false);
 
   useEffect(() => {
@@ -294,9 +296,15 @@ const AdminCaseDetail = () => {
       );
     }
     return (
-      <div key={key} className="admin-case-detail-img-wrap admin-case-detail-img-clickable" onClick={() => setEnlargedImage(row.url)}>
-        <img src={row.url} alt={label} className="admin-case-detail-uploaded-img" />
-      </div>
+      <DocumentImage
+        key={key}
+        src={row.url}
+        alt={label}
+        className="admin-case-detail-uploaded-img"
+        turn={turnOf(row.url)}
+        onOpen={() => setEnlargedImage(row.url)}
+        onRotate={(direction) => rotate(row.url, direction)}
+      />
     );
   };
 
@@ -498,28 +506,12 @@ const AdminCaseDetail = () => {
   return (
     <div className="admin-case-detail-container">
       {enlargedImage && (
-        <div
-          className="admin-case-detail-lightbox"
-          onClick={() => setEnlargedImage(null)}
-          role="dialog"
-          aria-modal="true"
-          aria-label="תצוגה מוגדלת של התמונה"
-        >
-          <button
-            type="button"
-            className="admin-case-detail-lightbox-close"
-            onClick={() => setEnlargedImage(null)}
-            aria-label="סגור"
-          >
-            ×
-          </button>
-          <img
-            src={enlargedImage}
-            alt="תצוגה מוגדלת"
-            className="admin-case-detail-lightbox-img"
-            onClick={(e) => e.stopPropagation()}
-          />
-        </div>
+        <ImageLightbox
+          src={enlargedImage}
+          turn={turnOf(enlargedImage)}
+          onRotate={(direction) => rotate(enlargedImage, direction)}
+          onClose={() => setEnlargedImage(null)}
+        />
       )}
       <div className={`admin-case-detail-card ${getCaseStageToneClass(c)}`.trim()}>
         <h1>פרטי טופס – תיק #{c.id.slice(0, 8)}</h1>
@@ -561,9 +553,14 @@ const AdminCaseDetail = () => {
               </div>
             </div>
             {c.hraDetails.imageUrl ? (
-              <div className="admin-case-detail-img-wrap admin-case-detail-img-clickable" onClick={() => setEnlargedImage(c.hraDetails.imageUrl)}>
-                <img src={c.hraDetails.imageUrl} alt="תמונת HRA" className="admin-case-detail-uploaded-img" />
-              </div>
+              <DocumentImage
+                src={c.hraDetails.imageUrl}
+                alt="תמונת HRA"
+                className="admin-case-detail-uploaded-img"
+                turn={turnOf(c.hraDetails.imageUrl)}
+                onOpen={() => setEnlargedImage(c.hraDetails.imageUrl)}
+                onRotate={(direction) => rotate(c.hraDetails.imageUrl, direction)}
+              />
             ) : null}
             {c.hraDetails.fileUrl ? (
               <div className="admin-case-detail-attachment-card" style={{ marginTop: '0.75rem' }}>
@@ -776,16 +773,14 @@ const AdminCaseDetail = () => {
                       פתיחת PDF – תעודת זהות / מסמך
                     </a>
                   ) : (
-                    <div
-                      className="admin-case-detail-img-wrap admin-case-detail-img-clickable"
-                      onClick={() => setEnlargedImage(mediaFieldToUrl(c.idCardPhoto))}
-                    >
-                      <img
-                        src={mediaFieldToUrl(c.idCardPhoto)}
-                        alt="תעודת זהות / מסמך"
-                        className="admin-case-detail-uploaded-img"
-                      />
-                    </div>
+                    <DocumentImage
+                      src={mediaFieldToUrl(c.idCardPhoto)}
+                      alt="תעודת זהות / מסמך"
+                      className="admin-case-detail-uploaded-img"
+                      turn={turnOf(mediaFieldToUrl(c.idCardPhoto))}
+                      onOpen={() => setEnlargedImage(mediaFieldToUrl(c.idCardPhoto))}
+                      onRotate={(direction) => rotate(mediaFieldToUrl(c.idCardPhoto), direction)}
+                    />
                   )}
                 </div>
               )}
@@ -802,16 +797,14 @@ const AdminCaseDetail = () => {
                       פתיחת PDF – נספח
                     </a>
                   ) : (
-                    <div
-                      className="admin-case-detail-img-wrap admin-case-detail-img-clickable"
-                      onClick={() => setEnlargedImage(mediaFieldToUrl(c.idCardAnnex))}
-                    >
-                      <img
-                        src={mediaFieldToUrl(c.idCardAnnex)}
-                        alt="נספח למסמך"
-                        className="admin-case-detail-uploaded-img"
-                      />
-                    </div>
+                    <DocumentImage
+                      src={mediaFieldToUrl(c.idCardAnnex)}
+                      alt="נספח למסמך"
+                      className="admin-case-detail-uploaded-img"
+                      turn={turnOf(mediaFieldToUrl(c.idCardAnnex))}
+                      onOpen={() => setEnlargedImage(mediaFieldToUrl(c.idCardAnnex))}
+                      onRotate={(direction) => rotate(mediaFieldToUrl(c.idCardAnnex), direction)}
+                    />
                   )}
                 </div>
               )}
@@ -929,16 +922,14 @@ const AdminCaseDetail = () => {
             {mediaFieldToUrl(c.signatureImage) && (
               <div className="admin-case-detail-field admin-case-detail-field-block">
                 <span className="admin-case-detail-label">חתימה (תמונה שהלקוח העלה)</span>
-                <div
-                  className="admin-case-detail-signature-img-wrap admin-case-detail-img-clickable"
-                  onClick={() => setEnlargedImage(mediaFieldToUrl(c.signatureImage))}
-                >
-                  <img
-                    src={mediaFieldToUrl(c.signatureImage)}
-                    alt="חתימה"
-                    className="admin-case-detail-signature-img"
-                  />
-                </div>
+                <DocumentImage
+                  src={mediaFieldToUrl(c.signatureImage)}
+                  alt="חתימה"
+                  className="admin-case-detail-signature-img"
+                  turn={turnOf(mediaFieldToUrl(c.signatureImage))}
+                  onOpen={() => setEnlargedImage(mediaFieldToUrl(c.signatureImage))}
+                  onRotate={(direction) => rotate(mediaFieldToUrl(c.signatureImage), direction)}
+                />
               </div>
             )}
           </section>
