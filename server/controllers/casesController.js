@@ -20,8 +20,9 @@ import { findUserById, updateUserById } from '../models/User.js';
 import {
   sendDeferredPaymentRequestToAdmin,
   sendDeferredPaymentProposalSubmittedToAdmin,
+  sendCreditClientSubmittedEmail,
 } from '../services/email.js';
-import { getSuperAdminEmail } from '../utils/adminEmails.js';
+import { getSuperAdminEmail, getCreditDeskNotificationEmails } from '../utils/adminEmails.js';
 import {
   parseYyyyMmDd,
   utcTodayYyyyMmDd,
@@ -539,6 +540,17 @@ export const submitCreditAgreement = async (req, res) => {
     };
 
     await createCase(newCase);
+    try {
+      const client = await findUserById(req.user.id);
+      await sendCreditClientSubmittedEmail(getCreditDeskNotificationEmails(), {
+        clientName: fullName || client?.name || '',
+        clientEmail: client?.email || '',
+        clientPhone: client?.phone || '',
+        caseId: newCase.id,
+      });
+    } catch (mailErr) {
+      console.error('submitCreditAgreement notify error:', mailErr?.message || mailErr);
+    }
     return res.status(201).json({
       message: 'הסכם מסגרת האשראי נשמר',
       case: newCase,

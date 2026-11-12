@@ -722,3 +722,54 @@ export async function sendCaseStageUpdateEmail(toList, caseInfo, { stageNum, sta
     caseInfo,
   });
 }
+
+/** נשלח רק ליוד אחרי שלקוח מגיש בקשת לקוחות אשראי */
+export async function sendCreditClientSubmittedEmail(toList, caseInfo) {
+  const config = getConfig();
+  if (!config.isConfigured) {
+    console.warn('[Email] Not configured. Cannot send credit-client email.');
+    return false;
+  }
+  const transport = getTransporter();
+  if (!transport) return false;
+  const fromAddress = config.EMAIL_FROM || config.EMAIL_USER || config.SMTP_USER;
+  const recipients = [
+    ...new Set((toList || []).map((e) => String(e || '').trim().toLowerCase()).filter(Boolean)),
+  ];
+  if (!fromAddress || recipients.length === 0) return false;
+
+  const clientName = (caseInfo?.clientName || '').trim() || 'לקוח';
+  const clientEmail = (caseInfo?.clientEmail || '').trim() || '—';
+  const clientPhone = (caseInfo?.clientPhone || '').trim() || '—';
+  const caseId = (caseInfo?.caseId || '').trim() || '—';
+  const panelUrl = `${config.APP_BASE_URL.replace(/\/+$/, '')}/admin/credit-clients`;
+  const subject = 'בקשת לקוח אשראי חדשה';
+  const html = `
+    <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 560px;">
+      <h2>הוגשה בקשת לקוח אשראי</h2>
+      <p>לקוח הגיש בקשה ללקוחות אשראי.</p>
+      <ul style="padding-right: 20px;">
+        <li><strong>שם לקוח:</strong> ${clientName}</li>
+        <li><strong>אימייל לקוח:</strong> ${clientEmail}</li>
+        <li><strong>טלפון:</strong> ${clientPhone}</li>
+        <li><strong>מזהה תיק:</strong> ${caseId}</li>
+      </ul>
+      <p><a href="${panelUrl}" style="display:inline-block;padding:10px 16px;background:#1e6bb8;color:#fff;text-decoration:none;border-radius:8px;font-weight:700;">ללקוחות אשראי</a></p>
+      <hr style="border: none; border-top: 1px solid #eee;" />
+      <p style="color: #888; font-size: 12px;">סוכן ביטוח – הודעה אוטומטית אישית</p>
+    </div>
+  `;
+  const text = `הוגשה בקשת לקוח אשראי\n\nשם: ${clientName}\nאימייל: ${clientEmail}\nטלפון: ${clientPhone}\nמזהה: ${caseId}\n\n${panelUrl}`;
+
+  let anyOk = false;
+  for (const to of recipients) {
+    try {
+      await transport.sendMail({ from: fromAddress, to, subject, text, html });
+      console.log('[Email] Credit-client submission email sent to', to);
+      anyOk = true;
+    } catch (err) {
+      console.error('[Email] Credit-client submission email failed for', to, err?.message || err);
+    }
+  }
+  return anyOk;
+}

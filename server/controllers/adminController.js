@@ -6,6 +6,7 @@ import {
   isAnyAdminPanelEmail,
   isSuperAdminEmail,
   isCreditDeskEmail,
+  isCreditOnlyStaffEmail,
   canAccessInsuranceCases,
   getSecondaryAdminEmails,
 } from '../utils/adminEmails.js';
@@ -923,7 +924,7 @@ function getStaffPhoneOverrides() {
 function staffRecipientsForStage(stageNum) {
   if (stageNum === 1) return [FORMS_OWNER_EMAIL];
   if (stageNum === 3) return [INTERVIEW_OWNER_EMAIL];
-  return getSecondaryAdminEmails();
+  return getSecondaryAdminEmails().filter((email) => !isCreditOnlyStaffEmail(email));
 }
 
 function staffActionNoteFor(stageNum, email) {

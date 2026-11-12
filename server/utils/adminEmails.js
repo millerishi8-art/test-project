@@ -88,6 +88,11 @@ export function isCreditOnlyStaffEmail(email) {
   return CREDIT_DESK_EMAILS.includes(normalizeEmail(email));
 }
 
+/** מיילים שמקבלים הודעה רק על הגשת בקשת לקוח אשראי */
+export function getCreditDeskNotificationEmails() {
+  return [...CREDIT_DESK_EMAILS];
+}
+
 /** תיקי לקוחות רגילים: מנהל ראשי וכל העובדים, מלבד יוד */
 export function canAccessInsuranceCases(email) {
   if (isSuperAdminEmail(email)) return true;
