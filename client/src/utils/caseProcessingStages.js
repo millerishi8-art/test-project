@@ -109,11 +109,11 @@ export function clientCanEditSubmittedCase(c) {
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
 /**
- * טיימר מפתיחת הבקשה. נעצר בשלב «הוגשו טפסים» ומעלה.
+ * טיימר העובדים. מתחיל רק אחרי לחיצה על «נפתחה בקשה», ונעצר ב«הוגשו טפסים».
  * אחרי שבוע: כתום. אחרי שבועיים: אדום.
  */
 export function caseProcessingTimer(caseItem, now = Date.now()) {
-  const start = new Date(caseItem?.createdAt || 0).getTime();
+  const start = new Date(caseItem?.processingTimerStartedAt || 0).getTime();
   if (!start || Number.isNaN(start)) return null;
   const stage = getProcessingStageNumber(caseItem);
   const stopped = stage >= 3;

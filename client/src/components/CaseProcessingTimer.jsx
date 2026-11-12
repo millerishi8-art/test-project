@@ -10,7 +10,7 @@ export default function CaseProcessingTimer({ caseItem, compact = false }) {
     if (!timer || timer.stopped) return undefined;
     const id = window.setInterval(() => setNow(Date.now()), 30000);
     return () => window.clearInterval(id);
-  }, [timer?.stopped, caseItem?.id, caseItem?.createdAt, caseItem?.processingTimerStoppedAt, caseItem?.detailedAdminStatus]);
+  }, [timer?.stopped, caseItem?.id, caseItem?.processingTimerStartedAt, caseItem?.processingTimerStoppedAt, caseItem?.detailedAdminStatus]);
 
   if (!timer) return null;
 
@@ -18,7 +18,7 @@ export default function CaseProcessingTimer({ caseItem, compact = false }) {
 
   return (
     <div className={`case-timer case-timer--${timer.tone} ${compact ? 'case-timer--compact' : ''}`} role="status">
-      <span className="case-timer-kicker">{timer.stopped ? 'הטיימר נעצר' : 'זמן מאז פתיחת הבקשה'}</span>
+      <span className="case-timer-kicker">{timer.stopped ? 'הטיימר נעצר' : 'מאז נפתחה בקשה'}</span>
       <strong className="case-timer-value">{label}</strong>
     </div>
   );

@@ -856,14 +856,25 @@ const DEFAULT_STAFF_PHONES = {
   'lapidwoldenberg@gmail.com': '0545882718', // לפיד וולדנברג
 };
 
-/** הטיימר רץ מפתיחת הבקשה ונעצר ב«הוגשו טפסים» ומעלה. ביטול השלב מחדש אותו. */
+/**
+ * הטיימר של העובדים מתחיל רק בלחיצה על «נפתחה בקשה».
+ * נעצר ב«הוגשו טפסים» ומעלה. ביטול השלב מוחק את השעון.
+ */
 function processingTimerFields(caseData, stageNum) {
-  if (stageNum >= 3) {
-    if (caseData?.processingTimerStoppedAt) return {};
-    if (previousProcessingStageNumber(caseData) >= 3) return {};
-    return { processingTimerStoppedAt: new Date().toISOString() };
+  const now = new Date().toISOString();
+  if (stageNum === 1) {
+    return {
+      processingTimerStartedAt: now,
+      processingTimerStoppedAt: null,
+    };
   }
-  return { processingTimerStoppedAt: null };
+  if (stageNum === 2) {
+    return { processingTimerStoppedAt: null };
+  }
+  if (!caseData?.processingTimerStartedAt) return {};
+  if (caseData?.processingTimerStoppedAt) return {};
+  if (previousProcessingStageNumber(caseData) >= 3) return {};
+  return { processingTimerStoppedAt: now };
 }
 
 /**
@@ -1001,6 +1012,7 @@ export const updateCaseProcessing = async (req, res) => {
         rejectionReason: null,
         approvedBenefits: null,
         status: CASE_STATUS.PENDING,
+        processingTimerStartedAt: null,
         processingTimerStoppedAt: null,
       });
       const { authorName } = await resolveActorName(req);
@@ -1032,6 +1044,7 @@ export const updateCaseProcessing = async (req, res) => {
         rejectionReason: null,
         approvedBenefits: null,
         status: CASE_STATUS.PENDING,
+        processingTimerStartedAt: null,
         processingTimerStoppedAt: null,
       });
       const { authorName } = await resolveActorName(req);
