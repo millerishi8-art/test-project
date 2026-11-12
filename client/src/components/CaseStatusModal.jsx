@@ -1,19 +1,13 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
-import { explicitStageNumberFromLabel, getCaseStageToneClass, shortStageLabel } from '../utils/caseProcessingStages';
+import { explicitStageNumberFromLabel, getCaseStageToneClass, PROCESSING_STAGE_OPTIONS, shortStageLabel } from '../utils/caseProcessingStages';
 import CaseProcessingTimer from './CaseProcessingTimer';
 import CaseApprovalFields from './CaseApprovalFields';
 import '../styles/caseStageTones.css';
 import '../pages/AdminCaseProcessing.css';
 import './CaseStatusModal.css';
 
-export const CASE_PROCESSING_STAGES = [
-  { stage: 1, label: 'נפתחה בקשה', toneClass: 'stage-opening' },
-  { stage: 2, label: 'נעשה ראיון', toneClass: 'stage-interview' },
-  { stage: 3, label: 'הוגשו טפסים', toneClass: 'stage-forms' },
-  { stage: 4, label: 'הכייס סגור', isRejection: true },
-  { stage: 5, label: 'הכייס אושר', isApproval: true },
-];
+export const CASE_PROCESSING_STAGES = PROCESSING_STAGE_OPTIONS;
 
 function isStageActive(caseItem, stageNum) {
   return explicitStageNumberFromLabel(caseItem?.detailedAdminStatus) === stageNum;

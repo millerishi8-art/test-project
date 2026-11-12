@@ -2,20 +2,35 @@
  * תואם ל־PROCESSING_STAGES בשרת (adminController) ול־AdminCaseProcessing.
  * שלב 0 = נשלח מהלקוח, עדיין לא עודכן שלב עיבוד במערכת הניהול.
  */
-export const PROCESSING_STAGE_LABELS_HE = [
-  'נפתחה בקשה',
-  'נעשה ראיון',
-  'הוגשו טפסים',
-  'הכייס סגור',
-  'הכייס אושר',
+/** מספר שלב קבוע. 4 ו־5 נשארים סגירה ואישור. 6 הוא אימות מסמכים. */
+export const STAGE_LABEL_BY_NUMBER = {
+  1: 'נפתחה בקשה',
+  2: 'הגשת טפסים',
+  3: 'נעשה ראיון',
+  4: 'הכייס סגור',
+  5: 'הכייס אושר',
+  6: 'אימות מסמכים',
+};
+
+/** סדר הכפתורים במסך העובדים */
+export const PROCESSING_STAGE_OPTIONS = [
+  { stage: 1, label: STAGE_LABEL_BY_NUMBER[1], toneClass: 'stage-opening' },
+  { stage: 2, label: STAGE_LABEL_BY_NUMBER[2], toneClass: 'stage-forms' },
+  { stage: 3, label: STAGE_LABEL_BY_NUMBER[3], toneClass: 'stage-interview' },
+  { stage: 6, label: STAGE_LABEL_BY_NUMBER[6], toneClass: 'stage-forms' },
+  { stage: 4, label: STAGE_LABEL_BY_NUMBER[4], isRejection: true },
+  { stage: 5, label: STAGE_LABEL_BY_NUMBER[5], isApproval: true },
 ];
 
-/** ניסוחים ארוכים שנשמרו בתיקים קיימים – עדיין מזוהים כאותו שלב */
+export const PROCESSING_STAGE_LABELS_HE = PROCESSING_STAGE_OPTIONS.map((s) => s.label);
+
+/** ניסוחים ישנים שנשמרו בתיקים – ממופים לשלב הנכון אחרי שינוי הסדר */
 export const LEGACY_STAGE_LABELS_HE = {
+  'הוגשו טפסים': 2,
   'נפתחה הבקשה באתר מחכה לראיון אישי': 1,
   'נפתח הבקשה באתר מחכה לראיון אישי': 1,
-  'נעשה ראיון מחכה להגשת טפסים': 2,
-  'הוגשו טפסים מחכה לאישור הממשלה': 3,
+  'נעשה ראיון מחכה להגשת טפסים': 3,
+  'הוגשו טפסים מחכה לאישור הממשלה': 2,
   'הממשלה סגרה את הכייס': 4,
   'אושר על ידי הממשלה': 5,
 };
@@ -27,15 +42,16 @@ export const LEGACY_HE_STAGE1 = 'נפתח הבקשה באתר מחכה לראי�
 export function explicitStageNumberFromLabel(label) {
   const d = String(label || '').trim();
   if (!d) return 0;
-  const index = PROCESSING_STAGE_LABELS_HE.indexOf(d);
-  if (index >= 0) return index + 1;
+  for (const [num, text] of Object.entries(STAGE_LABEL_BY_NUMBER)) {
+    if (d === text) return Number(num);
+  }
   return LEGACY_STAGE_LABELS_HE[d] || 0;
 }
 
 /** הנוסח הקצר להצגה, גם אם בתיק שמור הנוסח הארוך הישן */
 export function shortStageLabel(label) {
   const n = explicitStageNumberFromLabel(label);
-  return n ? PROCESSING_STAGE_LABELS_HE[n - 1] : String(label || '').trim();
+  return n ? STAGE_LABEL_BY_NUMBER[n] || String(label || '').trim() : String(label || '').trim();
 }
 
 /**
@@ -97,7 +113,7 @@ export function clientCanEditSubmittedCase(c) {
   const status = String(c.status || '').toLowerCase();
   if (status === 'closed' || status === 'rejected' || status === 'approved') return false;
   const marked = explicitStageNumberFromLabel(c.detailedAdminStatus);
-  if (marked >= 4) return false;
+  if (marked === 4 || marked === 5) return false;
   return true;
 }
 
@@ -109,14 +125,16 @@ export function clientCanEditSubmittedCase(c) {
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
 /**
- * טיימר העובדים. מתחיל רק אחרי לחיצה על «נפתחה בקשה», ונעצר ב«הוגשו טפסים».
+ * טיימר העובדים. מתחיל רק אחרי לחיצה על «נפתחה בקשה», ונעצר ב«הגשת טפסים».
  * אחרי שבוע: כתום. אחרי שבועיים: אדום.
  */
+const TIMER_STOP_STAGES = new Set([2, 3, 4, 5, 6]);
+
 export function caseProcessingTimer(caseItem, now = Date.now()) {
   const start = new Date(caseItem?.processingTimerStartedAt || 0).getTime();
   if (!start || Number.isNaN(start)) return null;
   const stage = getProcessingStageNumber(caseItem);
-  const stopped = stage >= 3;
+  const stopped = TIMER_STOP_STAGES.has(stage);
   const storedStop = new Date(caseItem?.processingTimerStoppedAt || 0).getTime();
   const hasStoredStop = Boolean(storedStop) && !Number.isNaN(storedStop);
   const end = stopped ? (hasStoredStop ? storedStop : start) : now;
@@ -156,8 +174,8 @@ export function getCaseStageToneClass(c) {
   if (isCaseClosed(c)) return 'case-tone-closed';
   const n = getProcessingStageNumber(c);
   if (n === 5) return 'case-tone-approved';
-  if (n === 3) return 'case-tone-stage-3';
-  if (n === 2) return 'case-tone-stage-2';
+  if (n === 2 || n === 6) return 'case-tone-stage-3';
+  if (n === 3) return 'case-tone-stage-2';
   if (n === 1) return 'case-tone-stage-1';
   return '';
 }

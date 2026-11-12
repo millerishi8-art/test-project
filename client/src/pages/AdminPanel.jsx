@@ -9,7 +9,7 @@ import CaseProcessingTimer from '../components/CaseProcessingTimer.jsx';
 import {
   getCaseStageToneClass,
   isOnSixMonthRenewalTrack,
-  PROCESSING_STAGE_LABELS_HE,
+  PROCESSING_STAGE_OPTIONS,
   LEGACY_STAGE_LABELS_HE,
   explicitStageNumberFromLabel,
 } from '../utils/caseProcessingStages';
@@ -264,12 +264,12 @@ const AdminPanel = () => {
   const casesWithRenewal = insuranceCases.map((c) => ({ ...c, renewalStatus: getRenewalStatus(c) }));
   const caseSearchQuery = caseSearch.trim().toLowerCase();
   const statusFilterOptions = (() => {
-    const options = PROCESSING_STAGE_LABELS_HE.map((label, index) => ({
-      value: `stage:${index + 1}`,
+    const options = PROCESSING_STAGE_OPTIONS.map(({ stage, label }) => ({
+      value: `stage:${stage}`,
       label,
     }));
     const knownStages = new Set([
-      ...PROCESSING_STAGE_LABELS_HE,
+      ...PROCESSING_STAGE_OPTIONS.map((s) => s.label),
       ...Object.keys(LEGACY_STAGE_LABELS_HE),
     ]);
     const extraStages = new Set();

@@ -1,20 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { explicitStageNumberFromLabel, getCaseStageToneClass, shortStageLabel } from '../utils/caseProcessingStages';
+import { explicitStageNumberFromLabel, getCaseStageToneClass, PROCESSING_STAGE_OPTIONS, shortStageLabel } from '../utils/caseProcessingStages';
 import CaseProcessingTimer from '../components/CaseProcessingTimer';
 import CaseApprovalFields from '../components/CaseApprovalFields';
 import '../styles/caseStageTones.css';
 import './AdminPanel.css';
 import './AdminCaseProcessing.css';
 
-const STAGES = [
-  { stage: 1, label: 'נפתחה בקשה', toneClass: 'stage-opening' },
-  { stage: 2, label: 'נעשה ראיון', toneClass: 'stage-interview' },
-  { stage: 3, label: 'הוגשו טפסים', toneClass: 'stage-forms' },
-  { stage: 4, label: 'הכייס סגור', isRejection: true },
-  { stage: 5, label: 'הכייס אושר', isApproval: true },
-];
+const STAGES = PROCESSING_STAGE_OPTIONS;
 
 const AdminCaseProcessing = () => {
   const navigate = useNavigate();

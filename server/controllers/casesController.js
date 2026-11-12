@@ -684,15 +684,17 @@ export const submitDeferredPaymentProposedDeadline = async (req, res) => {
 };
 
 const LEGACY_STAGE_LABELS = {
+  'הוגשו טפסים': 2,
   'נפתחה הבקשה באתר מחכה לראיון אישי': 1,
   'נפתח הבקשה באתר מחכה לראיון אישי': 1,
-  'נעשה ראיון מחכה להגשת טפסים': 2,
-  'הוגשו טפסים מחכה לאישור הממשלה': 3,
+  'נעשה ראיון מחכה להגשת טפסים': 3,
+  'הוגשו טפסים מחכה לאישור הממשלה': 2,
   'הממשלה סגרה את הכייס': 4,
   'אושר על ידי הממשלה': 5,
   'נפתחה בקשה': 1,
-  'נעשה ראיון': 2,
-  'הוגשו טפסים': 3,
+  'הגשת טפסים': 2,
+  'נעשה ראיון': 3,
+  'אימות מסמכים': 6,
   'הכייס סגור': 4,
   'הכייס אושר': 5,
 };
@@ -706,7 +708,7 @@ function clientCanEditSubmittedCase(caseData) {
   if (status === 'closed' || status === 'rejected' || status === 'approved') return false;
   const d = String(caseData.detailedAdminStatus || '').trim();
   const marked = LEGACY_STAGE_LABELS[d] || 0;
-  if (marked >= 4) return false;
+  if (marked === 4 || marked === 5) return false;
   return true;
 }
 

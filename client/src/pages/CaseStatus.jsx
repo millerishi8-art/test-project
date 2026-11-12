@@ -18,67 +18,38 @@ import './CaseStatus.css';
  * חמשת שלבי התהליך כמו בעמוד ניהול – עם מצב completed / current / future / rejected / skipped
  */
 function getTimelineSteps(c, t) {
-  const labels = [t.processStep1, t.processStep2, t.processStep3, t.processStep4, t.processStep5];
+  const flow = [
+    { id: 1, title: t.processStep1 },
+    { id: 2, title: t.processStep2 },
+    { id: 3, title: t.processStep3 },
+    { id: 6, title: t.processStepDocs },
+    { id: 4, title: t.processStep4 },
+    { id: 5, title: t.processStep5 },
+  ];
   const stage = getProcessingStageNumber(c);
   const renewal = Boolean(c?.adminConfirmedCompleted);
+  const order = flow.map((step) => step.id);
+  const at = order.indexOf(stage);
 
-  /** מסלול הצלחה מלא אחרי אישור מנהל "הושלם" */
-  if (renewal) {
-    return labels.map((title, i) => {
-      const n = i + 1;
-      let state = 'future';
-      if (n <= 3) state = 'completed';
-      else if (n === 4) state = 'skipped';
-      else state = 'completed';
-      return {
-        key: String(n),
-        title,
-        desc: n === 4 ? t.processStepSkippedHint : '',
-        state,
-      };
-    });
-  }
-
-  if (stage === 4) {
-    return labels.map((title, i) => {
-      const n = i + 1;
-      let state = 'future';
-      if (n <= 3) state = 'completed';
-      else if (n === 4) state = 'rejected';
-      return { key: String(n), title, desc: '', state };
-    });
-  }
-
-  if (stage === 5) {
-    return labels.map((title, i) => {
-      const n = i + 1;
-      let state = 'future';
-      if (n <= 3) state = 'completed';
-      else if (n === 4) state = 'skipped';
-      else state = 'completed';
-      return {
-        key: String(n),
-        title,
-        desc: n === 4 ? t.processStepSkippedHint : '',
-        state,
-      };
-    });
-  }
-
-  if (stage === 0) {
-    return labels.map((title, i) => {
-      const n = i + 1;
-      const state = n === 1 ? 'current' : 'future';
-      return { key: String(n), title, desc: '', state };
-    });
-  }
-
-  return labels.map((title, i) => {
-    const n = i + 1;
+  return flow.map((step) => {
+    const i = order.indexOf(step.id);
     let state = 'future';
-    if (n < stage) state = 'completed';
-    else if (n === stage) state = 'current';
-    return { key: String(n), title, desc: '', state };
+    let desc = '';
+    if (renewal || stage === 5) {
+      if (step.id === 4) {
+        state = 'skipped';
+        desc = t.processStepSkippedHint;
+      } else state = 'completed';
+    } else if (stage === 4) {
+      if (step.id === 4) state = 'rejected';
+      else if (i < order.indexOf(4)) state = 'completed';
+    } else if (stage === 0) {
+      state = step.id === 1 ? 'current' : 'future';
+    } else if (at >= 0) {
+      if (i < at) state = 'completed';
+      else if (i === at) state = 'current';
+    }
+    return { key: String(step.id), title: step.title, desc, state };
   });
 }
 
@@ -122,6 +93,7 @@ const CaseStatus = () => {
     if (st === 0 || st === 1) return t.processStep1;
     if (st === 2) return t.processStep2;
     if (st === 3) return t.processStep3;
+    if (st === 6) return t.processStepDocs;
     return t.processStep1;
   };
 

@@ -830,25 +830,27 @@ export const confirmCaseCompleted = async (req, res) => {
 /** שלבי עיבוד תיק – טקסט ל־detailedAdminStatus */
 const PROCESSING_STAGES = {
   1: 'נפתחה בקשה',
-  2: 'נעשה ראיון',
-  3: 'הוגשו טפסים',
+  2: 'הגשת טפסים',
+  3: 'נעשה ראיון',
   4: 'הכייס סגור',
   5: 'הכייס אושר',
+  6: 'אימות מסמכים',
 };
 
 const LEGACY_STAGE_LABELS = {
+  'הוגשו טפסים': 2,
   'נפתחה הבקשה באתר מחכה לראיון אישי': 1,
   'נפתח הבקשה באתר מחכה לראיון אישי': 1,
-  'נעשה ראיון מחכה להגשת טפסים': 2,
-  'הוגשו טפסים מחכה לאישור הממשלה': 3,
+  'נעשה ראיון מחכה להגשת טפסים': 3,
+  'הוגשו טפסים מחכה לאישור הממשלה': 2,
   'הממשלה סגרה את הכייס': 4,
   'אושר על ידי הממשלה': 5,
 };
 
-/** מנהלי ראיונות – מקבלים מייל כשתיק ממתין לראיון אישי */
-const INTERVIEW_STAFF_EMAILS = ['lapidwoldenberg@gmail.com', 'abergelyuda7@gmail.com'];
-/** מנהל טפסים – מקבל מייל אחרי שנעשה ראיון ומחכים להגשת טפסים */
-const FORMS_STAFF_EMAILS = [];
+/** ליאור הלוי – הגשת טפסים ואימות מסמכים. מקבלת מייל בלחיצה על «נפתחה בקשה». */
+const FORMS_OWNER_EMAIL = 'lioranwork770@gmail.com';
+/** יהודה אברגל – מקבל מייל בלחיצה על «נעשה ראיון». */
+const INTERVIEW_OWNER_EMAIL = 'abergelyuda7@gmail.com';
 
 /** טלפונים ישראליים של העובדים להתראות SMS (ניתן לדרוס ב-STAFF_PHONE_OVERRIDES) */
 const DEFAULT_STAFF_PHONES = {
@@ -858,8 +860,10 @@ const DEFAULT_STAFF_PHONES = {
 
 /**
  * הטיימר של העובדים מתחיל רק בלחיצה על «נפתחה בקשה».
- * נעצר ב«הוגשו טפסים» ומעלה. ביטול השלב מוחק את השעון.
+ * נעצר ב«הגשת טפסים» ובכל שלב שאחריו. ביטול השלב מוחק את השעון.
  */
+const TIMER_STOP_STAGES = new Set([2, 3, 4, 5, 6]);
+
 function processingTimerFields(caseData, stageNum) {
   const now = new Date().toISOString();
   if (stageNum === 1) {
@@ -868,12 +872,10 @@ function processingTimerFields(caseData, stageNum) {
       processingTimerStoppedAt: null,
     };
   }
-  if (stageNum === 2) {
-    return { processingTimerStoppedAt: null };
-  }
+  if (!TIMER_STOP_STAGES.has(stageNum)) return {};
   if (!caseData?.processingTimerStartedAt) return {};
   if (caseData?.processingTimerStoppedAt) return {};
-  if (previousProcessingStageNumber(caseData) >= 3) return {};
+  if (TIMER_STOP_STAGES.has(previousProcessingStageNumber(caseData))) return {};
   return { processingTimerStoppedAt: now };
 }
 
@@ -918,22 +920,28 @@ function getStaffPhoneOverrides() {
   return map;
 }
 
+function staffRecipientsForStage(stageNum) {
+  if (stageNum === 1) return [FORMS_OWNER_EMAIL];
+  if (stageNum === 3) return [INTERVIEW_OWNER_EMAIL];
+  return getSecondaryAdminEmails();
+}
+
 function staffActionNoteFor(stageNum, email) {
   const e = String(email || '').trim().toLowerCase();
-  if (stageNum === 1 && INTERVIEW_STAFF_EMAILS.includes(e)) {
-    return 'נא לתאם ולבצע ראיון אישי עם הלקוח.';
+  if (stageNum === 1 && e === FORMS_OWNER_EMAIL) {
+    return 'נפתחה בקשה. נא להגיש את הטפסים.';
   }
-  if (stageNum === 2 && FORMS_STAFF_EMAILS.includes(e)) {
-    return 'נא להשלים מילוי והגשת טפסים מול הלקוח.';
+  if (stageNum === 3 && e === INTERVIEW_OWNER_EMAIL) {
+    return 'נא לבצע ראיון עם הלקוח.';
   }
   return '';
 }
 
 /**
- * מייל + WhatsApp אישי לכל עובד במעבר שלב.
+ * מייל + WhatsApp אישי. «נפתחה בקשה» נשלח לליאור, «נעשה ראיון» ליהודה אברגל.
  */
 async function notifyStaffOnCaseStageChange({ stageNum, stageLabel, caseInfo }) {
-  const staffEmails = getSecondaryAdminEmails();
+  const staffEmails = staffRecipientsForStage(stageNum);
   if (staffEmails.length === 0) return;
 
   const phoneOverrides = getStaffPhoneOverrides();
@@ -1033,8 +1041,8 @@ export const updateCaseProcessing = async (req, res) => {
     }
 
     const stageNum = typeof stage === 'string' ? parseInt(stage, 10) : stage;
-    if (!Number.isInteger(stageNum) || stageNum < 1 || stageNum > 5) {
-      return res.status(400).json({ error: 'סטטוס לא תקין. שלב חייב להיות 1–5.' });
+    if (!Number.isInteger(stageNum) || !PROCESSING_STAGES[stageNum]) {
+      return res.status(400).json({ error: 'סטטוס לא תקין.' });
     }
 
     /* לחיצה שנייה על אותו שלב פעיל – ביטול מלא בלי מייל */

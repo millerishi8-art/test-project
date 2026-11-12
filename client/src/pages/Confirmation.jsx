@@ -46,6 +46,7 @@ const Confirmation = () => {
     if (st === 0 || st === 1) return t.processStep1;
     if (st === 2) return t.processStep2;
     if (st === 3) return t.processStep3;
+    if (st === 6) return t.processStepDocs;
     return t.processStep1;
   };
 
