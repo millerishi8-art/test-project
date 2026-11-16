@@ -850,8 +850,8 @@ const LEGACY_STAGE_LABELS = {
 
 /** ליאור הלוי – הגשת טפסים ואימות מסמכים. מקבלת מייל בלחיצה על «נפתחה בקשה». */
 const FORMS_OWNER_EMAIL = 'lioranwork770@gmail.com';
-/** יהודה אברגל – מקבל מייל בלחיצה על «נעשה ראיון». */
-const INTERVIEW_OWNER_EMAIL = 'abergelyuda7@gmail.com';
+/** יהודה אברגל ומנהלת השיחות – מקבלים מייל בלחיצה על «נעשה ראיון». */
+const INTERVIEW_OWNER_EMAILS = ['abergelyuda7@gmail.com', 'chanakapwork@gmail.com'];
 
 /** טלפונים ישראליים של העובדים להתראות SMS (ניתן לדרוס ב-STAFF_PHONE_OVERRIDES) */
 const DEFAULT_STAFF_PHONES = {
@@ -923,7 +923,7 @@ function getStaffPhoneOverrides() {
 
 function staffRecipientsForStage(stageNum) {
   if (stageNum === 1) return [FORMS_OWNER_EMAIL];
-  if (stageNum === 3) return [INTERVIEW_OWNER_EMAIL];
+  if (stageNum === 3) return INTERVIEW_OWNER_EMAILS;
   return getSecondaryAdminEmails().filter((email) => !isCreditOnlyStaffEmail(email));
 }
 
@@ -932,7 +932,7 @@ function staffActionNoteFor(stageNum, email) {
   if (stageNum === 1 && e === FORMS_OWNER_EMAIL) {
     return 'נפתחה בקשה. נא להגיש את הטפסים.';
   }
-  if (stageNum === 3 && e === INTERVIEW_OWNER_EMAIL) {
+  if (stageNum === 3 && INTERVIEW_OWNER_EMAILS.includes(e)) {
     return 'נא לבצע ראיון עם הלקוח.';
   }
   return '';

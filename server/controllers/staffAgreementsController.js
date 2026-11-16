@@ -15,6 +15,7 @@ const STAFF_DISPLAY_NAMES = {
   'michalhezi2@gmail.com': 'מיכל',
   'workmiller770@gmail.com': 'מנחם פפר',
   'yudigruenberg@gmail.com': 'יוד גרונברג',
+  'chanakapwork@gmail.com': 'מנהלת שיחות',
 };
 
 function staffDisplayName(email, fallbackName = '') {

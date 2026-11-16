@@ -23,6 +23,7 @@ export const DEFAULT_SECONDARY_ADMIN_EMAILS = [
   'michalhezi2@gmail.com',
   'workmiller770@gmail.com',
   'yudigruenberg@gmail.com',
+  'chanakapwork@gmail.com',
 ];
 
 function normalizeEmail(email) {
