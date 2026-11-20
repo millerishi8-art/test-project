@@ -108,3 +108,26 @@ export async function getSignedUrl(filePath, expiresSec = 600) {
     return null;
   }
 }
+
+/** מוריד קובץ מה-bucket הפרטי לפי הנתיב שנשמר בתיק. */
+export async function downloadFromSupabase(filePath) {
+  const { supabaseUrl, supabaseServiceRoleKey } = getConfig();
+  if (!supabaseUrl || !supabaseServiceRoleKey) return null;
+  const path = String(filePath || '').trim();
+  if (!path) return null;
+  try {
+    const supabase = createClient(supabaseUrl, supabaseServiceRoleKey, {
+      auth: { persistSession: false },
+    });
+    const { data, error } = await supabase.storage.from(BUCKET_NAME).download(path);
+    if (error || !data) {
+      console.error('[Supabase] שגיאה בהורדה:', error?.message || 'empty');
+      return null;
+    }
+    const buffer = Buffer.from(await data.arrayBuffer());
+    return { buffer, contentType: data.type || 'application/octet-stream' };
+  } catch (err) {
+    console.error('[Supabase] downloadFromSupabase:', err?.message || err);
+    return null;
+  }
+}

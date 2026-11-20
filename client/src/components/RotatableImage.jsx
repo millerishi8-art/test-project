@@ -25,7 +25,7 @@ export function RotateControls({ onLeft, onRight }) {
   );
 }
 
-export function DocumentImage({ src, alt, className, turn = 0, onOpen, onRotate }) {
+export function DocumentImage({ src, alt, className, turn = 0, onOpen, onRotate, onDownload, downloadBusy = false }) {
   const sideways = turn % 2 === 1;
   return (
     <div className="document-image">
@@ -40,11 +40,16 @@ export function DocumentImage({ src, alt, className, turn = 0, onOpen, onRotate 
         </span>
       </button>
       <RotateControls onLeft={() => onRotate(-1)} onRight={() => onRotate(1)} />
+      {onDownload ? (
+        <button type="button" className="image-download-btn" onClick={onDownload} disabled={downloadBusy}>
+          {downloadBusy ? 'מוריד...' : 'הורדה למחשב'}
+        </button>
+      ) : null}
     </div>
   );
 }
 
-export function ImageLightbox({ src, alt = 'תצוגה מוגדלת', turn = 0, onRotate, onClose }) {
+export function ImageLightbox({ src, alt = 'תצוגה מוגדלת', turn = 0, onRotate, onClose, onDownload, downloadBusy = false }) {
   if (!src) return null;
   const sideways = turn % 2 === 1;
   return (
@@ -61,6 +66,11 @@ export function ImageLightbox({ src, alt = 'תצוגה מוגדלת', turn = 0, 
       />
       <div className="image-lightbox-tools" onClick={(event) => event.stopPropagation()}>
         <RotateControls onLeft={() => onRotate(-1)} onRight={() => onRotate(1)} />
+        {onDownload ? (
+          <button type="button" className="image-download-btn image-download-btn-light" onClick={onDownload} disabled={downloadBusy}>
+            {downloadBusy ? 'מוריד...' : 'הורדה למחשב'}
+          </button>
+        ) : null}
       </div>
     </div>
   );

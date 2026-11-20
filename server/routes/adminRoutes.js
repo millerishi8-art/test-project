@@ -3,6 +3,8 @@ import {
   getAllCases,
   getCreditClients,
   getCaseById,
+  downloadCaseFile,
+  downloadCaseImagesZip,
   getAllUsers,
   confirmCaseCompleted,
   updateCaseStatus,
@@ -38,6 +40,8 @@ router.use(isAdmin);
 
 router.get('/cases', getAllCases);
 router.get('/credit-clients', getCreditClients);
+router.get('/cases/:id/media', downloadCaseFile);
+router.get('/cases/:id/images.zip', downloadCaseImagesZip);
 router.get('/cases/:id', getCaseById);
 router.get('/notices/unseen', getUnseenAdminNotices);
 router.post('/notices/:id/ack', ackAdminNotice);

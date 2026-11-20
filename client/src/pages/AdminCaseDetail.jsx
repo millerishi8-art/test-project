@@ -141,6 +141,24 @@ function urlLooksLikePdf(url) {
   return /\.pdf(\?|#|$)/i.test(url);
 }
 
+function downloadFileName(label, storagePath) {
+  const match = String(storagePath || '').match(/\.([a-z0-9]{2,5})$/i);
+  const ext = match ? match[1].toLowerCase() : 'jpg';
+  const base = String(label || 'תמונה').replace(/[\\/:*?"<>|]/g, '').trim() || 'תמונה';
+  return `${base}.${ext}`;
+}
+
+function saveBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+
 function normalizeAttachmentRows(caseData) {
   const meta = Array.isArray(caseData?.attachmentMeta) ? caseData.attachmentMeta : [];
   if (meta.length > 0) {
@@ -149,6 +167,7 @@ function normalizeAttachmentRows(caseData) {
         id: `meta_${idx}`,
         category: String(m?.category || 'general'),
         url: mediaFieldToUrl(m?.path),
+        storagePath: String(m?.storagePath || ''),
       }))
       .filter((r) => !!r.url);
   }
@@ -158,6 +177,7 @@ function normalizeAttachmentRows(caseData) {
       id: `att_${idx}`,
       category: 'general',
       url: mediaFieldToUrl(a),
+      storagePath: String(caseData?.attachmentStoragePaths?.[idx] || ''),
     }))
     .filter((r) => !!r.url);
 }
@@ -206,6 +226,8 @@ const AdminCaseDetail = () => {
   const [enlargedImage, setEnlargedImage] = useState(null);
   const { turnOf, rotate } = useImageRotation();
   const [statusModalOpen, setStatusModalOpen] = useState(false);
+  const [downloadState, setDownloadState] = useState('');
+  const [downloadError, setDownloadError] = useState('');
 
   useEffect(() => {
     let cancelled = false;
@@ -496,6 +518,51 @@ const AdminCaseDetail = () => {
   const familyChildren = Array.isArray(c?.personalDetails?.familyChildren) ? c.personalDetails.familyChildren : [];
   const savedAddedMembers = membersFromCase(c?.personalDetails);
 
+  const downloadStoredFile = async (storagePath, filename) => {
+    if (!storagePath || downloadState) return;
+    setDownloadState(storagePath);
+    setDownloadError('');
+    try {
+      const res = await axios.get(`/admin/cases/${caseId}/media`, {
+        params: { path: storagePath },
+        responseType: 'blob',
+      });
+      saveBlob(res.data, filename || downloadFileName('תמונה', storagePath));
+    } catch {
+      setDownloadError('ההורדה נכשלה. נסו שוב.');
+    } finally {
+      setDownloadState('');
+    }
+  };
+
+  const downloadAllImages = async () => {
+    if (downloadState) return;
+    setDownloadState('all');
+    setDownloadError('');
+    try {
+      const res = await axios.get(`/admin/cases/${caseId}/images.zip`, { responseType: 'blob' });
+      saveBlob(res.data, 'תמונות-התיק.zip');
+    } catch {
+      setDownloadError('הורדת התמונות נכשלה. נסו שוב.');
+    } finally {
+      setDownloadState('');
+    }
+  };
+
+  const renderDownloadButton = (storagePath, label) => {
+    if (!storagePath) return null;
+    return (
+      <button
+        type="button"
+        className="image-download-btn"
+        onClick={() => downloadStoredFile(storagePath, downloadFileName(label, storagePath))}
+        disabled={Boolean(downloadState)}
+      >
+        {downloadState === storagePath ? 'מוריד...' : 'הורדה למחשב'}
+      </button>
+    );
+  };
+
   const renderMediaCard = (row, label, idx) => {
     const key = `${row.id}_${idx}`;
     if (urlLooksLikePdf(row.url)) {
@@ -504,6 +571,7 @@ const AdminCaseDetail = () => {
           <a className="admin-case-detail-pdf-open-link" href={row.url} target="_blank" rel="noopener noreferrer">
             {label} – PDF
           </a>
+          {renderDownloadButton(row.storagePath, label)}
         </div>
       );
     }
@@ -516,6 +584,8 @@ const AdminCaseDetail = () => {
         turn={turnOf(row.url)}
         onOpen={() => setEnlargedImage(row.url)}
         onRotate={(direction) => rotate(row.url, direction)}
+        onDownload={row.storagePath ? () => downloadStoredFile(row.storagePath, downloadFileName(label, row.storagePath)) : undefined}
+        downloadBusy={downloadState === row.storagePath}
       />
     );
   };
@@ -707,6 +777,36 @@ const AdminCaseDetail = () => {
     return <pre className="admin-case-detail-json">{JSON.stringify(pd, null, 2)}</pre>;
   };
 
+  const downloadableFiles = [];
+  const rememberDownload = (storagePath, label, src) => {
+    const path = String(storagePath || '').trim();
+    if (!/^uploads\/[A-Za-z0-9._/-]+$/.test(path) || path.includes('..')) return;
+    if (downloadableFiles.some((file) => file.path === path)) return;
+    downloadableFiles.push({
+      path,
+      name: downloadFileName(label, path),
+      src: String(src || ''),
+    });
+  };
+  rememberDownload(c.idCardPhotoStoragePath, 'תעודת זהות', mediaFieldToUrl(c.idCardPhoto));
+  rememberDownload(c.idCardAnnexStoragePath, 'נספח', mediaFieldToUrl(c.idCardAnnex));
+  rememberDownload(c.signatureImageStoragePath, 'חתימה', mediaFieldToUrl(c.signatureImage));
+  rememberDownload(c.agentSignatureImageStoragePath, 'חתימת סוכן', mediaFieldToUrl(c.agentSignatureImage));
+  rememberDownload(c.hraDetails?.imagePath, 'תמונת HRA', c.hraDetails?.imageUrl);
+  rememberDownload(c.hraDetails?.filePath, 'קובץ HRA', c.hraDetails?.fileUrl);
+  attachmentRows.forEach((row, index) => rememberDownload(row.storagePath, `מסמך ${index + 1}`, row.url));
+  savedAddedMembers.forEach((member, memberIndex) => {
+    (member.images || []).forEach((image, imageIndex) => {
+      rememberDownload(image.path, `${member.fullName || `אדם ${memberIndex + 1}`} ${imageIndex + 1}`, memberImageViewUrl(image));
+    });
+  });
+  const enlargedDownload = downloadableFiles.find((file) => file.src && file.src === enlargedImage);
+  const hasCaseImages =
+    downloadableFiles.length > 0 ||
+    attachmentRows.length > 0 ||
+    savedAddedMembers.some((member) => (member.images || []).length > 0) ||
+    Boolean(mediaFieldToUrl(c.idCardPhoto) || mediaFieldToUrl(c.idCardAnnex) || mediaFieldToUrl(c.signatureImage));
+
   const isCardOrderCase =
     c?.benefitType === 'card_order' ||
     c?.personalDetails?.form === 'card_order' ||
@@ -723,6 +823,12 @@ const AdminCaseDetail = () => {
           turn={turnOf(enlargedImage)}
           onRotate={(direction) => rotate(enlargedImage, direction)}
           onClose={() => setEnlargedImage(null)}
+          onDownload={
+            enlargedDownload
+              ? () => downloadStoredFile(enlargedDownload.path, enlargedDownload.name)
+              : undefined
+          }
+          downloadBusy={downloadState === enlargedDownload?.path}
         />
       )}
       <div className={`admin-case-detail-card ${getCaseStageToneClass(c)}`.trim()}>
@@ -772,6 +878,8 @@ const AdminCaseDetail = () => {
                 turn={turnOf(c.hraDetails.imageUrl)}
                 onOpen={() => setEnlargedImage(c.hraDetails.imageUrl)}
                 onRotate={(direction) => rotate(c.hraDetails.imageUrl, direction)}
+                onDownload={c.hraDetails.imagePath ? () => downloadStoredFile(c.hraDetails.imagePath, downloadFileName('תמונת HRA', c.hraDetails.imagePath)) : undefined}
+                downloadBusy={downloadState === c.hraDetails.imagePath}
               />
             ) : null}
             {c.hraDetails.fileUrl ? (
@@ -784,6 +892,7 @@ const AdminCaseDetail = () => {
                 >
                   {c.hraDetails.fileName || 'קובץ HRA'} – פתח / הורד
                 </a>
+                {renderDownloadButton(c.hraDetails.filePath, c.hraDetails.fileName || 'קובץ HRA')}
               </div>
             ) : null}
           </section>
@@ -837,12 +946,23 @@ const AdminCaseDetail = () => {
         <section className="admin-case-detail-section">
           <div className="admin-case-detail-section-head">
             <h2>תוכן הטופס</h2>
+            {hasCaseImages ? (
+              <button
+                type="button"
+                className="admin-case-detail-edit-text"
+                onClick={downloadAllImages}
+                disabled={Boolean(downloadState)}
+              >
+                {downloadState === 'all' ? 'מוריד...' : 'הורדת כל התמונות'}
+              </button>
+            ) : null}
             {canEditSubmittedText && !editingText && (isCardOrderCase || isCreditCase) ? (
               <button type="button" className="admin-case-detail-edit-text" onClick={() => startTextEdit()}>
                 עריכת מלל
               </button>
             ) : null}
           </div>
+          {downloadError ? <p className="admin-case-detail-error">{downloadError}</p> : null}
           {canEditSubmittedText && !isCardOrderCase && !isCreditCase ? (
             <div className="admin-case-add-person">
               {!editingText ? (
@@ -1101,15 +1221,17 @@ const AdminCaseDetail = () => {
                           const label = `תמונה ${imageIndex + 1}`;
                           if (urlLooksLikePdf(src) || urlLooksLikePdf(image.path)) {
                             return (
-                              <a
-                                key={image.path || imageIndex}
-                                className="admin-case-detail-pdf-open-link"
-                                href={src}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                              >
-                                {label} – PDF
-                              </a>
+                              <div key={image.path || imageIndex}>
+                                <a
+                                  className="admin-case-detail-pdf-open-link"
+                                  href={src}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                >
+                                  {label} – PDF
+                                </a>
+                                {renderDownloadButton(image.path, label)}
+                              </div>
                             );
                           }
                           return (
@@ -1121,6 +1243,8 @@ const AdminCaseDetail = () => {
                               turn={turnOf(src)}
                               onOpen={() => setEnlargedImage(src)}
                               onRotate={(direction) => rotate(src, direction)}
+                              onDownload={image.path ? () => downloadStoredFile(image.path, downloadFileName(label, image.path)) : undefined}
+                              downloadBusy={downloadState === image.path}
                             />
                           );
                         })}
@@ -1152,14 +1276,17 @@ const AdminCaseDetail = () => {
                 <div className="admin-case-detail-field admin-case-detail-field-block">
                   <span className="admin-case-detail-label">תמונת תעודת זהות / מסמך</span>
                   {urlLooksLikePdf(mediaFieldToUrl(c.idCardPhoto)) ? (
-                    <a
-                      className="admin-case-detail-pdf-open-link"
-                      href={mediaFieldToUrl(c.idCardPhoto)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      פתיחת PDF – תעודת זהות / מסמך
-                    </a>
+                    <div>
+                      <a
+                        className="admin-case-detail-pdf-open-link"
+                        href={mediaFieldToUrl(c.idCardPhoto)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        פתיחת PDF – תעודת זהות / מסמך
+                      </a>
+                      {renderDownloadButton(c.idCardPhotoStoragePath, 'תעודת זהות')}
+                    </div>
                   ) : (
                     <DocumentImage
                       src={mediaFieldToUrl(c.idCardPhoto)}
@@ -1168,6 +1295,8 @@ const AdminCaseDetail = () => {
                       turn={turnOf(mediaFieldToUrl(c.idCardPhoto))}
                       onOpen={() => setEnlargedImage(mediaFieldToUrl(c.idCardPhoto))}
                       onRotate={(direction) => rotate(mediaFieldToUrl(c.idCardPhoto), direction)}
+                      onDownload={c.idCardPhotoStoragePath ? () => downloadStoredFile(c.idCardPhotoStoragePath, downloadFileName('תעודת זהות', c.idCardPhotoStoragePath)) : undefined}
+                      downloadBusy={downloadState === c.idCardPhotoStoragePath}
                     />
                   )}
                 </div>
@@ -1176,14 +1305,17 @@ const AdminCaseDetail = () => {
                 <div className="admin-case-detail-field admin-case-detail-field-block">
                   <span className="admin-case-detail-label">נספח למסמך</span>
                   {urlLooksLikePdf(mediaFieldToUrl(c.idCardAnnex)) ? (
-                    <a
-                      className="admin-case-detail-pdf-open-link"
-                      href={mediaFieldToUrl(c.idCardAnnex)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      פתיחת PDF – נספח
-                    </a>
+                    <div>
+                      <a
+                        className="admin-case-detail-pdf-open-link"
+                        href={mediaFieldToUrl(c.idCardAnnex)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        פתיחת PDF – נספח
+                      </a>
+                      {renderDownloadButton(c.idCardAnnexStoragePath, 'נספח')}
+                    </div>
                   ) : (
                     <DocumentImage
                       src={mediaFieldToUrl(c.idCardAnnex)}
@@ -1192,6 +1324,8 @@ const AdminCaseDetail = () => {
                       turn={turnOf(mediaFieldToUrl(c.idCardAnnex))}
                       onOpen={() => setEnlargedImage(mediaFieldToUrl(c.idCardAnnex))}
                       onRotate={(direction) => rotate(mediaFieldToUrl(c.idCardAnnex), direction)}
+                      onDownload={c.idCardAnnexStoragePath ? () => downloadStoredFile(c.idCardAnnexStoragePath, downloadFileName('נספח', c.idCardAnnexStoragePath)) : undefined}
+                      downloadBusy={downloadState === c.idCardAnnexStoragePath}
                     />
                   )}
                 </div>
@@ -1317,6 +1451,8 @@ const AdminCaseDetail = () => {
                   turn={turnOf(mediaFieldToUrl(c.signatureImage))}
                   onOpen={() => setEnlargedImage(mediaFieldToUrl(c.signatureImage))}
                   onRotate={(direction) => rotate(mediaFieldToUrl(c.signatureImage), direction)}
+                  onDownload={c.signatureImageStoragePath ? () => downloadStoredFile(c.signatureImageStoragePath, downloadFileName('חתימה', c.signatureImageStoragePath)) : undefined}
+                  downloadBusy={downloadState === c.signatureImageStoragePath}
                 />
               </div>
             )}

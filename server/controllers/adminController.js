@@ -23,7 +23,9 @@ import {
   utcTodayYyyyMmDd,
   subtractOneDayYmd,
 } from '../utils/deferredPaymentDates.js';
-import { withSignedCaseMediaForAdmin } from '../utils/caseMediaUrls.js';
+import { storagePathOf, withSignedCaseMediaForAdmin } from '../utils/caseMediaUrls.js';
+import { downloadFromSupabase } from '../services/supabaseStorage.js';
+import { zipStore } from '../utils/zipStore.js';
 import { recordAdminCaseChange, processingChangeSteps, statusChangeSteps } from '../services/adminChangeNotice.js';
 import {
   listUnseenAdminNotices,
@@ -72,6 +74,120 @@ export const getCaseById = async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ error: 'שגיאה בשליפת התיק' });
+  }
+};
+
+function fileLabel(category, index) {
+  const value = String(category || '');
+  if (value.includes('passport')) return `דרכון-${index + 1}`;
+  if (value.includes('ssn')) return `סושיאל-${index + 1}`;
+  if (value.includes('medical')) return `מסמך-רפואי-${index + 1}`;
+  if (value === 'birth') return `תעודת-לידה-${index + 1}`;
+  if (value === 'payment') return `אישור-תשלום-${index + 1}`;
+  if (value === 'marriage_certificate_us') return `תעודת-נישואין-${index + 1}`;
+  if (value === 'id_doc') return `זיהוי-${index + 1}`;
+  if (value === 'card_photo') return `צילום-כרטיס-${index + 1}`;
+  return `מסמך-${index + 1}`;
+}
+
+function extensionOf(storagePath) {
+  const match = String(storagePath || '').match(/\.([a-z0-9]{2,5})$/i);
+  return match ? match[1].toLowerCase() : 'jpg';
+}
+
+function collectCaseFiles(caseData) {
+  const files = [];
+  const add = (storagePath, label) => {
+    const path = storagePathOf(storagePath);
+    if (!path || files.some((file) => file.path === path)) return;
+    const base = String(label || 'קובץ').replace(/[\\/:*?"<>|]/g, '').trim() || 'קובץ';
+    files.push({ path, name: `${String(files.length + 1).padStart(2, '0')}-${base}.${extensionOf(path)}` });
+  };
+  add(caseData?.idCardPhoto, 'תעודת-זהות');
+  add(caseData?.idCardAnnex, 'נספח');
+  add(caseData?.signatureImage, 'חתימה');
+  add(caseData?.agentSignatureImage, 'חתימת-סוכן');
+  add(caseData?.hraDetails?.imagePath, 'תמונת-HRA');
+  add(caseData?.hraDetails?.filePath, 'קובץ-HRA');
+  const meta = Array.isArray(caseData?.attachmentMeta) ? caseData.attachmentMeta : [];
+  if (meta.length > 0) {
+    meta.forEach((item, index) => add(item?.path, fileLabel(item?.category, index)));
+  } else if (Array.isArray(caseData?.attachments)) {
+    caseData.attachments.forEach((item, index) => add(typeof item === 'string' ? item : item?.path, `מסמך-${index + 1}`));
+  }
+  const members = Array.isArray(caseData?.personalDetails?.addedMembers) ? caseData.personalDetails.addedMembers : [];
+  members.forEach((member, memberIndex) => {
+    const images = Array.isArray(member?.images) ? member.images : [];
+    const who = String(member?.fullName || `אדם-${memberIndex + 1}`).replace(/[\\/:*?"<>|]/g, '').trim();
+    images.forEach((image, imageIndex) => add(typeof image === 'string' ? image : image?.path, `${who}-${imageIndex + 1}`));
+  });
+  return files;
+}
+
+async function caseFileForRequest(req, res, storagePath) {
+  const requested = storagePathOf(storagePath);
+  if (!requested) {
+    res.status(400).json({ error: 'קובץ לא תקין' });
+    return null;
+  }
+  const caseData = await findCaseById(req.params.id);
+  if (!caseData) {
+    res.status(404).json({ error: 'תיק לא נמצא' });
+    return null;
+  }
+  if (caseDeskDenied(req, res, caseData)) return null;
+  const match = collectCaseFiles(caseData).find((file) => file.path === requested);
+  if (!match) {
+    res.status(404).json({ error: 'הקובץ לא שייך לתיק' });
+    return null;
+  }
+  const downloaded = await downloadFromSupabase(requested);
+  if (!downloaded) {
+    res.status(404).json({ error: 'הקובץ לא נמצא' });
+    return null;
+  }
+  return { ...match, ...downloaded };
+}
+
+function sendAttachment(res, buffer, contentType, filename) {
+  const asciiName = String(filename || 'file').replace(/[^\x20-\x7E]/g, '_') || 'file';
+  res.setHeader('Content-Type', contentType || 'application/octet-stream');
+  res.setHeader(
+    'Content-Disposition',
+    `attachment; filename="${asciiName}"; filename*=UTF-8''${encodeURIComponent(filename || 'file')}`
+  );
+  res.send(buffer);
+}
+
+export const downloadCaseFile = async (req, res) => {
+  try {
+    const file = await caseFileForRequest(req, res, req.query.path);
+    if (!file) return;
+    return sendAttachment(res, file.buffer, file.contentType, file.name);
+  } catch (error) {
+    console.error('downloadCaseFile error:', error);
+    return res.status(500).json({ error: 'שגיאה בהורדת הקובץ' });
+  }
+};
+
+export const downloadCaseImagesZip = async (req, res) => {
+  try {
+    const caseData = await findCaseById(req.params.id);
+    if (!caseData) return res.status(404).json({ error: 'תיק לא נמצא' });
+    if (caseDeskDenied(req, res, caseData)) return;
+    const listed = collectCaseFiles(caseData);
+    if (!listed.length) return res.status(404).json({ error: 'אין תמונות להורדה' });
+    const packed = [];
+    for (const file of listed) {
+      const downloaded = await downloadFromSupabase(file.path);
+      if (!downloaded?.buffer?.length) continue;
+      packed.push({ name: file.name, buffer: downloaded.buffer });
+    }
+    if (!packed.length) return res.status(404).json({ error: 'התמונות לא נמצאו' });
+    return sendAttachment(res, zipStore(packed), 'application/zip', 'תמונות-התיק.zip');
+  } catch (error) {
+    console.error('downloadCaseImagesZip error:', error);
+    return res.status(500).json({ error: 'שגיאה בהורדת התמונות' });
   }
 };
 

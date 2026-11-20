@@ -12,6 +12,14 @@ function alreadyPublicOrInline(val) {
   return false;
 }
 
+export function storagePathOf(val) {
+  if (typeof val !== 'string') return '';
+  const path = val.trim();
+  if (!path || path.includes('..') || alreadyPublicOrInline(path)) return '';
+  if (!/^uploads\/[A-Za-z0-9._/-]{1,400}$/.test(path)) return '';
+  return path;
+}
+
 export async function signMediaIfStoragePath(val, expiresSec = ADMIN_MEDIA_SIGNED_TTL_SEC) {
   if (alreadyPublicOrInline(val)) return val;
   const signed = await getSignedUrl(String(val).trim(), expiresSec);
@@ -37,8 +45,15 @@ export async function withSignedCaseMediaForAdmin(caseData, expiresSec = ADMIN_M
   out.agentSignatureImage = agentSignatureImage;
   out.idCardPhoto = idCardPhoto;
   out.idCardAnnex = idCardAnnex;
+  out.signatureImageStoragePath = storagePathOf(caseData.signatureImage);
+  out.agentSignatureImageStoragePath = storagePathOf(caseData.agentSignatureImage);
+  out.idCardPhotoStoragePath = storagePathOf(caseData.idCardPhoto);
+  out.idCardAnnexStoragePath = storagePathOf(caseData.idCardAnnex);
 
   if (Array.isArray(caseData.attachments)) {
+    out.attachmentStoragePaths = caseData.attachments.map((item) =>
+      storagePathOf(typeof item === 'string' ? item : item?.path || item?.url)
+    );
     out.attachments = await Promise.all(
       caseData.attachments.map(async (item) => {
         if (typeof item === 'string') return signMediaIfStoragePath(item, expiresSec);
@@ -61,7 +76,7 @@ export async function withSignedCaseMediaForAdmin(caseData, expiresSec = ADMIN_M
         const p = m.path;
         if (typeof p !== 'string') return m;
         const signed = await signMediaIfStoragePath(p, expiresSec);
-        return { ...m, path: signed };
+        return { ...m, path: signed, storagePath: storagePathOf(p) };
       })
     );
   }
