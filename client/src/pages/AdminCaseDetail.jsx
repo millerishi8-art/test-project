@@ -228,6 +228,7 @@ const AdminCaseDetail = () => {
   const [statusModalOpen, setStatusModalOpen] = useState(false);
   const [downloadState, setDownloadState] = useState('');
   const [downloadError, setDownloadError] = useState('');
+  const [imageDropMemberId, setImageDropMemberId] = useState('');
 
   useEffect(() => {
     let cancelled = false;
@@ -1069,7 +1070,26 @@ const AdminCaseDetail = () => {
                           onChange={(e) => updateDraftMember(member.id, 'notes', e.target.value)}
                         />
                       </label>
-                      <div className="admin-case-member-images">
+                      <div
+                        className={`admin-case-member-images${imageDropMemberId === member.id ? ' is-dragover' : ''}`}
+                        onDragEnter={(e) => {
+                          e.preventDefault();
+                          if (!textSaving && !member.imageUploading) setImageDropMemberId(member.id);
+                        }}
+                        onDragOver={(e) => {
+                          e.preventDefault();
+                          if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
+                        }}
+                        onDragLeave={(e) => {
+                          if (!e.currentTarget.contains(e.relatedTarget)) setImageDropMemberId('');
+                        }}
+                        onDrop={(e) => {
+                          e.preventDefault();
+                          setImageDropMemberId('');
+                          if (textSaving || member.imageUploading) return;
+                          uploadMemberImages(member.id, e.dataTransfer.files);
+                        }}
+                      >
                         <span className="admin-case-text-edit-field">תמונות</span>
                         <label className="admin-case-member-image-add">
                           {member.imageUploading ? 'מעלה תמונות...' : '+ הוספת תמונה'}
@@ -1085,6 +1105,7 @@ const AdminCaseDetail = () => {
                             }}
                           />
                         </label>
+                        <p className="admin-case-member-drop-hint">אפשר גם לגרור תמונה לכאן</p>
                         {member.imageError ? (
                           <p className="admin-case-detail-error">{member.imageError}</p>
                         ) : null}

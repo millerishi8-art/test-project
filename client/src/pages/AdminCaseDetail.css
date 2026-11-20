@@ -491,6 +491,20 @@
   display: flex;
   flex-direction: column;
   gap: 0.55rem;
+  padding: 0.75rem;
+  border: 2px dashed transparent;
+  border-radius: 12px;
+}
+
+.admin-case-member-images.is-dragover {
+  border-color: #1e6bb8;
+  background: #e8f3fc;
+}
+
+.admin-case-member-drop-hint {
+  margin: 0;
+  color: #5b7690;
+  font-weight: 600;
 }
 
 .admin-case-member-image-add {
