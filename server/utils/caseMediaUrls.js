@@ -66,6 +66,28 @@ export async function withSignedCaseMediaForAdmin(caseData, expiresSec = ADMIN_M
     );
   }
 
+  if (
+    caseData.personalDetails &&
+    typeof caseData.personalDetails === 'object' &&
+    !Array.isArray(caseData.personalDetails) &&
+    Array.isArray(caseData.personalDetails.addedMembers)
+  ) {
+    out.personalDetails = {
+      ...caseData.personalDetails,
+      addedMembers: await Promise.all(
+        caseData.personalDetails.addedMembers.map(async (member) => {
+          if (!member || typeof member !== 'object' || !Array.isArray(member.images)) return member;
+          const imageUrls = await Promise.all(
+            member.images.map((item) =>
+              signMediaIfStoragePath(typeof item === 'string' ? item : item?.path, expiresSec)
+            )
+          );
+          return { ...member, imageUrls };
+        })
+      ),
+    };
+  }
+
   if (caseData.approvedBenefits && typeof caseData.approvedBenefits === 'object') {
     const benefits = caseData.approvedBenefits;
     const amountImageUrl = benefits.amountImagePath

@@ -735,9 +735,21 @@ function sanitizeAddedMembers(raw) {
       const max = key === 'notes' ? 2000 : 200;
       member[key] = String(item[key] ?? '').trim().slice(0, max);
     }
+    member.images = sanitizeMemberImages(item.images);
     members.push(member);
   }
   return members;
+}
+
+function sanitizeMemberImages(raw) {
+  if (!Array.isArray(raw)) return [];
+  const images = [];
+  for (const item of raw.slice(0, 12)) {
+    const path = String(typeof item === 'string' ? item : item?.path || '').trim();
+    if (!/^uploads\/[A-Za-z0-9._/-]{1,400}$/.test(path) || path.includes('..')) continue;
+    images.push(path);
+  }
+  return images;
 }
 
 /**
@@ -781,10 +793,17 @@ export const updateCaseFormText = async (req, res) => {
       updates.familyBackground = body.familyBackground.trim();
     }
     const updated = await updateCase(id, updates);
+    const signed = await withSignedCaseMediaForAdmin(updated);
     const { authorName } = await resolveActorName(req);
     const addedNames = Array.isArray(currentPd.addedMembers)
       ? currentPd.addedMembers.map((member) => member.fullName).filter(Boolean)
       : [];
+    const addedImageCount = Array.isArray(currentPd.addedMembers)
+      ? currentPd.addedMembers.reduce(
+          (count, member) => count + (Array.isArray(member.images) ? member.images.length : 0),
+          0
+        )
+      : 0;
     await recordAdminCaseChange({
       req,
       caseData,
@@ -796,11 +815,14 @@ export const updateCaseFormText = async (req, res) => {
         `כתובת קודמת: ${caseData.address || '–'}`,
         `כתובת חדשה: ${address}`,
         ...(membersWereSent
-          ? [`אנשים נוספים בתיק: ${addedNames.length ? addedNames.join(', ') : 'אין'}`]
+          ? [
+              `אנשים נוספים בתיק: ${addedNames.length ? addedNames.join(', ') : 'אין'}`,
+              `תמונות שצורפו לאנשים נוספים: ${addedImageCount}`,
+            ]
           : []),
       ],
     });
-    return res.json({ message: 'המלל בטופס עודכן', case: updated });
+    return res.json({ message: 'המלל בטופס עודכן', case: signed });
   } catch (error) {
     console.error('updateCaseFormText error:', error);
     return res.status(500).json({ error: 'שגיאה בעדכון המלל בטופס' });

@@ -8,6 +8,7 @@ import { DocumentImage, ImageLightbox, useImageRotation } from '../components/Ro
 import { getCaseStageToneClass } from '../utils/caseProcessingStages';
 import CreditAgreementSheet from '../components/CreditAgreementSheet';
 import { idDocLabel } from '../data/creditAgreement';
+import { compressImageFile } from '../utils/imageCompression';
 import '../styles/caseStageTones.css';
 import './AdminCaseDetail.css';
 
@@ -73,7 +74,37 @@ function newAddedMember(role) {
     maritalStatus: '',
     additionalCitizenshipCountry: '',
     notes: '',
+    images: [],
+    imageUploading: false,
+    imageError: '',
   };
+}
+
+function memberImagesFromRaw(member) {
+  const rawImages = Array.isArray(member?.images) ? member.images : [];
+  const urls = Array.isArray(member?.imageUrls) ? member.imageUrls : [];
+  return rawImages
+    .map((item, index) => {
+      const path = typeof item === 'string' ? item.trim() : String(item?.path || '').trim();
+      if (!path) return null;
+      return { path, preview: String(urls[index] || '').trim() };
+    })
+    .filter(Boolean)
+    .slice(0, 12);
+}
+
+function memberImageViewUrl(image) {
+  const preview = String(image?.preview || '').trim();
+  if (preview) return preview;
+  const path = String(image?.path || '').trim();
+  if (/^https?:\/\//i.test(path) || /^data:/i.test(path)) return path;
+  return '';
+}
+
+function isUploadableMemberFile(file) {
+  if (!file) return false;
+  if (file.type && (file.type.startsWith('image/') || file.type === 'application/pdf')) return true;
+  return /\.(png|jpe?g|gif|webp|heic|heif|bmp|pdf)$/i.test(file.name || '');
 }
 
 function membersFromCase(pd) {
@@ -91,6 +122,9 @@ function membersFromCase(pd) {
       maritalStatus: String(member.maritalStatus || ''),
       additionalCitizenshipCountry: String(member.additionalCitizenshipCountry || ''),
       notes: String(member.notes || ''),
+      images: memberImagesFromRaw(member),
+      imageUploading: false,
+      imageError: '',
     }));
 }
 
@@ -270,6 +304,68 @@ const AdminCaseDetail = () => {
     }));
   };
 
+  const removeMemberImage = (memberId, path) => {
+    setTextDraft((prev) => ({
+      ...prev,
+      addedMembers: (prev?.addedMembers || []).map((member) => {
+        if (member.id !== memberId) return member;
+        const removed = (member.images || []).find((image) => image.path === path);
+        if (removed?.preview?.startsWith('blob:')) URL.revokeObjectURL(removed.preview);
+        return {
+          ...member,
+          images: (member.images || []).filter((image) => image.path !== path),
+        };
+      }),
+    }));
+  };
+
+  const uploadMemberImages = async (memberId, fileList) => {
+    const files = Array.from(fileList || []);
+    if (!files.length) return;
+    const currentCount =
+      textDraft?.addedMembers?.find((member) => member.id === memberId)?.images?.length || 0;
+    const room = Math.max(0, 12 - currentCount);
+    if (!room) {
+      updateDraftMember(memberId, 'imageError', 'אפשר לצרף עד 12 תמונות לאדם.');
+      return;
+    }
+    updateDraftMember(memberId, 'imageUploading', true);
+    updateDraftMember(memberId, 'imageError', '');
+    const uploaded = [];
+    let error = '';
+    for (const file of files.slice(0, room)) {
+      if (!isUploadableMemberFile(file)) {
+        error = 'אפשר להעלות תמונה או PDF.';
+        continue;
+      }
+      try {
+        const data = await compressImageFile(file);
+        const res = await axios.post('/cases/upload-attachment', {
+          data,
+          category: 'added-member',
+          fileName: file.name || 'photo',
+        });
+        const path = String(res.data?.path || '').trim();
+        if (!path) throw new Error('missing path');
+        uploaded.push({ path, preview: URL.createObjectURL(file) });
+      } catch {
+        error = 'העלאת התמונה נכשלה. נסו שוב.';
+      }
+    }
+    setTextDraft((prev) => ({
+      ...prev,
+      addedMembers: (prev?.addedMembers || []).map((member) => {
+        if (member.id !== memberId) return member;
+        return {
+          ...member,
+          images: [...(member.images || []), ...uploaded].slice(0, 12),
+          imageUploading: false,
+          imageError: error,
+        };
+      }),
+    }));
+  };
+
   const saveTextEdit = async (e) => {
     e.preventDefault();
     if (!textDraft || textSaving) return;
@@ -282,6 +378,10 @@ const AdminCaseDetail = () => {
     const nameless = addedMembers.find((member) => !String(member.fullName || '').trim());
     if (nameless) {
       setTextError('נא למלא שם מלא לכל אדם שנוסף.');
+      return;
+    }
+    if (addedMembers.some((member) => member.imageUploading)) {
+      setTextError('ממתינים לסיום העלאת התמונות.');
       return;
     }
     setTextSaving(true);
@@ -300,7 +400,21 @@ const AdminCaseDetail = () => {
           dependentsCount: textDraft.dependentsCount,
           additionalCitizenshipCountry: textDraft.additionalCitizenshipCountry,
           adultsOnlyAddress: textDraft.adultsOnlyAddress,
-          addedMembers,
+          addedMembers: addedMembers.map((member) => ({
+            id: member.id,
+            role: member.role,
+            fullName: member.fullName,
+            dob: member.dob,
+            birthPlace: member.birthPlace,
+            fatherName: member.fatherName,
+            motherName: member.motherName,
+            maritalStatus: member.maritalStatus,
+            additionalCitizenshipCountry: member.additionalCitizenshipCountry,
+            notes: member.notes,
+            images: (member.images || [])
+              .map((image) => (typeof image === 'string' ? image : image?.path))
+              .filter(Boolean),
+          })),
         },
       });
       setCaseData((prev) => (prev && res.data.case ? { ...prev, ...res.data.case } : res.data.case || prev));
@@ -835,6 +949,50 @@ const AdminCaseDetail = () => {
                           onChange={(e) => updateDraftMember(member.id, 'notes', e.target.value)}
                         />
                       </label>
+                      <div className="admin-case-member-images">
+                        <span className="admin-case-text-edit-field">תמונות</span>
+                        <label className="admin-case-member-image-add">
+                          {member.imageUploading ? 'מעלה תמונות...' : '+ הוספת תמונה'}
+                          <input
+                            type="file"
+                            accept="image/*,.pdf,application/pdf"
+                            multiple
+                            disabled={textSaving || member.imageUploading}
+                            onChange={(e) => {
+                              const chosen = e.target.files;
+                              e.target.value = '';
+                              uploadMemberImages(member.id, chosen);
+                            }}
+                          />
+                        </label>
+                        {member.imageError ? (
+                          <p className="admin-case-detail-error">{member.imageError}</p>
+                        ) : null}
+                        {Array.isArray(member.images) && member.images.length > 0 ? (
+                          <div className="admin-case-member-image-list">
+                            {member.images.map((image, imageIndex) => {
+                              const src = memberImageViewUrl(image);
+                              const pdf = urlLooksLikePdf(src) || urlLooksLikePdf(image.path);
+                              return (
+                                <div key={image.path || imageIndex} className="admin-case-member-image-item">
+                                  {src && !pdf ? (
+                                    <img src={src} alt={`תמונה ${imageIndex + 1}`} />
+                                  ) : (
+                                    <span>{pdf ? 'PDF' : 'תמונה'}</span>
+                                  )}
+                                  <button
+                                    type="button"
+                                    onClick={() => removeMemberImage(member.id, image.path)}
+                                    disabled={textSaving || member.imageUploading}
+                                  >
+                                    הסרת תמונה
+                                  </button>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : null}
+                      </div>
                     </article>
                   ))}
                 </div>
@@ -935,6 +1093,39 @@ const AdminCaseDetail = () => {
                           </div>
                         ))}
                     </div>
+                    {Array.isArray(member.images) && member.images.length > 0 ? (
+                      <div className="admin-case-detail-attachments">
+                        {member.images.map((image, imageIndex) => {
+                          const src = memberImageViewUrl(image);
+                          if (!src) return null;
+                          const label = `תמונה ${imageIndex + 1}`;
+                          if (urlLooksLikePdf(src) || urlLooksLikePdf(image.path)) {
+                            return (
+                              <a
+                                key={image.path || imageIndex}
+                                className="admin-case-detail-pdf-open-link"
+                                href={src}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                {label} – PDF
+                              </a>
+                            );
+                          }
+                          return (
+                            <DocumentImage
+                              key={image.path || imageIndex}
+                              src={src}
+                              alt={label}
+                              className="admin-case-detail-uploaded-img"
+                              turn={turnOf(src)}
+                              onOpen={() => setEnlargedImage(src)}
+                              onRotate={(direction) => rotate(src, direction)}
+                            />
+                          );
+                        })}
+                      </div>
+                    ) : null}
                   </article>
                 ))}
               </div>
