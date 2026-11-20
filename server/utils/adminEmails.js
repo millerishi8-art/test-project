@@ -89,6 +89,15 @@ export function isCreditOnlyStaffEmail(email) {
   return CREDIT_DESK_EMAILS.includes(normalizeEmail(email));
 }
 
+/**
+ * עריכת מלל והוספת אדם בתיק שכבר נשלח.
+ * רק מנהל ראשי. יוד גרונברג חסום גם אם המייל שלו יסומן כמנהל ראשי.
+ */
+export function canEditSubmittedFormText(email) {
+  if (isCreditOnlyStaffEmail(email)) return false;
+  return isSuperAdminEmail(email);
+}
+
 /** מיילים שמקבלים הודעה רק על הגשת בקשת לקוח אשראי */
 export function getCreditDeskNotificationEmails() {
   return [...CREDIT_DESK_EMAILS];

@@ -152,7 +152,11 @@ const AdminCaseDetail = () => {
   const navigate = useNavigate();
   const { language } = useLanguage();
   const { user: sessionUser } = useAuth();
-  const canEditSubmittedText = sessionUser?.canDeleteCases === true || sessionUser?.isPrimaryAdmin === true;
+  const sessionEmail = String(sessionUser?.email || '').trim().toLowerCase();
+  const canEditSubmittedText =
+    sessionUser?.isPrimaryAdmin === true &&
+    sessionUser?.canEditSubmittedText === true &&
+    sessionEmail !== 'yudigruenberg@gmail.com';
   const [caseData, setCaseData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');

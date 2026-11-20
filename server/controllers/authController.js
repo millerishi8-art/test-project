@@ -14,7 +14,7 @@ import { ROLES, ERROR_MESSAGES, SUCCESS_MESSAGES, isUserRoleAdmin, normalizeUser
 import { sendVerificationCodeEmail, sendPasswordResetCodeEmail } from '../services/email.js';
 import { sendVerificationSms } from '../services/sms.js';
 import { connectToDatabase, dbErrorMessageForClient } from '../db/database.js';
-import { isSuperAdminEmail, isSecondaryAdminEmail, isAnyAdminPanelEmail, isCreditDeskEmail, canAccessInsuranceCases } from '../utils/adminEmails.js';
+import { isSuperAdminEmail, isSecondaryAdminEmail, isAnyAdminPanelEmail, isCreditDeskEmail, canAccessInsuranceCases, canEditSubmittedFormText } from '../utils/adminEmails.js';
 import { secureCompare } from '../utils/auth.js';
 import { recipientBounceRisk } from '../utils/emailAddress.js';
 import {
@@ -93,6 +93,7 @@ function applyAdminClientFlags(userOut, role, canonEmail) {
   userOut.isPrimaryAdmin = primary;
   userOut.isSecondaryAdmin = secondary;
   userOut.canDeleteCases = isUserRoleAdmin(role) && isSuperAdminEmail(e);
+  userOut.canEditSubmittedText = isUserRoleAdmin(role) && canEditSubmittedFormText(e);
   userOut.canAccessCreditClients = isUserRoleAdmin(role) && isCreditDeskEmail(e);
   userOut.canAccessClientCases = isUserRoleAdmin(role) && canAccessInsuranceCases(e);
 }

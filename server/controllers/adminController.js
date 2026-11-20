@@ -7,6 +7,7 @@ import {
   isSuperAdminEmail,
   isCreditDeskEmail,
   isCreditOnlyStaffEmail,
+  canEditSubmittedFormText,
   canAccessInsuranceCases,
   getSecondaryAdminEmails,
 } from '../utils/adminEmails.js';
@@ -740,11 +741,12 @@ function sanitizeAddedMembers(raw) {
 }
 
 /**
- * רק המנהל הראשי מתקן מלל בטופס שכבר נשלח (כתובת ושדות טקסט).
+ * רק המנהל הראשי מתקן מלל או מוסיף אדם בטופס שכבר נשלח.
+ * יוד גרונברג לא מקבל את הגישה הזו.
  */
 export const updateCaseFormText = async (req, res) => {
   try {
-    if (!isSuperAdminEmail(req.user?.email)) {
+    if (!canEditSubmittedFormText(req.user?.email)) {
       return res.status(403).json({ error: 'רק המנהל הראשי יכול לערוך מלל בטופס שנשלח.' });
     }
     const { id } = req.params;
