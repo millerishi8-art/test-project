@@ -39,6 +39,58 @@ const adminCitizenshipLabels = {
   en: 'Additional citizenship (country)',
 };
 
+const ADDED_MEMBER_ROLES = [
+  { id: 'child', label: 'ילד', addLabel: '+ ילד' },
+  { id: 'man', label: 'איש', addLabel: '+ איש' },
+  { id: 'woman', label: 'אישה', addLabel: '+ אישה' },
+  { id: 'spouse', label: 'בן/בת זוג', addLabel: '+ בן/בת זוג' },
+];
+
+const ADDED_MEMBER_ROLE_LABEL = Object.fromEntries(ADDED_MEMBER_ROLES.map((role) => [role.id, role.label]));
+
+const ADDED_MEMBER_FIELDS = [
+  ['fullName', 'שם מלא'],
+  ['dob', 'תאריך לידה'],
+  ['birthPlace', 'מקום לידה'],
+  ['fatherName', 'שם האב'],
+  ['motherName', 'שם האם'],
+  ['maritalStatus', 'מצב משפחתי'],
+  ['additionalCitizenshipCountry', 'אזרחות נוספת (קוד מדינה)'],
+];
+
+function newAddedMember(role) {
+  return {
+    id: `m_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`,
+    role,
+    fullName: '',
+    dob: '',
+    birthPlace: '',
+    fatherName: '',
+    motherName: '',
+    maritalStatus: '',
+    additionalCitizenshipCountry: '',
+    notes: '',
+  };
+}
+
+function membersFromCase(pd) {
+  const raw = Array.isArray(pd?.addedMembers) ? pd.addedMembers : [];
+  return raw
+    .filter((member) => member && typeof member === 'object' && ADDED_MEMBER_ROLE_LABEL[member.role])
+    .map((member, index) => ({
+      id: String(member.id || `saved_${index}`),
+      role: member.role,
+      fullName: String(member.fullName || ''),
+      dob: String(member.dob || ''),
+      birthPlace: String(member.birthPlace || ''),
+      fatherName: String(member.fatherName || ''),
+      motherName: String(member.motherName || ''),
+      maritalStatus: String(member.maritalStatus || ''),
+      additionalCitizenshipCountry: String(member.additionalCitizenshipCountry || ''),
+      notes: String(member.notes || ''),
+    }));
+}
+
 /** URL להצגה – תומך במחרוזת או באובייקט מהמסד (path/url) */
 function mediaFieldToUrl(val) {
   if (!val) return '';
@@ -157,8 +209,12 @@ const AdminCaseDetail = () => {
     }
   };
 
-  const startTextEdit = () => {
+  const startTextEdit = (roleToAdd) => {
     const pd = caseData?.personalDetails && typeof caseData.personalDetails === 'object' ? caseData.personalDetails : {};
+    const addedMembers = membersFromCase(pd);
+    if (typeof roleToAdd === 'string' && ADDED_MEMBER_ROLE_LABEL[roleToAdd]) {
+      addedMembers.push(newAddedMember(roleToAdd));
+    }
     setTextDraft({
       address: caseData?.address || pd.address || '',
       fullName: pd.fullName || '',
@@ -171,6 +227,7 @@ const AdminCaseDetail = () => {
       additionalCitizenshipCountry: pd.additionalCitizenshipCountry || '',
       adultsOnlyAddress: pd.adultsOnlyAddress || '',
       familyBackground: caseData?.familyBackground || '',
+      addedMembers,
     });
     setTextError('');
     setEditingText(true);
@@ -180,12 +237,44 @@ const AdminCaseDetail = () => {
     setTextDraft((prev) => ({ ...prev, [key]: value }));
   };
 
+  const beginAddMember = (role) => {
+    if (editingText) {
+      setTextDraft((prev) =>
+        prev ? { ...prev, addedMembers: [...(prev.addedMembers || []), newAddedMember(role)] } : prev
+      );
+      return;
+    }
+    startTextEdit(role);
+  };
+
+  const updateDraftMember = (id, key, value) => {
+    setTextDraft((prev) => ({
+      ...prev,
+      addedMembers: (prev?.addedMembers || []).map((member) =>
+        member.id === id ? { ...member, [key]: value } : member
+      ),
+    }));
+  };
+
+  const removeDraftMember = (id) => {
+    setTextDraft((prev) => ({
+      ...prev,
+      addedMembers: (prev?.addedMembers || []).filter((member) => member.id !== id),
+    }));
+  };
+
   const saveTextEdit = async (e) => {
     e.preventDefault();
     if (!textDraft || textSaving) return;
     const address = String(textDraft.address || '').trim();
     if (!address) {
       setTextError('כתובת למשלוח הכרטיס לא יכולה להיות ריקה.');
+      return;
+    }
+    const addedMembers = Array.isArray(textDraft.addedMembers) ? textDraft.addedMembers : [];
+    const nameless = addedMembers.find((member) => !String(member.fullName || '').trim());
+    if (nameless) {
+      setTextError('נא למלא שם מלא לכל אדם שנוסף.');
       return;
     }
     setTextSaving(true);
@@ -204,6 +293,7 @@ const AdminCaseDetail = () => {
           dependentsCount: textDraft.dependentsCount,
           additionalCitizenshipCountry: textDraft.additionalCitizenshipCountry,
           adultsOnlyAddress: textDraft.adultsOnlyAddress,
+          addedMembers,
         },
       });
       setCaseData((prev) => (prev && res.data.case ? { ...prev, ...res.data.case } : res.data.case || prev));
@@ -283,6 +373,7 @@ const AdminCaseDetail = () => {
     mainDocs.general.push(row);
   });
   const familyChildren = Array.isArray(c?.personalDetails?.familyChildren) ? c.personalDetails.familyChildren : [];
+  const savedAddedMembers = membersFromCase(c?.personalDetails);
 
   const renderMediaCard = (row, label, idx) => {
     const key = `${row.id}_${idx}`;
@@ -625,12 +716,33 @@ const AdminCaseDetail = () => {
         <section className="admin-case-detail-section">
           <div className="admin-case-detail-section-head">
             <h2>תוכן הטופס</h2>
-            {canEditSubmittedText && !editingText ? (
-              <button type="button" className="admin-case-detail-edit-text" onClick={startTextEdit}>
+            {canEditSubmittedText && !editingText && (isCardOrderCase || isCreditCase) ? (
+              <button type="button" className="admin-case-detail-edit-text" onClick={() => startTextEdit()}>
                 עריכת מלל
               </button>
             ) : null}
           </div>
+          {canEditSubmittedText && !isCardOrderCase && !isCreditCase ? (
+            <div className="admin-case-add-person">
+              {!editingText ? (
+                <button type="button" className="admin-case-detail-edit-text" onClick={() => startTextEdit()}>
+                  עריכת מלל
+                </button>
+              ) : null}
+              <span className="admin-case-add-person-label">הוספת אדם:</span>
+              {ADDED_MEMBER_ROLES.map((role) => (
+                <button
+                  key={role.id}
+                  type="button"
+                  className="admin-case-add-person-btn"
+                  onClick={() => beginAddMember(role.id)}
+                  disabled={textSaving}
+                >
+                  {role.addLabel}
+                </button>
+              ))}
+            </div>
+          ) : null}
           {editingText && textDraft ? (
             <form className="admin-case-text-edit" onSubmit={saveTextEdit}>
               <label className="admin-case-text-edit-field">
@@ -672,6 +784,51 @@ const AdminCaseDetail = () => {
                         onChange={(e) => handleTextDraftChange(key, e.target.value)}
                       />
                     </label>
+                  ))}
+                </div>
+              ) : null}
+              {!isCardOrderCase && Array.isArray(textDraft.addedMembers) && textDraft.addedMembers.length > 0 ? (
+                <div className="admin-case-added-members">
+                  {textDraft.addedMembers.map((member, idx) => (
+                    <article key={member.id} className="admin-case-added-member">
+                      <div className="admin-case-added-member-head">
+                        <h3>
+                          {ADDED_MEMBER_ROLE_LABEL[member.role] || 'אדם'} #{idx + 1}
+                        </h3>
+                        <button
+                          type="button"
+                          className="admin-case-added-member-remove"
+                          onClick={() => removeDraftMember(member.id)}
+                          disabled={textSaving}
+                        >
+                          הסרה
+                        </button>
+                      </div>
+                      <div className="admin-case-text-edit-grid">
+                        {ADDED_MEMBER_FIELDS.map(([key, label]) => (
+                          <label key={key} className="admin-case-text-edit-field">
+                            <span>
+                              {label}
+                              {key === 'fullName' ? ' *' : ''}
+                            </span>
+                            <input
+                              type="text"
+                              value={member[key] || ''}
+                              onChange={(e) => updateDraftMember(member.id, key, e.target.value)}
+                              required={key === 'fullName'}
+                            />
+                          </label>
+                        ))}
+                      </div>
+                      <label className="admin-case-text-edit-field">
+                        <span>הערות</span>
+                        <textarea
+                          rows={2}
+                          value={member.notes || ''}
+                          onChange={(e) => updateDraftMember(member.id, 'notes', e.target.value)}
+                        />
+                      </label>
+                    </article>
                   ))}
                 </div>
               ) : null}
@@ -742,6 +899,39 @@ const AdminCaseDetail = () => {
               {renderPersonalDetailsContent(c.personalDetails)}
             </div>
           </div>
+          )}
+          {!editingText && !isCardOrderCase && !isCreditCase && savedAddedMembers.length > 0 && (
+            <div className="admin-case-detail-field admin-case-detail-field-block">
+              <span className="admin-case-detail-label">אנשים שנוספו לתיק</span>
+              <div className="admin-case-detail-children-cards">
+                {savedAddedMembers.map((member) => (
+                  <article key={member.id} className="admin-case-detail-child-card">
+                    <h4 className="admin-case-detail-child-title">
+                      {ADDED_MEMBER_ROLE_LABEL[member.role] || 'אדם'}
+                      {member.fullName ? ` — ${member.fullName}` : ''}
+                    </h4>
+                    <div className="admin-case-detail-grid">
+                      {[
+                        ['dob', 'תאריך לידה'],
+                        ['birthPlace', 'מקום לידה'],
+                        ['fatherName', 'שם האב'],
+                        ['motherName', 'שם האם'],
+                        ['maritalStatus', 'מצב משפחתי'],
+                        ['additionalCitizenshipCountry', 'אזרחות נוספת'],
+                        ['notes', 'הערות'],
+                      ]
+                        .filter(([key]) => String(member[key] || '').trim() !== '')
+                        .map(([key, label]) => (
+                          <div key={key} className="admin-case-detail-field">
+                            <span className="admin-case-detail-label">{label}</span>
+                            <span className="admin-case-detail-value">{member[key]}</span>
+                          </div>
+                        ))}
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </div>
           )}
           {typeof c.personalDetails === 'object' &&
             c.personalDetails !== null &&

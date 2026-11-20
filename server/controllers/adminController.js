@@ -705,6 +705,40 @@ const EDITABLE_FORM_TEXT_KEYS = [
   'adultsOnlyAddress',
 ];
 
+const ADDED_MEMBER_ROLES = new Set(['child', 'man', 'woman', 'spouse']);
+const ADDED_MEMBER_TEXT_KEYS = [
+  'dob',
+  'birthPlace',
+  'fatherName',
+  'motherName',
+  'maritalStatus',
+  'additionalCitizenshipCountry',
+  'notes',
+];
+
+function sanitizeAddedMembers(raw) {
+  if (!Array.isArray(raw)) return [];
+  const members = [];
+  for (const item of raw.slice(0, 40)) {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) continue;
+    const role = String(item.role || '').trim();
+    if (!ADDED_MEMBER_ROLES.has(role)) continue;
+    const fullName = String(item.fullName || '').trim().slice(0, 200);
+    if (!fullName) continue;
+    const id =
+      String(item.id || '')
+        .replace(/[^a-zA-Z0-9_-]/g, '')
+        .slice(0, 80) || `m_${members.length + 1}`;
+    const member = { id, role, fullName };
+    for (const key of ADDED_MEMBER_TEXT_KEYS) {
+      const max = key === 'notes' ? 2000 : 200;
+      member[key] = String(item[key] ?? '').trim().slice(0, max);
+    }
+    members.push(member);
+  }
+  return members;
+}
+
 /**
  * רק המנהל הראשי מתקן מלל בטופס שכבר נשלח (כתובת ושדות טקסט).
  */
@@ -735,6 +769,10 @@ export const updateCaseFormText = async (req, res) => {
     if (typeof currentPd.adultsOnlyAddress === 'string') {
       currentPd.adultsOnlyAddress = currentPd.adultsOnlyAddress.slice(0, 500);
     }
+    const membersWereSent = Object.prototype.hasOwnProperty.call(incomingPd, 'addedMembers');
+    if (membersWereSent) {
+      currentPd.addedMembers = sanitizeAddedMembers(incomingPd.addedMembers);
+    }
     currentPd.address = address;
     const updates = { address, personalDetails: currentPd };
     if (typeof body.familyBackground === 'string') {
@@ -742,6 +780,9 @@ export const updateCaseFormText = async (req, res) => {
     }
     const updated = await updateCase(id, updates);
     const { authorName } = await resolveActorName(req);
+    const addedNames = Array.isArray(currentPd.addedMembers)
+      ? currentPd.addedMembers.map((member) => member.fullName).filter(Boolean)
+      : [];
     await recordAdminCaseChange({
       req,
       caseData,
@@ -752,6 +793,9 @@ export const updateCaseFormText = async (req, res) => {
         `כייס של: ${currentPd.fullName || caseData.personalDetails?.fullName || 'לקוח'}`,
         `כתובת קודמת: ${caseData.address || '–'}`,
         `כתובת חדשה: ${address}`,
+        ...(membersWereSent
+          ? [`אנשים נוספים בתיק: ${addedNames.length ? addedNames.join(', ') : 'אין'}`]
+          : []),
       ],
     });
     return res.json({ message: 'המלל בטופס עודכן', case: updated });
