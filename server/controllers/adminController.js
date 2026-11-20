@@ -706,7 +706,7 @@ const EDITABLE_FORM_TEXT_KEYS = [
   'adultsOnlyAddress',
 ];
 
-const ADDED_MEMBER_ROLES = new Set(['child', 'man', 'woman', 'spouse']);
+const ADDED_MEMBER_ROLES = new Set(['child', 'man', 'guardian', 'spouse', 'woman']);
 const ADDED_MEMBER_TEXT_KEYS = [
   'dob',
   'birthPlace',

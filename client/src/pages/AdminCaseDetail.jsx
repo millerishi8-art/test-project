@@ -42,11 +42,14 @@ const adminCitizenshipLabels = {
 const ADDED_MEMBER_ROLES = [
   { id: 'child', label: 'ילד', addLabel: '+ ילד' },
   { id: 'man', label: 'איש', addLabel: '+ איש' },
-  { id: 'woman', label: 'אישה', addLabel: '+ אישה' },
+  { id: 'guardian', label: 'אפוטרופוס', addLabel: '+ אפוטרופוס' },
   { id: 'spouse', label: 'בן/בת זוג', addLabel: '+ בן/בת זוג' },
 ];
 
-const ADDED_MEMBER_ROLE_LABEL = Object.fromEntries(ADDED_MEMBER_ROLES.map((role) => [role.id, role.label]));
+const ADDED_MEMBER_ROLE_LABEL = {
+  ...Object.fromEntries(ADDED_MEMBER_ROLES.map((role) => [role.id, role.label])),
+  woman: 'אישה',
+};
 
 const ADDED_MEMBER_FIELDS = [
   ['fullName', 'שם מלא'],
