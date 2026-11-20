@@ -95,10 +95,72 @@ function memberImagesFromRaw(member) {
 
 function memberImageViewUrl(image) {
   const preview = String(image?.preview || '').trim();
-  if (preview) return preview;
+  if (/^(https?:|blob:|data:)/i.test(preview)) return preview;
   const path = String(image?.path || '').trim();
-  if (/^https?:\/\//i.test(path) || /^data:/i.test(path)) return path;
+  if (/^(https?:|blob:|data:)/i.test(path)) return path;
   return '';
+}
+
+function MemberStoredImage({ caseId, storagePath, src, alt, turn, onOpen, onRotate, onDownload, downloadBusy }) {
+  const direct = memberImageViewUrl({ preview: src, path: src });
+  const [blobUrl, setBlobUrl] = useState('');
+
+  useEffect(() => {
+    if (direct || !storagePath || !caseId) {
+      setBlobUrl('');
+      return undefined;
+    }
+    let cancelled = false;
+    let created = '';
+    axios
+      .get(`/admin/cases/${caseId}/media`, {
+        params: { path: storagePath },
+        responseType: 'blob',
+      })
+      .then((res) => {
+        if (cancelled) return;
+        created = URL.createObjectURL(res.data);
+        setBlobUrl(created);
+      })
+      .catch(() => {
+        if (!cancelled) setBlobUrl('');
+      });
+    return () => {
+      cancelled = true;
+      if (created) URL.revokeObjectURL(created);
+    };
+  }, [caseId, storagePath, direct]);
+
+  const view = direct || blobUrl;
+  if (!view) {
+    return <p className="admin-case-member-drop-hint">{storagePath ? 'טוען תמונה...' : ''}</p>;
+  }
+  if (urlLooksLikePdf(view) || urlLooksLikePdf(storagePath)) {
+    return (
+      <div>
+        <a className="admin-case-detail-pdf-open-link" href={view} target="_blank" rel="noopener noreferrer">
+          {alt} – PDF
+        </a>
+        {onDownload ? (
+          <button type="button" className="image-download-btn" onClick={onDownload} disabled={downloadBusy}>
+            {downloadBusy ? 'מוריד...' : 'הורדה למחשב'}
+          </button>
+        ) : null}
+      </div>
+    );
+  }
+  return (
+    <DocumentImage
+      src={view}
+      alt={alt}
+      className="admin-case-detail-uploaded-img"
+      turn={turn}
+      onOpen={() => onOpen(view)}
+      onRotate={(direction) => onRotate(view, direction)}
+      onDownload={onDownload}
+      downloadBusy={downloadBusy}
+    />
+  );
 }
 
 function isUploadableMemberFile(file) {
@@ -510,6 +572,7 @@ const AdminCaseDetail = () => {
       spouseDocs[spouseType].push(row);
       return;
     }
+    if (String(row.category || '').startsWith('added_')) return;
     if (Object.prototype.hasOwnProperty.call(mainDocs, row.category)) {
       mainDocs[row.category].push(row);
       return;
@@ -517,7 +580,23 @@ const AdminCaseDetail = () => {
     mainDocs.general.push(row);
   });
   const familyChildren = Array.isArray(c?.personalDetails?.familyChildren) ? c.personalDetails.familyChildren : [];
-  const savedAddedMembers = membersFromCase(c?.personalDetails);
+  const savedAddedMembers = membersFromCase(c?.personalDetails).map((member) => {
+    const extra = attachmentRows.filter((row) => row.category === `added_${member.id}` && row.storagePath);
+    if (!extra.length) return member;
+    const images = [...(member.images || [])];
+    extra.forEach((row) => {
+      const existing = images.find((image) => image.path === row.storagePath);
+      if (existing) {
+        if (!existing.preview && memberImageViewUrl({ preview: row.url })) existing.preview = row.url;
+        return;
+      }
+      images.push({
+        path: row.storagePath,
+        preview: memberImageViewUrl({ preview: row.url }),
+      });
+    });
+    return { ...member, images };
+  });
 
   const downloadStoredFile = async (storagePath, filename) => {
     if (!storagePath || downloadState) return;
@@ -1237,34 +1316,22 @@ const AdminCaseDetail = () => {
                     {Array.isArray(member.images) && member.images.length > 0 ? (
                       <div className="admin-case-detail-attachments">
                         {member.images.map((image, imageIndex) => {
-                          const src = memberImageViewUrl(image);
-                          if (!src) return null;
                           const label = `תמונה ${imageIndex + 1}`;
-                          if (urlLooksLikePdf(src) || urlLooksLikePdf(image.path)) {
-                            return (
-                              <div key={image.path || imageIndex}>
-                                <a
-                                  className="admin-case-detail-pdf-open-link"
-                                  href={src}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                >
-                                  {label} – PDF
-                                </a>
-                                {renderDownloadButton(image.path, label)}
-                              </div>
-                            );
-                          }
                           return (
-                            <DocumentImage
+                            <MemberStoredImage
                               key={image.path || imageIndex}
-                              src={src}
+                              caseId={caseId}
+                              storagePath={image.path}
+                              src={memberImageViewUrl(image)}
                               alt={label}
-                              className="admin-case-detail-uploaded-img"
-                              turn={turnOf(src)}
-                              onOpen={() => setEnlargedImage(src)}
-                              onRotate={(direction) => rotate(src, direction)}
-                              onDownload={image.path ? () => downloadStoredFile(image.path, downloadFileName(label, image.path)) : undefined}
+                              turn={turnOf(memberImageViewUrl(image) || image.path)}
+                              onOpen={(view) => setEnlargedImage(view)}
+                              onRotate={(view, direction) => rotate(view, direction)}
+                              onDownload={
+                                image.path
+                                  ? () => downloadStoredFile(image.path, downloadFileName(label, image.path))
+                                  : undefined
+                              }
                               downloadBusy={downloadState === image.path}
                             />
                           );

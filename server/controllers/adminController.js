@@ -857,15 +857,64 @@ function sanitizeAddedMembers(raw) {
   return members;
 }
 
+function normalizeStoredUploadPath(value) {
+  let path = String(value || '').trim().split('?')[0].split('#')[0];
+  if (!path) return '';
+  try {
+    path = decodeURIComponent(path);
+  } catch {
+    /* השאר את המחרוזת כמו שהיא */
+  }
+  const at = path.lastIndexOf('uploads/');
+  if (at === -1) return '';
+  const sliced = path.slice(at);
+  if (sliced.includes('..') || sliced.length > 500) return '';
+  if (!/^uploads\/[A-Za-z0-9._~()!'%-]+$/.test(sliced)) return '';
+  return sliced;
+}
+
 function sanitizeMemberImages(raw) {
   if (!Array.isArray(raw)) return [];
   const images = [];
   for (const item of raw.slice(0, 12)) {
-    const path = String(typeof item === 'string' ? item : item?.path || '').trim();
-    if (!/^uploads\/[A-Za-z0-9._/-]{1,400}$/.test(path) || path.includes('..')) continue;
+    const path = normalizeStoredUploadPath(typeof item === 'string' ? item : item?.path);
+    if (!path || images.includes(path)) continue;
     images.push(path);
   }
   return images;
+}
+
+function syncMemberImagesOntoCase(caseData, members) {
+  const meta = Array.isArray(caseData?.attachmentMeta) ? caseData.attachmentMeta.map((item) => ({ ...item })) : [];
+  const attachments = Array.isArray(caseData?.attachments) ? [...caseData.attachments] : [];
+  const wanted = new Set();
+  for (const member of members) {
+    const category = `added_${member.id}`;
+    for (const imagePath of member.images || []) {
+      wanted.add(`${category}|${imagePath}`);
+      const already = meta.some((item) => item?.category === category && normalizeStoredUploadPath(item.path) === imagePath);
+      if (!already) {
+        meta.push({ category, path: imagePath });
+        const attached = attachments.some((item) => normalizeStoredUploadPath(typeof item === 'string' ? item : item?.path) === imagePath);
+        if (!attached) attachments.push(imagePath);
+      }
+    }
+  }
+  const nextMeta = meta.filter((item) => {
+    const category = String(item?.category || '');
+    if (!category.startsWith('added_')) return true;
+    return wanted.has(`${category}|${normalizeStoredUploadPath(item.path)}`);
+  });
+  const removed = new Set(
+    meta
+      .filter((item) => String(item?.category || '').startsWith('added_'))
+      .map((item) => normalizeStoredUploadPath(item.path))
+      .filter((path) => path && !nextMeta.some((item) => normalizeStoredUploadPath(item.path) === path))
+  );
+  const nextAttachments = attachments.filter(
+    (item) => !removed.has(normalizeStoredUploadPath(typeof item === 'string' ? item : item?.path))
+  );
+  return { attachmentMeta: nextMeta, attachments: nextAttachments };
 }
 
 /**
@@ -905,6 +954,11 @@ export const updateCaseFormText = async (req, res) => {
     }
     currentPd.address = address;
     const updates = { address, personalDetails: currentPd };
+    if (membersWereSent) {
+      const synced = syncMemberImagesOntoCase(caseData, currentPd.addedMembers || []);
+      updates.attachmentMeta = synced.attachmentMeta;
+      updates.attachments = synced.attachments;
+    }
     if (typeof body.familyBackground === 'string') {
       updates.familyBackground = body.familyBackground.trim();
     }
