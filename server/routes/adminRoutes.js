@@ -5,6 +5,7 @@ import {
   getCaseById,
   downloadCaseFile,
   downloadCaseImagesZip,
+  removeCaseClientImage,
   getAllUsers,
   confirmCaseCompleted,
   updateCaseStatus,
@@ -41,6 +42,7 @@ router.use(isAdmin);
 router.get('/cases', getAllCases);
 router.get('/credit-clients', getCreditClients);
 router.get('/cases/:id/media', downloadCaseFile);
+router.delete('/cases/:id/media', removeCaseClientImage);
 router.get('/cases/:id/images.zip', downloadCaseImagesZip);
 router.get('/cases/:id', getCaseById);
 router.get('/notices/unseen', getUnseenAdminNotices);

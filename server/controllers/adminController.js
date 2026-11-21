@@ -24,7 +24,7 @@ import {
   subtractOneDayYmd,
 } from '../utils/deferredPaymentDates.js';
 import { storagePathOf, withSignedCaseMediaForAdmin } from '../utils/caseMediaUrls.js';
-import { downloadFromSupabase } from '../services/supabaseStorage.js';
+import { deleteFromSupabase, downloadFromSupabase } from '../services/supabaseStorage.js';
 import { zipStore } from '../utils/zipStore.js';
 import { recordAdminCaseChange, processingChangeSteps, statusChangeSteps } from '../services/adminChangeNotice.js';
 import {
@@ -188,6 +188,151 @@ export const downloadCaseImagesZip = async (req, res) => {
   } catch (error) {
     console.error('downloadCaseImagesZip error:', error);
     return res.status(500).json({ error: 'שגיאה בהורדת התמונות' });
+  }
+};
+
+function canonicalUploadPath(value) {
+  if (value && typeof value === 'object') {
+    return canonicalUploadPath(value.storagePath || value.path || value.url || '');
+  }
+  let raw = String(value || '').trim().split('?')[0].split('#')[0];
+  if (!raw) return '';
+  try {
+    raw = decodeURIComponent(raw);
+  } catch {
+    /* השאר את המחרוזת כמו שהיא */
+  }
+  const at = raw.lastIndexOf('uploads/');
+  if (at === -1) return '';
+  const sliced = raw.slice(at);
+  if (sliced.includes('..') || sliced.includes('\\') || sliced.includes('\0') || sliced.length > 500) return '';
+  if (!/^uploads\/[^/]+$/.test(sliced)) return '';
+  return sliced;
+}
+
+function protectedCasePaths(caseData) {
+  return new Set(
+    [
+      caseData?.signatureImage,
+      caseData?.agentSignatureImage,
+      caseData?.hraDetails?.imagePath,
+      caseData?.hraDetails?.filePath,
+    ]
+      .map((item) => canonicalUploadPath(item))
+      .filter(Boolean)
+  );
+}
+
+function caseStillUsesPath(caseData, requested) {
+  if (!requested || !caseData) return false;
+  const slots = [
+    caseData.idCardPhoto,
+    caseData.idCardAnnex,
+    caseData.signatureImage,
+    caseData.agentSignatureImage,
+    caseData.hraDetails?.imagePath,
+    caseData.hraDetails?.filePath,
+    caseData.approvedBenefits?.amountImagePath,
+  ];
+  if (slots.some((item) => canonicalUploadPath(item) === requested)) return true;
+  const meta = Array.isArray(caseData.attachmentMeta) ? caseData.attachmentMeta : [];
+  if (meta.some((item) => canonicalUploadPath(item?.path) === requested)) return true;
+  const attachments = Array.isArray(caseData.attachments) ? caseData.attachments : [];
+  if (attachments.some((item) => canonicalUploadPath(item) === requested)) return true;
+  const members = Array.isArray(caseData.personalDetails?.addedMembers) ? caseData.personalDetails.addedMembers : [];
+  return members.some(
+    (member) => Array.isArray(member?.images) && member.images.some((image) => canonicalUploadPath(image) === requested)
+  );
+}
+
+/**
+ * המנהל הראשי מסיר תמונה או מסמך שהלקוח העלה.
+ * חתימה וקבצי HRA נשארים.
+ */
+export const removeCaseClientImage = async (req, res) => {
+  try {
+    if (!canEditSubmittedFormText(req.user?.email)) {
+      return res.status(403).json({ error: 'רק המנהל הראשי יכול להסיר תמונה מתיק שנשלח.' });
+    }
+    const caseData = await findCaseById(req.params.id);
+    if (!caseData) return res.status(404).json({ error: 'תיק לא נמצא' });
+    if (caseDeskDenied(req, res, caseData)) return;
+
+    const field = req.body?.field === 'idCardPhoto' || req.body?.field === 'idCardAnnex' ? req.body.field : '';
+    const requested = canonicalUploadPath(req.body?.path);
+    if (!requested && !field) return res.status(400).json({ error: 'קובץ לא תקין' });
+    if (requested && protectedCasePaths(caseData).has(requested)) {
+      return res.status(400).json({ error: 'אפשר להסיר רק תמונות ומסמכים שהלקוח העלה.' });
+    }
+
+    const updates = {};
+    let removedCount = 0;
+    const clearSlot = (name) => {
+      if (!caseData[name]) return;
+      const currentPath = canonicalUploadPath(caseData[name]);
+      const named = field === name && (!requested || !currentPath || currentPath === requested);
+      const matched = Boolean(requested) && currentPath === requested;
+      if (!named && !matched) return;
+      updates[name] = null;
+      removedCount += 1;
+    };
+    clearSlot('idCardPhoto');
+    clearSlot('idCardAnnex');
+
+    if (requested && Array.isArray(caseData.attachmentMeta) && caseData.attachmentMeta.length) {
+      const nextMeta = caseData.attachmentMeta.filter((item) => canonicalUploadPath(item?.path) !== requested);
+      if (nextMeta.length !== caseData.attachmentMeta.length) {
+        updates.attachmentMeta = nextMeta;
+        updates.attachments = Array.isArray(caseData.attachments)
+          ? caseData.attachments.filter((item) => canonicalUploadPath(item) !== requested)
+          : nextMeta.map((item) => item?.path).filter(Boolean);
+        removedCount += caseData.attachmentMeta.length - nextMeta.length;
+      }
+    } else if (requested && Array.isArray(caseData.attachments)) {
+      const nextAttachments = caseData.attachments.filter((item) => canonicalUploadPath(item) !== requested);
+      if (nextAttachments.length !== caseData.attachments.length) {
+        updates.attachments = nextAttachments;
+        removedCount += caseData.attachments.length - nextAttachments.length;
+      }
+    }
+
+    const personalDetails =
+      caseData.personalDetails && typeof caseData.personalDetails === 'object' && !Array.isArray(caseData.personalDetails)
+        ? caseData.personalDetails
+        : null;
+    if (requested && personalDetails && Array.isArray(personalDetails.addedMembers)) {
+      let changed = false;
+      const addedMembers = personalDetails.addedMembers.map((member) => {
+        if (!member || !Array.isArray(member.images)) return member;
+        const images = member.images.filter((image) => canonicalUploadPath(image) !== requested);
+        if (images.length === member.images.length) return member;
+        changed = true;
+        removedCount += member.images.length - images.length;
+        return { ...member, images };
+      });
+      if (changed) updates.personalDetails = { ...personalDetails, addedMembers };
+    }
+
+    if (!removedCount) return res.status(404).json({ error: 'התמונה לא נמצאה בתיק' });
+
+    const updated = await updateCase(req.params.id, updates);
+    if (requested && !caseStillUsesPath(updated, requested)) {
+      await deleteFromSupabase(requested);
+    }
+    const signed = await withSignedCaseMediaForAdmin(updated);
+    const { authorName } = await resolveActorName(req);
+    const fileName = requested ? requested.split('/').pop() : field === 'idCardAnnex' ? 'נספח' : 'תעודת זהות';
+    await recordAdminCaseChange({
+      req,
+      caseData,
+      actorName: authorName,
+      title: 'הוסרה תמונה שהלקוח שלח',
+      steps: [`מי הסיר: ${authorName}`, `קובץ: ${fileName}`],
+    });
+    return res.json({ message: 'התמונה הוסרה מהתיק', case: signed });
+  } catch (error) {
+    console.error('removeCaseClientImage error:', error);
+    return res.status(500).json({ error: 'שגיאה בהסרת התמונה' });
   }
 };
 

@@ -101,7 +101,7 @@ function memberImageViewUrl(image) {
   return '';
 }
 
-function MemberStoredImage({ caseId, storagePath, src, alt, turn, onOpen, onRotate, onDownload, downloadBusy }) {
+function MemberStoredImage({ caseId, storagePath, src, alt, turn, onOpen, onRotate, onDownload, downloadBusy, onRemove, removeBusy }) {
   const direct = memberImageViewUrl({ preview: src, path: src });
   const [blobUrl, setBlobUrl] = useState('');
 
@@ -146,6 +146,11 @@ function MemberStoredImage({ caseId, storagePath, src, alt, turn, onOpen, onRota
             {downloadBusy ? 'מוריד...' : 'הורדה למחשב'}
           </button>
         ) : null}
+        {onRemove ? (
+          <button type="button" className="image-remove-btn" onClick={onRemove} disabled={removeBusy}>
+            {removeBusy ? 'מסיר...' : 'הסרת תמונה'}
+          </button>
+        ) : null}
       </div>
     );
   }
@@ -159,6 +164,8 @@ function MemberStoredImage({ caseId, storagePath, src, alt, turn, onOpen, onRota
       onRotate={(direction) => onRotate(view, direction)}
       onDownload={onDownload}
       downloadBusy={downloadBusy}
+      onRemove={onRemove}
+      removeBusy={removeBusy}
     />
   );
 }
@@ -290,6 +297,7 @@ const AdminCaseDetail = () => {
   const [statusModalOpen, setStatusModalOpen] = useState(false);
   const [downloadState, setDownloadState] = useState('');
   const [downloadError, setDownloadError] = useState('');
+  const [removingPath, setRemovingPath] = useState('');
   const [imageDropMemberId, setImageDropMemberId] = useState('');
 
   useEffect(() => {
@@ -643,6 +651,46 @@ const AdminCaseDetail = () => {
     );
   };
 
+  const removeClientImage = async (storagePath, field) => {
+    if (!canEditSubmittedText || removingPath) return;
+    const path = String(storagePath || '').trim();
+    const slot = field === 'idCardPhoto' || field === 'idCardAnnex' ? field : '';
+    const key = path || slot;
+    if (!key) return;
+    if (!window.confirm('להסיר את התמונה מהתיק? היא תימחק ולא תופיע יותר.')) return;
+    setRemovingPath(key);
+    setDownloadError('');
+    try {
+      const res = await axios.delete(`/admin/cases/${caseId}/media`, {
+        data: { path, field: slot },
+      });
+      setCaseData((prev) => (prev && res.data.case ? { ...prev, ...res.data.case } : res.data.case || prev));
+      setEnlargedImage(null);
+    } catch (err) {
+      setDownloadError(err.response?.data?.error || 'הסרת התמונה נכשלה. נסו שוב.');
+    } finally {
+      setRemovingPath('');
+    }
+  };
+
+  const renderRemoveButton = (storagePath, field) => {
+    if (!canEditSubmittedText) return null;
+    const path = String(storagePath || '').trim();
+    const slot = field === 'idCardPhoto' || field === 'idCardAnnex' ? field : '';
+    const key = path || slot;
+    if (!key) return null;
+    return (
+      <button
+        type="button"
+        className="image-remove-btn"
+        onClick={() => removeClientImage(path, slot)}
+        disabled={Boolean(removingPath)}
+      >
+        {removingPath === key ? 'מסיר...' : 'הסרת תמונה'}
+      </button>
+    );
+  };
+
   const renderMediaCard = (row, label, idx) => {
     const key = `${row.id}_${idx}`;
     if (urlLooksLikePdf(row.url)) {
@@ -652,6 +700,7 @@ const AdminCaseDetail = () => {
             {label} – PDF
           </a>
           {renderDownloadButton(row.storagePath, label)}
+          {renderRemoveButton(row.storagePath || row.url)}
         </div>
       );
     }
@@ -666,6 +715,8 @@ const AdminCaseDetail = () => {
         onRotate={(direction) => rotate(row.url, direction)}
         onDownload={row.storagePath ? () => downloadStoredFile(row.storagePath, downloadFileName(label, row.storagePath)) : undefined}
         downloadBusy={downloadState === row.storagePath}
+        onRemove={canEditSubmittedText ? () => removeClientImage(row.storagePath || row.url) : undefined}
+        removeBusy={removingPath === (row.storagePath || row.url)}
       />
     );
   };
@@ -1333,6 +1384,12 @@ const AdminCaseDetail = () => {
                                   : undefined
                               }
                               downloadBusy={downloadState === image.path}
+                              onRemove={
+                                canEditSubmittedText && image.path
+                                  ? () => removeClientImage(image.path)
+                                  : undefined
+                              }
+                              removeBusy={removingPath === image.path}
                             />
                           );
                         })}
@@ -1374,6 +1431,7 @@ const AdminCaseDetail = () => {
                         פתיחת PDF – תעודת זהות / מסמך
                       </a>
                       {renderDownloadButton(c.idCardPhotoStoragePath, 'תעודת זהות')}
+                      {renderRemoveButton(c.idCardPhotoStoragePath, c.idCardPhotoStoragePath ? '' : 'idCardPhoto')}
                     </div>
                   ) : (
                     <DocumentImage
@@ -1385,6 +1443,12 @@ const AdminCaseDetail = () => {
                       onRotate={(direction) => rotate(mediaFieldToUrl(c.idCardPhoto), direction)}
                       onDownload={c.idCardPhotoStoragePath ? () => downloadStoredFile(c.idCardPhotoStoragePath, downloadFileName('תעודת זהות', c.idCardPhotoStoragePath)) : undefined}
                       downloadBusy={downloadState === c.idCardPhotoStoragePath}
+                      onRemove={
+                        canEditSubmittedText
+                          ? () => removeClientImage(c.idCardPhotoStoragePath, c.idCardPhotoStoragePath ? '' : 'idCardPhoto')
+                          : undefined
+                      }
+                      removeBusy={removingPath === (c.idCardPhotoStoragePath || 'idCardPhoto')}
                     />
                   )}
                 </div>
@@ -1403,6 +1467,7 @@ const AdminCaseDetail = () => {
                         פתיחת PDF – נספח
                       </a>
                       {renderDownloadButton(c.idCardAnnexStoragePath, 'נספח')}
+                      {renderRemoveButton(c.idCardAnnexStoragePath, c.idCardAnnexStoragePath ? '' : 'idCardAnnex')}
                     </div>
                   ) : (
                     <DocumentImage
@@ -1414,6 +1479,12 @@ const AdminCaseDetail = () => {
                       onRotate={(direction) => rotate(mediaFieldToUrl(c.idCardAnnex), direction)}
                       onDownload={c.idCardAnnexStoragePath ? () => downloadStoredFile(c.idCardAnnexStoragePath, downloadFileName('נספח', c.idCardAnnexStoragePath)) : undefined}
                       downloadBusy={downloadState === c.idCardAnnexStoragePath}
+                      onRemove={
+                        canEditSubmittedText
+                          ? () => removeClientImage(c.idCardAnnexStoragePath, c.idCardAnnexStoragePath ? '' : 'idCardAnnex')
+                          : undefined
+                      }
+                      removeBusy={removingPath === (c.idCardAnnexStoragePath || 'idCardAnnex')}
                     />
                   )}
                 </div>

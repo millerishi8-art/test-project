@@ -25,7 +25,7 @@ export function RotateControls({ onLeft, onRight }) {
   );
 }
 
-export function DocumentImage({ src, alt, className, turn = 0, onOpen, onRotate, onDownload, downloadBusy = false }) {
+export function DocumentImage({ src, alt, className, turn = 0, onOpen, onRotate, onDownload, downloadBusy = false, onRemove, removeBusy = false }) {
   const sideways = turn % 2 === 1;
   return (
     <div className="document-image">
@@ -43,6 +43,11 @@ export function DocumentImage({ src, alt, className, turn = 0, onOpen, onRotate,
       {onDownload ? (
         <button type="button" className="image-download-btn" onClick={onDownload} disabled={downloadBusy}>
           {downloadBusy ? 'מוריד...' : 'הורדה למחשב'}
+        </button>
+      ) : null}
+      {onRemove ? (
+        <button type="button" className="image-remove-btn" onClick={onRemove} disabled={removeBusy}>
+          {removeBusy ? 'מסיר...' : 'הסרת תמונה'}
         </button>
       ) : null}
     </div>

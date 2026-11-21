@@ -131,3 +131,25 @@ export async function downloadFromSupabase(filePath) {
     return null;
   }
 }
+
+/** מוחק קובץ מה-bucket הפרטי. הנתיב חייב להיות uploads/… שכבר הוסר מהתיק. */
+export async function deleteFromSupabase(filePath) {
+  const { supabaseUrl, supabaseServiceRoleKey } = getConfig();
+  if (!supabaseUrl || !supabaseServiceRoleKey) return false;
+  const path = String(filePath || '').trim();
+  if (!path || path.includes('..') || !path.startsWith('uploads/')) return false;
+  try {
+    const supabase = createClient(supabaseUrl, supabaseServiceRoleKey, {
+      auth: { persistSession: false },
+    });
+    const { error } = await supabase.storage.from(BUCKET_NAME).remove([path]);
+    if (error) {
+      console.error('[Supabase] שגיאה במחיקת קובץ:', error.message);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error('[Supabase] deleteFromSupabase:', err?.message || err);
+    return false;
+  }
+}
