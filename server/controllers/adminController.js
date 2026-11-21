@@ -21,6 +21,7 @@ import { sendWhatsAppMessage } from '../services/whatsapp.js';
 import {
   parseYyyyMmDd,
   utcTodayYyyyMmDd,
+  todayIsraelYyyyMmDd,
   subtractOneDayYmd,
 } from '../utils/deferredPaymentDates.js';
 import { storagePathOf, withSignedCaseMediaForAdmin } from '../utils/caseMediaUrls.js';
@@ -1208,6 +1209,44 @@ export const confirmCaseCompleted = async (req, res) => {
   } catch (error) {
     console.error('confirmCaseCompleted error:', error);
     return res.status(500).json({ error: 'שגיאה באישור הקייס' });
+  }
+};
+
+/**
+ * קביעת חידוש עתידי לתאריך שהמנהל בחר.
+ * התיק נכנס מיד למקטע «חידוש עתידי». שבוע לפני התאריך נפתחת התראה אצל הצוות.
+ */
+export const scheduleFutureRenewal = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const caseData = await findCaseById(id);
+    if (!caseData) return res.status(404).json({ error: 'תיק לא נמצא' });
+    if (caseDeskDenied(req, res, caseData)) return;
+    if (isCreditAgreementCase(caseData)) {
+      return res.status(400).json({ error: 'לתיק אשראי אין מסלול חידוש עתידי.' });
+    }
+    const renewOn = parseYyyyMmDd(req.body?.renewOn);
+    if (!renewOn) return res.status(400).json({ error: 'נא לבחור תאריך חידוש.' });
+    const today = todayIsraelYyyyMmDd();
+    if (renewOn <= today) return res.status(400).json({ error: 'תאריך החידוש צריך להיות בעתיד.' });
+    const max = new Date();
+    max.setUTCFullYear(max.getUTCFullYear() + 10);
+    if (renewOn > max.toISOString().slice(0, 10)) {
+      return res.status(400).json({ error: 'אפשר לקבוע חידוש עד עשר שנים קדימה.' });
+    }
+    const renewalDate = new Date(`${renewOn}T12:00:00.000Z`).toISOString();
+    const actorEmail = String(req.user?.email || '').trim().toLowerCase();
+    const updated = await updateCase(id, {
+      renewalDate,
+      futureRenewalScheduled: true,
+      futureRenewalSetAt: new Date().toISOString(),
+      futureRenewalSetBy: actorEmail || null,
+      isRenewed: false,
+    });
+    return res.json({ message: 'הכייס נקבע לחידוש עתידי', case: updated });
+  } catch (error) {
+    console.error('scheduleFutureRenewal error:', error);
+    return res.status(500).json({ error: 'שגיאה בקביעת החידוש' });
   }
 };
 

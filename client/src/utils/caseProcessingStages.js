@@ -92,11 +92,12 @@ export function isGovernmentFinalDecision(c) {
   return n === 4 || n === 5;
 }
 
-/** יופיע ב«חידוש עתידי (חצי שנה)» עד מחיקת התיק */
+/** יופיע ב«חידוש עתידי» עד מחיקת התיק, או אחרי שנקבע לו תאריך בכפתור החידוש */
 export function isOnSixMonthRenewalTrack(c) {
   if (!c) return false;
   const type = String(c.benefitType || '').toLowerCase();
   if (type === 'credit_agreement' || c.personalDetails?.form === 'credit_agreement') return false;
+  if (c.futureRenewalScheduled === true) return true;
   if (c.adminConfirmedCompleted) return true;
   return isGovernmentFinalDecision(c);
 }

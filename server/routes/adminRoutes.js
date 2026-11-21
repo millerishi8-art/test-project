@@ -8,6 +8,7 @@ import {
   removeCaseClientImage,
   getAllUsers,
   confirmCaseCompleted,
+  scheduleFutureRenewal,
   updateCaseStatus,
   updateCaseFormText,
   updateCaseProcessing,
@@ -55,6 +56,7 @@ router.post('/cases/:id/notes', addCaseInterimNote);
 router.patch('/cases/:id/notes/:noteId', updateCaseInterimNote);
 router.delete('/cases/:id/notes/:noteId', deleteCaseInterimNote);
 router.patch('/cases/:id/confirm-completed', confirmCaseCompleted);
+router.patch('/cases/:id/future-renewal', scheduleFutureRenewal);
 router.delete('/cases/:id', deleteCasePermanent);
 router.get('/users', getAllUsers);
 router.patch('/users/:id/deferred-payment', patchUserDeferredPayment);

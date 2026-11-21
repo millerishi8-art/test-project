@@ -4,6 +4,7 @@ import axios from 'axios';
 import { useAuth } from '../context/AuthContext.jsx';
 import HraDetailsModal, { hasHraContent } from '../components/HraDetailsModal.jsx';
 import { CaseInterimNotesButton } from '../components/CaseInterimNotes.jsx';
+import FutureRenewalButton from '../components/FutureRenewalButton.jsx';
 import CaseStatusModal from '../components/CaseStatusModal.jsx';
 import CaseProcessingTimer from '../components/CaseProcessingTimer.jsx';
 import {
@@ -67,6 +68,55 @@ function getRenewalStatus(c) {
   return RENEWAL_OK;
 }
 
+function renewalDayKey(value) {
+  const date = new Date(value || 0);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toISOString().slice(0, 10);
+}
+
+function daysUntilRenewal(value) {
+  const target = renewalDayKey(value);
+  if (!target) return null;
+  const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jerusalem' });
+  const from = new Date(`${today}T12:00:00.000Z`).getTime();
+  const to = new Date(`${target}T12:00:00.000Z`).getTime();
+  return Math.round((to - from) / (24 * 60 * 60 * 1000));
+}
+
+function formatRenewalDay(value) {
+  const key = renewalDayKey(value);
+  if (!key) return '–';
+  const [year, month, day] = key.split('-');
+  return `${day}.${month}.${year}`;
+}
+
+const RENEWAL_ALERT_STORAGE = 'futureRenewalAlertsShown';
+
+function alertShownToday(caseId, dayKey) {
+  try {
+    const raw = JSON.parse(localStorage.getItem(RENEWAL_ALERT_STORAGE) || '{}');
+    const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jerusalem' });
+    return raw[`${caseId}|${dayKey}`] === today;
+  } catch {
+    return false;
+  }
+}
+
+function markAlertsShown(items) {
+  try {
+    const raw = JSON.parse(localStorage.getItem(RENEWAL_ALERT_STORAGE) || '{}');
+    const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Jerusalem' });
+    items.forEach((item) => {
+      raw[`${item.id}|${renewalDayKey(item.renewalDate)}`] = today;
+    });
+    const keys = Object.keys(raw);
+    if (keys.length > 200) keys.slice(0, keys.length - 200).forEach((key) => delete raw[key]);
+    localStorage.setItem(RENEWAL_ALERT_STORAGE, JSON.stringify(raw));
+  } catch {
+    /* ignore */
+  }
+}
+
 const AdminPanel = () => {
   const { user: sessionUser } = useAuth();
   const canDeleteCases = sessionUser?.canDeleteCases === true;
@@ -94,6 +144,7 @@ const AdminPanel = () => {
   const [caseSearch, setCaseSearch] = useState('');
   const [caseStatusFilter, setCaseStatusFilter] = useState('all');
   const [caseSortOrder, setCaseSortOrder] = useState('newest');
+  const [renewalAlerts, setRenewalAlerts] = useState([]);
 
   const handleInterimNotesChange = (caseId, interimNotes) => {
     setCases((prev) =>
@@ -112,6 +163,28 @@ const AdminPanel = () => {
   useEffect(() => {
     fetchData();
   }, []);
+
+  useEffect(() => {
+    const due = cases.filter((item) => {
+      if (isCreditAgreementCase(item) || !isOnSixMonthRenewalTrack(item) || item.isRenewed) return false;
+      const days = daysUntilRenewal(item.renewalDate);
+      if (days == null || days < 0 || days > 7) return false;
+      return !alertShownToday(item.id, renewalDayKey(item.renewalDate));
+    });
+    if (!due.length) return;
+    markAlertsShown(due);
+    setRenewalAlerts(due);
+    if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+    const body =
+      due.length === 1
+        ? `${due[0].userName || due[0].personalDetails?.fullName || 'לקוח'} · ${formatRenewalDay(due[0].renewalDate)}`
+        : `${due.length} כייסים צריכים חידוש בשבוע הקרוב`;
+    try {
+      new Notification('שבוע לפני חידוש כייס', { body });
+    } catch {
+      /* הדפדפן חסם התראה */
+    }
+  }, [cases]);
 
   useEffect(() => {
     if (stateTab === 'cases') setMainSection('cases');
@@ -170,15 +243,44 @@ const AdminPanel = () => {
     });
   };
 
-  const renewalLabel = (status) => {
+  const renewalLabel = (caseItem) => {
+    const status = caseItem?.renewalStatus;
+    if (status === RENEWAL_IN_6_MONTHS) {
+      const day = formatRenewalDay(caseItem.renewalDate);
+      return day === '–' ? 'חידוש עתידי' : `חידוש עתידי · ${day}`;
+    }
     const labels = {
       [RENEWAL_NEEDS_NOW]: 'צריך חידוש עכשיו',
       [RENEWAL_PENDING_CONFIRMATION]: 'מחכה לאישור השלמה',
-      [RENEWAL_IN_6_MONTHS]: 'חידוש עתידי (חצי שנה)',
       [RENEWAL_OK]: 'בסדר',
-      [RENEWAL_DONE]: 'חודש'
+      [RENEWAL_DONE]: 'חודש',
     };
     return labels[status] || status;
+  };
+
+  const applyCaseUpdate = (updated) => {
+    if (!updated?.id) return;
+    setCases((prev) => prev.map((item) => (item.id === updated.id ? { ...item, ...updated } : item)));
+    setUsers((prev) =>
+      prev.map((user) => ({
+        ...user,
+        cases: Array.isArray(user.cases)
+          ? user.cases.map((item) => (item.id === updated.id ? { ...item, ...updated } : item))
+          : user.cases,
+      }))
+    );
+  };
+
+  const handleFutureRenewalSaved = (updated) => {
+    applyCaseUpdate(updated);
+    const day = formatRenewalDay(updated?.renewalDate);
+    setSuccessMessage(day === '–' ? 'הכייס נכנס לחידוש עתידי.' : `הכייס נכנס לחידוש עתידי. התאריך: ${day}`);
+    setTimeout(() => setSuccessMessage(''), 4000);
+  };
+
+  const dismissRenewalAlerts = () => {
+    markAlertsShown(renewalAlerts);
+    setRenewalAlerts([]);
   };
 
   const handleConfirmCompleted = async (caseId) => {
@@ -329,7 +431,7 @@ const AdminPanel = () => {
       <div className="admin-header">
         <h1>ניהול תיקי לקוחות</h1>
         <p className="admin-welcome">
-          כאן מופיעים <strong>תיקי הלקוחות</strong>, הסטטוסים, וטפסים לחידוש עתידי (חצי שנה).
+          כאן מופיעים <strong>תיקי הלקוחות</strong>, הסטטוסים, וחידוש עתידי.
         </p>
         <p className="admin-sub">עובדים לך על הכייס הוא תור העבודה על התיקים הפתוחים.</p>
         {sessionUser?.isSecondaryAdmin && (
@@ -384,7 +486,7 @@ const AdminPanel = () => {
               className={casesFilter === RENEWAL_IN_6_MONTHS ? 'active' : ''}
               onClick={() => setCasesFilter(RENEWAL_IN_6_MONTHS)}
             >
-              טפסים לחידוש עתידי (חצי שנה) ({countIn6Months})
+              חידוש עתידי ({countIn6Months})
             </button>
           </div>
         )}
@@ -535,6 +637,12 @@ const AdminPanel = () => {
                                           notes={caseItem.interimNotes}
                                           onNotesChange={handleInterimNotesChange}
                                         />
+                                        <FutureRenewalButton
+                                          caseId={caseItem.id}
+                                          caseLabel={`${user.name || ''} · ${getBenefitTitle(caseItem.benefitType)}`}
+                                          renewalDate={caseItem.renewalDate}
+                                          onScheduled={handleFutureRenewalSaved}
+                                        />
                                         <button
                                           type="button"
                                           className={`admin-hra-btn${hasHraContent(caseItem.hraDetails) ? ' is-filled' : ''}`}
@@ -580,6 +688,11 @@ const AdminPanel = () => {
 
       {mainSection === 'cases' && (
         <>
+          {successMessage ? (
+            <div className="admin-success-message" role="status">
+              {successMessage}
+            </div>
+          ) : null}
           <form
             className="admin-case-search"
             onSubmit={(e) => e.preventDefault()}
@@ -664,10 +777,10 @@ const AdminPanel = () => {
                       <td data-label="טלפון">{caseItem.userPhone}</td>
                       <td data-label="סוג הטבה">{getBenefitTitle(caseItem.benefitType)}</td>
                       <td data-label="תאריך יצירה">{formatDate(caseItem.createdAt)}</td>
-                      <td data-label="תאריך חידוש">{formatDate(caseItem.renewalDate)}</td>
+                      <td data-label="תאריך חידוש">{formatRenewalDay(caseItem.renewalDate)}</td>
                       <td data-label="מצב חידוש">
                         <span className={`status-badge renewal-${caseItem.renewalStatus}`}>
-                          {renewalLabel(caseItem.renewalStatus)}
+                          {renewalLabel(caseItem)}
                         </span>
                       </td>
                       <td data-label="סטטוס תיק">
@@ -697,6 +810,12 @@ const AdminPanel = () => {
                             caseLabel={`${caseItem.userName || ''} · ${getBenefitTitle(caseItem.benefitType)}`}
                             notes={caseItem.interimNotes}
                             onNotesChange={handleInterimNotesChange}
+                          />
+                          <FutureRenewalButton
+                            caseId={caseItem.id}
+                            caseLabel={`${caseItem.userName || ''} · ${getBenefitTitle(caseItem.benefitType)}`}
+                            renewalDate={caseItem.renewalDate}
+                            onScheduled={handleFutureRenewalSaved}
                           />
                           <button
                             type="button"
@@ -769,6 +888,39 @@ const AdminPanel = () => {
         />
       ) : null}
 
+      {renewalAlerts.length > 0 ? (
+        <div className="future-renewal-backdrop" role="presentation">
+          <div className="future-renewal-modal" role="dialog" aria-modal="true" aria-labelledby="renewal-alert-title">
+            <h3 id="renewal-alert-title">שבוע לפני חידוש הכייס</h3>
+            <p className="future-renewal-hint">הכייסים האלה צריכים חידוש בשבוע הקרוב.</p>
+            <ul className="future-renewal-alert-list">
+              {renewalAlerts.map((item) => (
+                <li key={item.id}>
+                  <strong>{item.userName || item.personalDetails?.fullName || 'לקוח'}</strong>
+                  <span>תאריך חידוש: {formatRenewalDay(item.renewalDate)}</span>
+                </li>
+              ))}
+            </ul>
+            <div className="future-renewal-actions">
+              <button
+                type="button"
+                className="future-renewal-save"
+                onClick={() => {
+                  dismissRenewalAlerts();
+                  setMainSection('cases');
+                  setCasesFilter(RENEWAL_IN_6_MONTHS);
+                }}
+              >
+                פתיחת חידוש עתידי
+              </button>
+              <button type="button" className="future-renewal-cancel" onClick={dismissRenewalAlerts}>
+                הבנתי
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       <div className="admin-stats">
         <div className="stat-card">
           <h3>סה"כ משתמשים</h3>
@@ -779,7 +931,7 @@ const AdminPanel = () => {
           <p className="stat-number">{insuranceCases.length}</p>
         </div>
         <div className="stat-card stat-info">
-          <h3>טפסים לחידוש עתידי (חצי שנה)</h3>
+          <h3>חידוש עתידי</h3>
           <p className="stat-number">{countIn6Months}</p>
         </div>
       </div>
