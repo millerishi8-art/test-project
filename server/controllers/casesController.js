@@ -27,7 +27,7 @@ import {
   parseYyyyMmDd,
   utcTodayYyyyMmDd,
 } from '../utils/deferredPaymentDates.js';
-import { signMediaIfStoragePath, withSignedCaseMediaForAdmin } from '../utils/caseMediaUrls.js';
+import { signMediaIfStoragePath, withSignedCaseMediaForAdmin, withoutClientHiddenFields } from '../utils/caseMediaUrls.js';
 import {
   CREDIT_AGREEMENT_TEXT,
   CREDIT_AGREEMENT_TYPE,
@@ -733,12 +733,13 @@ export const getMyCases = async (req, res) => {
     const userCases = await findCasesByUserId(req.user.id);
     const withApprovalImage = await Promise.all(
       userCases.map(async (c) => {
-        const path = c?.approvedBenefits?.amountImagePath;
-        if (!path) return c;
+        const visible = withoutClientHiddenFields(c);
+        const path = visible?.approvedBenefits?.amountImagePath;
+        if (!path) return visible;
         const amountImageUrl = await signMediaIfStoragePath(path);
         return {
-          ...c,
-          approvedBenefits: { ...c.approvedBenefits, amountImageUrl: amountImageUrl || null },
+          ...visible,
+          approvedBenefits: { ...visible.approvedBenefits, amountImageUrl: amountImageUrl || null },
         };
       })
     );
@@ -757,7 +758,7 @@ export const getMyCaseById = async (req, res) => {
     if (!caseData || String(caseData.userId) !== String(req.user.id)) {
       return res.status(404).json({ error: ERROR_MESSAGES.CASES.CASE_NOT_FOUND });
     }
-    const signed = await withSignedCaseMediaForAdmin(caseData);
+    const signed = await withSignedCaseMediaForAdmin(withoutClientHiddenFields(caseData));
     return res.json({
       case: signed,
       canEdit: clientCanEditSubmittedCase(caseData),
@@ -885,7 +886,7 @@ export const updateMyCase = async (req, res) => {
     const updated = await updateCase(caseData.id, updates);
     return res.json({
       message: 'התיק עודכן בהצלחה',
-      case: updated,
+      case: withoutClientHiddenFields(updated),
     });
   } catch (error) {
     console.error('updateMyCase error:', error);
@@ -918,7 +919,7 @@ export const renewCase = async (req, res) => {
 
     res.json({
       message: SUCCESS_MESSAGES.CASES.RENEWED,
-      case: updated,
+      case: withoutClientHiddenFields(updated),
     });
   } catch (error) {
     console.error('Case renewal error:', error);

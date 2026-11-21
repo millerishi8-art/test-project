@@ -1,5 +1,17 @@
 import { getSignedUrl } from '../services/supabaseStorage.js';
 
+/**
+ * פרטי ACCESS HRA (שם משתמש, סיסמה, צילום מסך וקובץ) נשארים אצל הצוות.
+ * התשובה ללקוח היא עותק בלי השדה, בלי לשנות את התיק השמור.
+ */
+export function withoutClientHiddenFields(caseData) {
+  if (!caseData || typeof caseData !== 'object') return caseData;
+  if (!Object.prototype.hasOwnProperty.call(caseData, 'hraDetails')) return caseData;
+  const copy = { ...caseData };
+  delete copy.hraDetails;
+  return copy;
+}
+
 /** TTL לצפייה במסמכים בממשק המנהל (רענון הדף מפיק קישורים חדשים) */
 const ADMIN_MEDIA_SIGNED_TTL_SEC = 60 * 60 * 8; // 8 שעות
 
