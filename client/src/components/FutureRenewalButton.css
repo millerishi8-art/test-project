@@ -1,0 +1,139 @@
+.admin-future-renewal-btn {
+  padding: 0.45rem 0.8rem;
+  min-height: 38px;
+  border: 1.5px solid #86efac;
+  border-radius: 10px;
+  background: #f0fdf4;
+  color: #166534;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.admin-future-renewal-btn:hover {
+  background: #dcfce7;
+}
+
+.admin-case-detail-actions .admin-future-renewal-btn {
+  padding: 0.75rem 1.5rem;
+  min-height: 48px;
+  font-size: 1rem;
+}
+
+.future-renewal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background: rgba(15, 23, 42, 0.45);
+}
+
+.future-renewal-modal {
+  width: min(100%, 32rem);
+  max-height: min(90vh, 40rem);
+  overflow: auto;
+  padding: 1.25rem;
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.25);
+  text-align: right;
+}
+
+.future-renewal-modal h3 {
+  margin: 0 0 0.4rem;
+  color: #114c88;
+  font-size: 1.2rem;
+}
+
+.future-renewal-case,
+.future-renewal-result,
+.future-renewal-hint {
+  margin: 0.35rem 0;
+  color: #334155;
+}
+
+.future-renewal-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin: 0.8rem 0;
+}
+
+.future-renewal-choices button {
+  min-height: 40px;
+  padding: 0.4rem 0.75rem;
+  border: 1px solid #bfdbfe;
+  border-radius: 999px;
+  background: #f8fbff;
+  color: #1e3a8a;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.future-renewal-choices button.is-selected {
+  background: #1e6bb8;
+  border-color: #1e6bb8;
+  color: #fff;
+}
+
+.future-renewal-date-label {
+  display: block;
+  margin-top: 0.4rem;
+  font-weight: 700;
+  color: #114c88;
+}
+
+.future-renewal-modal input[type='date'] {
+  width: 100%;
+  min-height: 44px;
+  margin-top: 0.35rem;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  font: inherit;
+}
+
+.future-renewal-error {
+  margin: 0.5rem 0 0;
+  color: #b42318;
+  font-weight: 700;
+}
+
+.future-renewal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.future-renewal-save,
+.future-renewal-cancel {
+  min-height: 44px;
+  padding: 0.5rem 1rem;
+  border-radius: 10px;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.future-renewal-save {
+  border: none;
+  background: #166534;
+  color: #fff;
+}
+
+.future-renewal-save:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.future-renewal-cancel {
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  color: #334155;
+}

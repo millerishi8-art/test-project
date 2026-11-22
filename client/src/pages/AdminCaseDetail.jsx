@@ -7,6 +7,7 @@ import CaseStatusModal from '../components/CaseStatusModal.jsx';
 import { DocumentImage, ImageLightbox, useImageRotation } from '../components/RotatableImage.jsx';
 import { getCaseStageToneClass, shortStageLabel } from '../utils/caseProcessingStages';
 import ShareCaseButton from '../components/ShareCaseButton.jsx';
+import FutureRenewalButton from '../components/FutureRenewalButton.jsx';
 import CreditAgreementSheet from '../components/CreditAgreementSheet';
 import { idDocLabel } from '../data/creditAgreement';
 import { compressImageFile } from '../utils/imageCompression';
@@ -1636,6 +1637,16 @@ const AdminCaseDetail = () => {
             ]}
             url={`${window.location.origin}/admin/cases/${c.id}`}
           />
+          {!isCreditCase ? (
+            <FutureRenewalButton
+              caseId={c.id}
+              caseLabel={c.userName || c.personalDetails?.fullName || ''}
+              renewalDate={c.renewalDate}
+              onScheduled={(updated) => {
+                if (updated) setCaseData((prev) => (prev ? { ...prev, ...updated } : updated));
+              }}
+            />
+          ) : null}
           {!c.adminConfirmedCompleted && (
             <button
               type="button"
