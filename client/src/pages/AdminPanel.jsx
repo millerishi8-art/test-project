@@ -285,15 +285,6 @@ const AdminPanel = () => {
     setRenewalAlerts([]);
   };
 
-  const handleConfirmCompleted = async (caseId) => {
-    try {
-      await axios.patch(`/admin/cases/${caseId}/confirm-completed`);
-      await fetchData();
-    } catch (err) {
-      console.error('Failed to confirm case:', err);
-    }
-  };
-
   const handleRemoveCase = async (caseItem) => {
     if (
       !window.confirm(

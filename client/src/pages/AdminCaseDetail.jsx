@@ -293,7 +293,6 @@ const AdminCaseDetail = () => {
   const [textDraft, setTextDraft] = useState(null);
   const [textSaving, setTextSaving] = useState(false);
   const [textError, setTextError] = useState('');
-  const [confirmingCompleted, setConfirmingCompleted] = useState(false);
   const [enlargedImage, setEnlargedImage] = useState(null);
   const { turnOf, rotate } = useImageRotation();
   const [statusModalOpen, setStatusModalOpen] = useState(false);
@@ -519,18 +518,6 @@ const AdminCaseDetail = () => {
       setTextError(err.response?.data?.error || 'שגיאה בשמירת המלל');
     } finally {
       setTextSaving(false);
-    }
-  };
-
-  const handleConfirmCompleted = async () => {
-    setConfirmingCompleted(true);
-    try {
-      const res = await axios.patch(`/admin/cases/${caseId}/confirm-completed`);
-      setCaseData((prev) => (prev ? { ...prev, ...res.data.case } : res.data.case));
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setConfirmingCompleted(false);
     }
   };
 
@@ -1647,16 +1634,6 @@ const AdminCaseDetail = () => {
               }}
             />
           ) : null}
-          {!c.adminConfirmedCompleted && (
-            <button
-              type="button"
-              className="admin-confirm-completed-btn"
-              onClick={handleConfirmCompleted}
-              disabled={confirmingCompleted}
-            >
-              {confirmingCompleted ? 'מאשר...' : 'אישור הושלם (צריך חידוש בעוד חצי שנה)'}
-            </button>
-          )}
           <button type="button" className="admin-case-detail-back" onClick={() => navigate('/admin')}>
             חזרה לניהול תיקי לקוחות
           </button>

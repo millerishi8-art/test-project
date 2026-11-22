@@ -657,24 +657,6 @@
   color: #475569;
 }
 
-.admin-confirm-completed-btn {
-  padding: 0.45rem 0.9rem;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: #1e6bb8;
-  background: #e3f2fd;
-  border: 2px solid #1e6bb8;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.admin-confirm-completed-btn:hover {
-  background: #1e6bb8;
-  color: white;
-  transform: translateY(-1px);
-}
-
 .admin-demote-btn {
   padding: 0.45rem 0.9rem;
   font-size: 0.9rem;
