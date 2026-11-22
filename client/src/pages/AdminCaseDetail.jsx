@@ -1128,7 +1128,7 @@ const AdminCaseDetail = () => {
               </label>
               {!isCardOrderCase ? (
                 <label className="admin-case-text-edit-field">
-                  <span>כתובת מבוגרים בלבד (לא חובה)</span>
+                  <span>כתובת מגורים (לא חובה)</span>
                   <textarea
                     value={textDraft.adultsOnlyAddress || ''}
                     onChange={(e) => handleTextDraftChange('adultsOnlyAddress', e.target.value)}
@@ -1304,7 +1304,7 @@ const AdminCaseDetail = () => {
           )}
           {!editingText && !isCardOrderCase && !isCreditCase && String(c.personalDetails?.adultsOnlyAddress || '').trim() !== '' && (
           <div className="admin-case-detail-field admin-case-detail-field-block">
-            <span className="admin-case-detail-label">כתובת מבוגרים בלבד</span>
+            <span className="admin-case-detail-label">כתובת מגורים</span>
             <p className="admin-case-detail-value admin-case-detail-text">{c.personalDetails.adultsOnlyAddress}</p>
           </div>
           )}
