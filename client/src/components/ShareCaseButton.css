@@ -1,0 +1,87 @@
+.share-case {
+  position: relative;
+  display: inline-flex;
+}
+
+.share-case-btn {
+  min-height: 38px;
+  padding: 0.45rem 0.8rem;
+  border: 1.5px solid #93c5fd;
+  border-radius: 10px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.share-case-btn:hover {
+  background: #dbeafe;
+}
+
+.share-case-menu {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 6px);
+  inset-inline-start: 0;
+  min-width: 12rem;
+  padding: 0.35rem;
+  border: 1px solid #dbeafe;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.16);
+}
+
+.share-case-menu a,
+.share-case-menu button {
+  display: block;
+  width: 100%;
+  min-height: 40px;
+  padding: 0.45rem 0.7rem;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #1e3a8a;
+  font: inherit;
+  font-weight: 700;
+  text-align: start;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.share-case-menu a:hover,
+.share-case-menu button:hover {
+  background: #eff6ff;
+}
+
+.share-case-notice {
+  position: absolute;
+  top: calc(100% + 6px);
+  inset-inline-start: 0;
+  z-index: 31;
+  padding: 0.35rem 0.6rem;
+  border-radius: 8px;
+  background: #14532d;
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.admin-actions-cell .share-case,
+.case-status-edit-row .share-case {
+  max-width: 100%;
+}
+
+@media (max-width: 760px) {
+  .admin-actions-cell .share-case,
+  .admin-actions-cell .share-case-btn {
+    width: 100%;
+  }
+
+  .share-case-menu {
+    inset-inline-start: 0;
+    inset-inline-end: 0;
+  }
+}

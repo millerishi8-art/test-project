@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext.jsx';
 import HraDetailsModal, { hasHraContent } from '../components/HraDetailsModal.jsx';
 import { CaseInterimNotesButton } from '../components/CaseInterimNotes.jsx';
 import FutureRenewalButton from '../components/FutureRenewalButton.jsx';
+import ShareCaseButton from '../components/ShareCaseButton.jsx';
 import CaseStatusModal from '../components/CaseStatusModal.jsx';
 import CaseProcessingTimer from '../components/CaseProcessingTimer.jsx';
 import {
@@ -13,6 +14,7 @@ import {
   PROCESSING_STAGE_OPTIONS,
   LEGACY_STAGE_LABELS_HE,
   explicitStageNumberFromLabel,
+  shortStageLabel,
 } from '../utils/caseProcessingStages';
 import '../styles/caseStageTones.css';
 import './AdminPanel.css';
@@ -358,6 +360,20 @@ const AdminPanel = () => {
     return labels[s] || s;
   };
 
+  const caseShareProps = (caseItem, name) => {
+    const stage = shortStageLabel(caseItem.detailedAdminStatus);
+    const renewal = formatRenewalDay(caseItem.renewalDate);
+    return {
+      title: `כייס של ${name || caseItem.personalDetails?.fullName || 'לקוח'}`,
+      lines: [
+        `סוג: ${getBenefitTitle(caseItem.benefitType)}`,
+        `סטטוס: ${stage || statusLabel(caseItem.status)}`,
+        renewal !== '–' ? `חידוש: ${renewal}` : '',
+      ],
+      url: `${window.location.origin}/admin/cases/${caseItem.id}`,
+    };
+  };
+
   const insuranceCases = cases.filter((c) => !isCreditAgreementCase(c));
   const panelUsers = users.filter((user) => {
     const list = Array.isArray(user.cases) ? user.cases : [];
@@ -631,6 +647,7 @@ const AdminPanel = () => {
                                         >
                                           סטטוס הכייס
                                         </button>
+                                        <ShareCaseButton {...caseShareProps(caseItem, user.name)} />
                                         <CaseInterimNotesButton
                                           caseId={caseItem.id}
                                           caseLabel={`${user.name || ''} · ${getBenefitTitle(caseItem.benefitType)}`}
@@ -805,6 +822,7 @@ const AdminPanel = () => {
                           >
                             סטטוס הכייס
                           </button>
+                          <ShareCaseButton {...caseShareProps(caseItem, caseItem.userName)} />
                           <CaseInterimNotesButton
                             caseId={caseItem.id}
                             caseLabel={`${caseItem.userName || ''} · ${getBenefitTitle(caseItem.benefitType)}`}

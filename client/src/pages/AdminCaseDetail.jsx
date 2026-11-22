@@ -5,7 +5,8 @@ import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext.jsx';
 import CaseStatusModal from '../components/CaseStatusModal.jsx';
 import { DocumentImage, ImageLightbox, useImageRotation } from '../components/RotatableImage.jsx';
-import { getCaseStageToneClass } from '../utils/caseProcessingStages';
+import { getCaseStageToneClass, shortStageLabel } from '../utils/caseProcessingStages';
+import ShareCaseButton from '../components/ShareCaseButton.jsx';
 import CreditAgreementSheet from '../components/CreditAgreementSheet';
 import { idDocLabel } from '../data/creditAgreement';
 import { compressImageFile } from '../utils/imageCompression';
@@ -1626,6 +1627,15 @@ const AdminCaseDetail = () => {
           >
             סטטוס הכייס
           </button>
+          <ShareCaseButton
+            title={`כייס של ${c.userName || c.personalDetails?.fullName || 'לקוח'}`}
+            lines={[
+              `סוג: ${benefitTitles[c.benefitType] || c.benefitType}`,
+              `סטטוס: ${shortStageLabel(c.detailedAdminStatus) || c.status || ''}`,
+              c.renewalDate ? `חידוש: ${formatDate(c.renewalDate)}` : '',
+            ]}
+            url={`${window.location.origin}/admin/cases/${c.id}`}
+          />
           {!c.adminConfirmedCompleted && (
             <button
               type="button"

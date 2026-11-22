@@ -11,6 +11,7 @@ import {
   clientCanEditSubmittedCase,
 } from '../utils/caseProcessingStages';
 import AgentSupportInline from '../components/AgentSupportInline';
+import ShareCaseButton from '../components/ShareCaseButton';
 import '../styles/caseStageTones.css';
 import './CaseStatus.css';
 
@@ -227,6 +228,24 @@ const CaseStatus = () => {
                         </span>
                       </div>
                     )}
+                    <div className="case-status-edit-row">
+                      <ShareCaseButton
+                        language={language}
+                        title={(() => {
+                          const who = String(c.personalDetails?.fullName || '').trim();
+                          if (language === 'he') return who ? `כייס של ${who}` : 'הכייס שלי';
+                          return who ? `Case of ${who}` : 'My case';
+                        })()}
+                        lines={[
+                          `${t.benefitType}: ${getBenefitTitle(c.benefitType)}`,
+                          `${t.status}: ${getClientStatusLabel(c)}`,
+                          c.renewalDate
+                            ? `${t.renewalDate}: ${new Date(c.renewalDate).toLocaleDateString(locale)}`
+                            : '',
+                        ]}
+                        url={`${window.location.origin}/case-status`}
+                      />
+                    </div>
                     {String(c.benefitType || '').toLowerCase() === 'credit_agreement' ? (
                       <div className="case-status-edit-row">
                         <button
