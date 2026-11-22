@@ -582,6 +582,40 @@
   align-items: center;
 }
 
+.admin-case-detail-actions .admin-hra-btn,
+.admin-case-detail-actions .admin-remove-btn {
+  padding: 0.75rem 1.2rem;
+  min-height: 48px;
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 700;
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.admin-case-detail-actions .admin-hra-btn {
+  color: #0f766e;
+  background: #ecfdf5;
+  border: 2px solid #0f766e;
+}
+
+.admin-case-detail-actions .admin-hra-btn.is-filled {
+  color: #1e3a8a;
+  background: #eef2ff;
+  border-color: #3730a3;
+}
+
+.admin-case-detail-actions .admin-remove-btn {
+  color: #b71c1c;
+  background: #ffebee;
+  border: 2px solid #b71c1c;
+}
+
+.admin-case-detail-actions .admin-remove-btn:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+
 .admin-case-detail-actions .admin-case-status-btn {
   padding: 0.75rem 1.5rem;
   min-height: var(--touch-min);
@@ -699,6 +733,10 @@
   .admin-case-detail-actions .admin-future-renewal-btn,
   .admin-case-detail-actions .share-case,
   .admin-case-detail-actions .share-case-btn,
+  .admin-case-detail-actions .case-notes-btn-wrap,
+  .admin-case-detail-actions .case-notes-icon-btn,
+  .admin-case-detail-actions .admin-hra-btn,
+  .admin-case-detail-actions .admin-remove-btn,
   .admin-case-detail-back {
     width: 100%;
     min-height: 48px;

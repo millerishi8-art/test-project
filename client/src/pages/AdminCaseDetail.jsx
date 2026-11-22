@@ -8,6 +8,8 @@ import { DocumentImage, ImageLightbox, useImageRotation } from '../components/Ro
 import { getCaseStageToneClass, shortStageLabel } from '../utils/caseProcessingStages';
 import ShareCaseButton from '../components/ShareCaseButton.jsx';
 import FutureRenewalButton from '../components/FutureRenewalButton.jsx';
+import { CaseInterimNotesButton } from '../components/CaseInterimNotes.jsx';
+import HraDetailsModal, { hasHraContent } from '../components/HraDetailsModal.jsx';
 import CreditAgreementSheet from '../components/CreditAgreementSheet';
 import { idDocLabel } from '../data/creditAgreement';
 import { compressImageFile } from '../utils/imageCompression';
@@ -285,6 +287,7 @@ const AdminCaseDetail = () => {
     sessionUser?.isPrimaryAdmin === true &&
     sessionUser?.canEditSubmittedText === true &&
     sessionEmail !== 'yudigruenberg@gmail.com';
+  const canDeleteCases = sessionUser?.canDeleteCases === true;
   const [caseData, setCaseData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -296,6 +299,8 @@ const AdminCaseDetail = () => {
   const [enlargedImage, setEnlargedImage] = useState(null);
   const { turnOf, rotate } = useImageRotation();
   const [statusModalOpen, setStatusModalOpen] = useState(false);
+  const [hraOpen, setHraOpen] = useState(false);
+  const [removingCase, setRemovingCase] = useState(false);
   const [downloadState, setDownloadState] = useState('');
   const [downloadError, setDownloadError] = useState('');
   const [removingPath, setRemovingPath] = useState('');
@@ -518,6 +523,25 @@ const AdminCaseDetail = () => {
       setTextError(err.response?.data?.error || 'שגיאה בשמירת המלל');
     } finally {
       setTextSaving(false);
+    }
+  };
+
+  const handleRemoveCase = async () => {
+    if (
+      !window.confirm(
+        'להסיר את התיק מהמערכת לצמיתות?\n\nפעולה זו למנהל ראשי בלבד. אם זה התיק היחיד של הלקוח, חשבון המשתמש יימחק גם הוא.'
+      )
+    ) {
+      return;
+    }
+    if (removingCase) return;
+    setRemovingCase(true);
+    try {
+      await axios.delete(`/admin/cases/${caseId}`);
+      navigate('/admin');
+    } catch (err) {
+      setRemovingCase(false);
+      window.alert(err.response?.data?.error || 'שגיאה במחיקת התיק');
     }
   };
 
@@ -1624,6 +1648,12 @@ const AdminCaseDetail = () => {
             ]}
             url={`${window.location.origin}/admin/cases/${c.id}`}
           />
+          <CaseInterimNotesButton
+            caseId={c.id}
+            caseLabel={`${c.userName || c.personalDetails?.fullName || ''} · ${benefitTitles[c.benefitType] || c.benefitType}`}
+            notes={c.interimNotes}
+            onNotesChange={(_id, notes) => setCaseData((prev) => (prev ? { ...prev, interimNotes: notes } : prev))}
+          />
           {!isCreditCase ? (
             <FutureRenewalButton
               caseId={c.id}
@@ -1634,12 +1664,39 @@ const AdminCaseDetail = () => {
               }}
             />
           ) : null}
+          <button
+            type="button"
+            className={`admin-hra-btn${hasHraContent(c.hraDetails) ? ' is-filled' : ''}`}
+            onClick={() => setHraOpen(true)}
+          >
+            {hasHraContent(c.hraDetails) ? 'פרטים מהאתר HRA לכייס' : 'העלת פרטים לכייס'}
+          </button>
+          {canDeleteCases ? (
+            <button
+              type="button"
+              className="admin-remove-btn"
+              onClick={handleRemoveCase}
+              disabled={removingCase}
+            >
+              {removingCase ? 'מוחק...' : 'הסר'}
+            </button>
+          ) : null}
           <button type="button" className="admin-case-detail-back" onClick={() => navigate('/admin')}>
             חזרה לניהול תיקי לקוחות
           </button>
         </div>
       </div>
 
+      {hraOpen ? (
+        <HraDetailsModal
+          caseId={c.id}
+          caseLabel={c.userName || c.personalDetails?.fullName || ''}
+          onClose={() => setHraOpen(false)}
+          onSaved={(updated) => {
+            if (updated) setCaseData((prev) => (prev ? { ...prev, ...updated } : updated));
+          }}
+        />
+      ) : null}
       {statusModalOpen ? (
         <CaseStatusModal
           caseItem={c}
